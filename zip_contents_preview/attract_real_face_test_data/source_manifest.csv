@@ -1,0 +1,16 @@
+person,slot,source_file,url
+person_01,straight_01.jpg,George_W_Bush_0001.jpg,https://raw.githubusercontent.com/Muhammad-Yunus/Face-Recognition-Eigenface-and-SVM/master/dataset/George_W_Bush/George_W_Bush_0001.jpg
+person_01,left_01.jpg,George_W_Bush_0002.jpg,https://raw.githubusercontent.com/Muhammad-Yunus/Face-Recognition-Eigenface-and-SVM/master/dataset/George_W_Bush/George_W_Bush_0002.jpg
+person_01,right_01.jpg,George_W_Bush_0003.jpg,https://raw.githubusercontent.com/Muhammad-Yunus/Face-Recognition-Eigenface-and-SVM/master/dataset/George_W_Bush/George_W_Bush_0003.jpg
+person_01,extra_01.jpg,George_W_Bush_0004.jpg,https://raw.githubusercontent.com/Muhammad-Yunus/Face-Recognition-Eigenface-and-SVM/master/dataset/George_W_Bush/George_W_Bush_0004.jpg
+person_01,extra_02.jpg,George_W_Bush_0005.jpg,https://raw.githubusercontent.com/Muhammad-Yunus/Face-Recognition-Eigenface-and-SVM/master/dataset/George_W_Bush/George_W_Bush_0005.jpg
+person_02,straight_01.jpg,Megawati_Sukarnoputri_0001.jpg,https://raw.githubusercontent.com/Muhammad-Yunus/Face-Recognition-Eigenface-and-SVM/master/dataset/Megawati_Sukarnoputri/Megawati_Sukarnoputri_0001.jpg
+person_02,left_01.jpg,Megawati_Sukarnoputri_0002.jpg,https://raw.githubusercontent.com/Muhammad-Yunus/Face-Recognition-Eigenface-and-SVM/master/dataset/Megawati_Sukarnoputri/Megawati_Sukarnoputri_0002.jpg
+person_02,right_01.jpg,Megawati_Sukarnoputri_0003.jpg,https://raw.githubusercontent.com/Muhammad-Yunus/Face-Recognition-Eigenface-and-SVM/master/dataset/Megawati_Sukarnoputri/Megawati_Sukarnoputri_0003.jpg
+person_02,extra_01.jpg,Megawati_Sukarnoputri_0004.jpg,https://raw.githubusercontent.com/Muhammad-Yunus/Face-Recognition-Eigenface-and-SVM/master/dataset/Megawati_Sukarnoputri/Megawati_Sukarnoputri_0004.jpg
+person_02,extra_02.jpg,Megawati_Sukarnoputri_0005.jpg,https://raw.githubusercontent.com/Muhammad-Yunus/Face-Recognition-Eigenface-and-SVM/master/dataset/Megawati_Sukarnoputri/Megawati_Sukarnoputri_0005.jpg
+person_03,straight_01.jpg,Tiger_Woods_0001.jpg,https://raw.githubusercontent.com/Muhammad-Yunus/Face-Recognition-Eigenface-and-SVM/master/dataset/Tiger_Woods/Tiger_Woods_0001.jpg
+person_03,left_01.jpg,Tiger_Woods_0002.jpg,https://raw.githubusercontent.com/Muhammad-Yunus/Face-Recognition-Eigenface-and-SVM/master/dataset/Tiger_Woods/Tiger_Woods_0002.jpg
+person_03,right_01.jpg,Tiger_Woods_0003.jpg,https://raw.githubusercontent.com/Muhammad-Yunus/Face-Recognition-Eigenface-and-SVM/master/dataset/Tiger_Woods/Tiger_Woods_0003.jpg
+person_03,extra_01.jpg,Tiger_Woods_0004.jpg,https://raw.githubusercontent.com/Muhammad-Yunus/Face-Recognition-Eigenface-and-SVM/master/dataset/Tiger_Woods/Tiger_Woods_0004.jpg
+person_03,extra_02.jpg,Tiger_Woods_0005.jpg,https://raw.githubusercontent.com/Muhammad-Yunus/Face-Recognition-Eigenface-and-SVM/master/dataset/Tiger_Woods/Tiger_Woods_0005.jpg

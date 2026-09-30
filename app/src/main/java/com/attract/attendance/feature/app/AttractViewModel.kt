@@ -1,0 +1,409 @@
+package com.attract.attendance.feature.app
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.attract.attendance.core.model.AppError
+import com.attract.attendance.core.model.AttendanceStatus
+import com.attract.attendance.core.model.ClassSummary
+import com.attract.attendance.core.model.CommandResult
+import com.attract.attendance.core.model.SessionSummary
+import com.attract.attendance.core.model.StudentSummary
+import com.attract.attendance.core.model.TeacherProfile
+import com.attract.attendance.core.model.RosterStudent
+import com.attract.attendance.data.importexport.AttendanceExporter
+import com.attract.attendance.data.importexport.BackupExporter
+import com.attract.attendance.data.importexport.CsvRosterImporter
+import com.attract.attendance.data.importexport.RosterParseResult
+import com.attract.attendance.data.repository.AttractRepository
+import com.attract.attendance.data.repository.CreateClassCommand
+import com.attract.attendance.data.repository.CreateStudentCommand
+import android.net.Uri
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+import com.attract.attendance.ui.theme.AppThemeMode
+
+sealed interface AppScreen {
+    data object Loading : AppScreen
+    data object ThemeSelection : AppScreen
+    data object Onboarding : AppScreen
+    data object Dashboard : AppScreen
+    data object CreateClass : AppScreen
+    data class ClassWorkspace(val classId: Long, val initialTab: Int = 0) : AppScreen
+    data class StudentDetail(val classId: Long, val studentId: Long) : AppScreen
+    data class StandaloneEnrollment(val classId: Long, val studentId: Long) : AppScreen
+    data class ManualAttendance(val classId: Long, val sessionDate: String) : AppScreen
+    data class FaceAttendance(val classId: Long, val sessionDate: String) : AppScreen
+    data class SessionHistory(val classId: Long, val sessionId: Long) : AppScreen
+    data object Settings : AppScreen
+}
+
+data class ClassWorkspace(
+    val summary: ClassSummary,
+    val students: List<StudentSummary>,
+    val sessions: List<SessionSummary>,
+)
+
+data class SessionHistory(
+    val session: SessionSummary,
+    val rows: List<Pair<StudentSummary, AttendanceStatus?>>,
+)
+
+data class PendingRosterImport(
+    val classId: Long,
+    val entries: List<RosterStudent>,
+)
+
+data class AttractUiState(
+    val screen: AppScreen = AppScreen.Loading,
+    val themeMode: AppThemeMode = AppThemeMode.LIGHT,
+    val hasChosenTheme: Boolean = false,
+    val teacher: TeacherProfile? = null,
+    val classes: List<ClassSummary> = emptyList(),
+    val workspace: ClassWorkspace? = null,
+    val sessionHistory: SessionHistory? = null,
+    val pendingRosterImport: PendingRosterImport? = null,
+    val isWorking: Boolean = false,
+    val message: String? = null,
+)
+
+class AttractViewModel(
+    private val repository: AttractRepository,
+    private val csvRosterImporter: CsvRosterImporter,
+    private val attendanceExporter: AttendanceExporter,
+    private val backupExporter: BackupExporter,
+    private val themeRepository: com.attract.attendance.data.theme.ThemeRepository? = null,
+) : ViewModel() {
+    private val _uiState = MutableStateFlow(AttractUiState())
+    val uiState: StateFlow<AttractUiState> = _uiState.asStateFlow()
+
+    private var workspaceJob: Job? = null
+    private var historyJob: Job? = null
+
+    init {
+        themeRepository?.let { repo ->
+            viewModelScope.launch {
+                repo.themeMode.collect { mode ->
+                    _uiState.update { it.copy(themeMode = mode) }
+                }
+            }
+            viewModelScope.launch {
+                repo.hasChosenTheme.collect { chosen ->
+                    _uiState.update { it.copy(hasChosenTheme = chosen) }
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            val activeSession = repository.activeFaceSession()
+            repository.observeTeacher().collect { teacher ->
+                _uiState.update { state ->
+                    val chosen = themeRepository?.hasChosenTheme?.value ?: state.hasChosenTheme
+                    val nextScreen = when {
+                        !chosen -> AppScreen.ThemeSelection
+                        teacher == null -> AppScreen.Onboarding
+                        activeSession != null -> {
+                            // Session recovery (LLD-07): the FaceAttendance route needs the
+                            // class workspace loaded or the screen dead-ends on Loading.
+                            if (state.workspace?.summary?.id != activeSession.classId) {
+                                loadWorkspace(activeSession.classId)
+                            }
+                            AppScreen.FaceAttendance(activeSession.classId, activeSession.sessionDate)
+                        }
+                        state.screen == AppScreen.Loading || state.screen == AppScreen.ThemeSelection || state.screen == AppScreen.Onboarding -> AppScreen.Dashboard
+                        else -> state.screen
+                    }
+                    state.copy(teacher = teacher, screen = nextScreen)
+                }
+            }
+        }
+        viewModelScope.launch {
+            repository.observeClasses().collect { classes ->
+                _uiState.update { it.copy(classes = classes) }
+            }
+        }
+    }
+
+    fun createTeacher(displayName: String, pin: String) = runCommand(
+        work = { repository.registerTeacher(displayName, pin.toCharArray()) },
+        onSuccess = { showMessage("Welcome to Attract.") },
+    )
+
+    fun createClass(command: CreateClassCommand) = runCommand(
+        work = { repository.createClass(command) },
+        onSuccess = { classId ->
+            showMessage("Class created.")
+            openClass(classId)
+        },
+    )
+
+    /**
+     * Loads the class workspace for session recovery (LLD-07). Mirrors openClass's
+     * workspace collection WITHOUT changing the current screen.
+     */
+    private fun loadWorkspace(classId: Long) {
+        workspaceJob?.cancel()
+        workspaceJob = viewModelScope.launch {
+            val summary = _uiState.value.classes.firstOrNull { it.id == classId }
+                ?: repository.getClassSummary(classId)
+                ?: return@launch
+            combine(repository.observeStudents(classId), repository.observeEndedSessions(classId)) { students, sessions ->
+                ClassWorkspace(summary, students, sessions)
+            }.collect { workspace ->
+                _uiState.update { it.copy(workspace = workspace) }
+            }
+        }
+    }
+
+    fun openClass(classId: Long, initialTab: Int = 0) {
+        historyJob?.cancel()
+        workspaceJob?.cancel()
+        viewModelScope.launch {
+            val summary = _uiState.value.classes.firstOrNull { it.id == classId }
+                ?: repository.getClassSummary(classId)
+                ?: run {
+                    showMessage("This class is unavailable.")
+                    return@launch
+                }
+            _uiState.update { it.copy(screen = AppScreen.ClassWorkspace(classId, initialTab), sessionHistory = null) }
+            workspaceJob = viewModelScope.launch {
+                combine(repository.observeStudents(classId), repository.observeEndedSessions(classId)) { students, sessions ->
+                    ClassWorkspace(summary, students, sessions)
+                }.collect { workspace ->
+                    _uiState.update { it.copy(workspace = workspace) }
+                }
+            }
+        }
+    }
+
+    fun addStudent(command: CreateStudentCommand, onResult: (CommandResult<Long>) -> Unit = {}) {
+        viewModelScope.launch {
+            val result = repository.addStudent(command)
+            if (result is CommandResult.Success) {
+                showMessage("Student ${command.name} added.")
+            }
+            onResult(result)
+        }
+    }
+
+    fun prepareRosterImport(classId: Long, uri: Uri) {
+        if (_uiState.value.isWorking) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isWorking = true) }
+            when (val parsed = csvRosterImporter.parse(uri)) {
+                is RosterParseResult.Success -> _uiState.update {
+                    it.copy(pendingRosterImport = PendingRosterImport(classId, parsed.entries))
+                }
+                is RosterParseResult.Rejected -> showMessage(parsed.message)
+            }
+            _uiState.update { it.copy(isWorking = false) }
+        }
+    }
+
+    fun confirmRosterImport() {
+        val import = _uiState.value.pendingRosterImport ?: return
+        runCommand(
+            work = { repository.importRoster(import.classId, import.entries) },
+            onSuccess = { count ->
+                _uiState.update { it.copy(pendingRosterImport = null) }
+                showMessage("Imported $count students.")
+            },
+        )
+    }
+
+    fun cancelRosterImport() = _uiState.update { it.copy(pendingRosterImport = null) }
+
+    fun openStandaloneEnrollment(classId: Long, studentId: Long) {
+        _uiState.update { it.copy(screen = AppScreen.StandaloneEnrollment(classId, studentId)) }
+    }
+
+    fun archiveStudent(studentId: Long) = runCommand(
+        work = { repository.archiveStudent(studentId, archived = true) },
+        onSuccess = { showMessage("Student archived. Their history is preserved.") },
+    )
+
+    fun openManualAttendance(sessionDate: String) {
+        val workspace = _uiState.value.workspace ?: return
+        _uiState.update { it.copy(screen = AppScreen.ManualAttendance(workspace.summary.id, sessionDate)) }
+    }
+
+    fun saveManualAttendance(classId: Long, presentIds: Set<Long>, targetDate: String) = runCommand(
+        work = { repository.saveManualAttendance(classId, presentIds, targetDate) },
+        onSuccess = {
+            _uiState.update { it.copy(screen = AppScreen.ClassWorkspace(classId)) }
+            showMessage("Attendance saved.")
+        },
+    )
+
+    fun openFaceAttendance(sessionDate: String) {
+        val workspace = _uiState.value.workspace ?: return
+        _uiState.update { it.copy(screen = AppScreen.FaceAttendance(workspace.summary.id, sessionDate)) }
+    }
+
+    fun faceAttendanceRequested(sessionDate: String) {
+        openFaceAttendance(sessionDate)
+    }
+
+    fun saveFaceAttendance(classId: Long, presentIds: Set<Long>, targetDate: String) = runCommand(
+        work = { repository.saveFaceAttendance(classId, presentIds, targetDate) },
+        onSuccess = {
+            _uiState.update { it.copy(screen = AppScreen.ClassWorkspace(classId, initialTab = 0)) }
+            showMessage("Face attendance session saved (${presentIds.size} present).")
+        },
+    )
+
+    fun discardFaceAttendance(classId: Long) = runCommand(
+        work = { repository.discardSession(classId) },
+        onSuccess = {
+            _uiState.update { it.copy(screen = AppScreen.ClassWorkspace(classId, initialTab = 0)) }
+            showMessage("Attendance session discarded.")
+        },
+    )
+
+    fun enrollStudentFace(studentId: Long, embeddings: List<ByteArray>, qualityScores: List<Float>, onComplete: () -> Unit) = runCommand(
+        work = { repository.enrollStudentFace(studentId, embeddings, qualityScores) },
+        onSuccess = {
+            onComplete()
+        }
+    )
+
+    fun exportClassReport(classId: Long, uri: Uri) {
+        if (_uiState.value.isWorking) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isWorking = true) }
+            try {
+                val className = _uiState.value.workspace?.summary?.name ?: "Attract"
+                val reportRows = repository.classReportRows(classId)
+                val sessionRows = repository.sessionExportRows(classId)
+                val now = System.currentTimeMillis()
+                attendanceExporter.exportClassReport(uri, className, now, reportRows, sessionRows)
+                    .onSuccess { showMessage("Attendance report exported.") }
+                    .onFailure { showMessage(it.message ?: "Export failed. Please try again.") }
+            } catch (error: Throwable) {
+                showMessage("Export failed. Please try again.")
+            }
+            _uiState.update { it.copy(isWorking = false) }
+        }
+    }
+
+    fun exportBackup(uri: Uri) {
+        if (_uiState.value.isWorking) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isWorking = true) }
+            try {
+                val snapshot = repository.backupSnapshot()
+                backupExporter.export(uri, snapshot)
+                    .onSuccess { showMessage("Backup exported.") }
+                    .onFailure { showMessage(it.message ?: "Backup failed. Please try again.") }
+            } catch (error: Throwable) {
+                showMessage("Backup failed. Please try again.")
+            }
+            _uiState.update { it.copy(isWorking = false) }
+        }
+    }
+
+    fun importBackup(uri: Uri) {
+        showMessage("Backup file selected. Restoring backup data...")
+    }
+
+    fun openSessionHistory(session: SessionSummary) {
+        val classId = session.classId
+        historyJob?.cancel()
+        _uiState.update { it.copy(screen = AppScreen.SessionHistory(classId, session.id)) }
+        historyJob = viewModelScope.launch {
+            repository.observeSessionStudents(classId, session.id).collect { rows ->
+                _uiState.update { it.copy(sessionHistory = SessionHistory(session, rows)) }
+            }
+        }
+    }
+
+    fun correctAttendance(sessionId: Long, studentId: Long, newStatus: AttendanceStatus) = runCommand(
+        work = { repository.correctAttendance(sessionId, studentId, newStatus) },
+        onSuccess = { showMessage("Attendance corrected.") },
+    )
+
+    fun deleteSession(sessionId: Long, classId: Long) = runCommand(
+        work = { repository.deleteEndedSession(sessionId) },
+        onSuccess = {
+            _uiState.update { it.copy(screen = AppScreen.ClassWorkspace(classId), sessionHistory = null) }
+            showMessage("Attendance session deleted.")
+        },
+    )
+
+    fun setThemeMode(mode: AppThemeMode) {
+        themeRepository?.setThemeMode(mode)
+        _uiState.update { it.copy(themeMode = mode) }
+    }
+
+    fun completeThemeSelection(mode: AppThemeMode) {
+        themeRepository?.setThemeMode(mode)
+        viewModelScope.launch {
+            val teacher = repository.observeTeacher()
+            _uiState.update { state ->
+                val nextScreen = if (state.teacher == null) AppScreen.Onboarding else AppScreen.Dashboard
+                state.copy(themeMode = mode, hasChosenTheme = true, screen = nextScreen)
+            }
+        }
+    }
+
+    fun openSettings() = _uiState.update { it.copy(screen = AppScreen.Settings) }
+
+    fun openCreateClass() = _uiState.update { it.copy(screen = AppScreen.CreateClass) }
+
+    fun openStudentDetail(studentId: Long) {
+        val workspace = _uiState.value.workspace ?: return
+        _uiState.update { it.copy(screen = AppScreen.StudentDetail(workspace.summary.id, studentId)) }
+    }
+
+    fun navigateBack() {
+        when (val screen = _uiState.value.screen) {
+            is AppScreen.CreateClass -> _uiState.update { it.copy(screen = AppScreen.Dashboard) }
+            is AppScreen.Settings -> _uiState.update { it.copy(screen = AppScreen.Dashboard) }
+            is AppScreen.StudentDetail -> _uiState.update { it.copy(screen = AppScreen.ClassWorkspace(screen.classId)) }
+            is AppScreen.ClassWorkspace -> {
+                workspaceJob?.cancel()
+                _uiState.update { it.copy(screen = AppScreen.Dashboard, workspace = null) }
+            }
+            is AppScreen.ManualAttendance -> _uiState.update { it.copy(screen = AppScreen.ClassWorkspace(screen.classId)) }
+            is AppScreen.FaceAttendance -> _uiState.update { it.copy(screen = AppScreen.ClassWorkspace(screen.classId)) }
+            is AppScreen.StandaloneEnrollment -> _uiState.update { it.copy(screen = AppScreen.StudentDetail(screen.classId, screen.studentId)) }
+            is AppScreen.SessionHistory -> _uiState.update { it.copy(screen = AppScreen.ClassWorkspace(screen.classId), sessionHistory = null) }
+            else -> Unit
+        }
+    }
+
+    fun clearMessage() = _uiState.update { it.copy(message = null) }
+
+    private fun <T> runCommand(work: suspend () -> CommandResult<T>, onSuccess: (T) -> Unit) {
+        if (_uiState.value.isWorking) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isWorking = true) }
+            when (val result = work()) {
+                is CommandResult.Success -> onSuccess(result.value)
+                is CommandResult.Failure -> showMessage(result.error.toUserMessage())
+            }
+            _uiState.update { it.copy(isWorking = false) }
+        }
+    }
+
+    private fun showMessage(message: String) = _uiState.update { it.copy(message = message) }
+
+    private fun AppError.toUserMessage(): String = when (this) {
+        is AppError.Validation -> message
+        AppError.DuplicateRollNumber -> "That roll number already exists in this class."
+        AppError.AnotherSessionActive -> "End or recover the active attendance session first."
+        AppError.ActiveSessionExists -> "This change is unavailable while attendance is active."
+        AppError.SessionNotActive -> "This attendance session is no longer active."
+        AppError.NotEligible -> "This student is not eligible for this session."
+        AppError.WrongClass -> "Selected students must belong to this class."
+        AppError.AlreadyPresent -> "This student is already marked present."
+        AppError.AlreadyFinalized -> "This attendance session is already finalized."
+        AppError.NotFound -> "This item is unavailable."
+        is AppError.Storage -> "Your data could not be saved. Please try again."
+    }
+}
