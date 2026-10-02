@@ -27,3 +27,4 @@ The binding high-level design is [docs/00-main-sdd.md](docs/00-main-sdd.md). The
 | [99 LLD template](docs/99-lld-template.md) | Required structure for every LLD | Approved template |
 
 All future implementation, design, and test work must be traceable to one of the numbered LLDs.
+# Attract-AI-Based-Attendance-Tracker
