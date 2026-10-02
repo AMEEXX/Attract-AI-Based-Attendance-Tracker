@@ -169,16 +169,26 @@ fun StudentDetailScreen(
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Text(
-                                    text = if (isEnrolled) "Biometrics Encrypted & Registered" else "Not enrolled yet",
+                                    text = when (student.enrollmentStatus) {
+                                        EnrollmentStatus.ENROLLED -> "Biometrics Encrypted & Registered"
+                                        EnrollmentStatus.REENROLL_REQUIRED -> "Re-enrollment Required (Pipeline Upgrade)"
+                                        EnrollmentStatus.NOT_ENROLLED -> "Not enrolled yet"
+                                    },
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = if (student.enrollmentStatus == EnrollmentStatus.REENROLL_REQUIRED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                             Box(
                                 modifier = Modifier
                                     .size(10.dp)
                                     .clip(CircleShape)
-                                    .background(if (isEnrolled) SuccessGreen else MaterialTheme.colorScheme.onSurfaceVariant)
+                                    .background(
+                                        when (student.enrollmentStatus) {
+                                            EnrollmentStatus.ENROLLED -> SuccessGreen
+                                            EnrollmentStatus.REENROLL_REQUIRED -> MaterialTheme.colorScheme.error
+                                            EnrollmentStatus.NOT_ENROLLED -> MaterialTheme.colorScheme.onSurfaceVariant
+                                        }
+                                    )
                             )
                         }
 
@@ -195,7 +205,13 @@ fun StudentDetailScreen(
                         ) {
                             Icon(Icons.Default.Face, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.size(8.dp))
-                            Text(if (isEnrolled) "Re-enroll face biometrics" else "Enroll face biometrics")
+                            Text(
+                                when (student.enrollmentStatus) {
+                                    EnrollmentStatus.ENROLLED -> "Re-enroll face biometrics"
+                                    EnrollmentStatus.REENROLL_REQUIRED -> "Repair / Re-enroll face"
+                                    EnrollmentStatus.NOT_ENROLLED -> "Enroll face biometrics"
+                                }
+                            )
                         }
                     }
                 }

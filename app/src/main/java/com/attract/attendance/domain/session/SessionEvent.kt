@@ -30,7 +30,10 @@ sealed interface SessionEvent {
         override val attemptId: Long,
         val matchedStudent: StudentSummary?,
         val confidence: Float,
+        val isAmbiguous: Boolean = false,
     ) : SessionEvent
+
+    data class RetryFeedbackExpired(override val attemptId: Long) : SessionEvent
 
     data class PersistCompleted(
         override val attemptId: Long,
@@ -38,8 +41,21 @@ sealed interface SessionEvent {
         val isSuccess: Boolean,
     ) : SessionEvent
 
-    data class EnrollmentRequested(override val attemptId: Long, val reason: String) : SessionEvent
+    data class EnrollmentRequested(override val attemptId: Long, val reason: String = "Manual enrollment requested") : SessionEvent
+    data class StudentSelectedForEnrollment(override val attemptId: Long, val targetStudent: StudentSummary) : SessionEvent
+    data class TeacherApprovalGranted(override val attemptId: Long, val grant: TeacherAuthorizationGrant) : SessionEvent
+    data class TeacherApprovalRejected(override val attemptId: Long) : SessionEvent
+    data class EnrollmentSlotCaptured(override val attemptId: Long, val slot: Int) : SessionEvent
+    data class EnrollmentSlotRetake(override val attemptId: Long, val slot: Int) : SessionEvent
+    data class EnrollmentCompleted(override val attemptId: Long, val student: StudentSummary) : SessionEvent
+
     data class TeacherAssistRequested(override val attemptId: Long, val reason: String) : SessionEvent
+    data class TeacherAssistActionSelected(
+        override val attemptId: Long,
+        val studentId: Long,
+        val action: TeacherAuthAction,
+    ) : SessionEvent
+
     data class EndRequested(override val attemptId: Long) : SessionEvent
     data class AuthOutcome(override val attemptId: Long, val authResult: AuthResult) : SessionEvent
     data class Cancel(override val attemptId: Long) : SessionEvent

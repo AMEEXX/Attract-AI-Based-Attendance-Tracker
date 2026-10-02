@@ -1,4 +1,4 @@
-﻿package com.attract.attendance.data.repository
+package com.attract.attendance.data.repository
 
 import android.database.sqlite.SQLiteConstraintException
 import androidx.room.withTransaction
@@ -80,7 +80,7 @@ class AttractRepository(
     sealed interface FallbackMarkResult {
         /** Exactly one PRESENT record now exists for (session, student). */
         data class Marked(val recordId: Long, val studentName: String) : FallbackMarkResult
-        /** Student was already PRESENT in this session — no duplicate created. */
+        /** Student was already PRESENT in this session â€” no duplicate created. */
         data class AlreadyPresent(val studentName: String) : FallbackMarkResult
         data object NoActiveSession : FallbackMarkResult
         data object StudentNotFound : FallbackMarkResult
@@ -99,7 +99,7 @@ class AttractRepository(
      *  - idempotent: already-PRESENT returns AlreadyPresent without a duplicate.
      */
     /**
-     * Persists an AI-recognition attendance mark IMMEDIATELY (LLD-06: Recognizing →
+     * Persists an AI-recognition attendance mark IMMEDIATELY (LLD-06: Recognizing â†’
      * PersistingPresent). Uses the SAME production command and uniqueness guarantees as
      * the manual fallback so both paths converge on one consistent Room state and the
      * end-of-session reconciliation can never collide or duplicate.
@@ -152,6 +152,85 @@ class AttractRepository(
             }
         } catch (error: Throwable) {
             android.util.Log.e("ATTRACT_ATTENDANCE_FALLBACK", "markRecognizedPresent FAILED", error)
+            FallbackMarkResult.Failed("${error::class.simpleName}: ${error.message}")
+        }
+    }
+    suspend fun markTeacherAssistedPresent(
+        classId: Long,
+        studentId: Long,
+        grant: com.attract.attendance.domain.session.TeacherAuthorizationGrant,
+    ): FallbackMarkResult {
+        android.util.Log.i(
+            "ATTRACT_ATTENDANCE_FALLBACK",
+            "markTeacherAssistedPresent: classId=$classId studentId=$studentId grantToken=${grant.token}",
+        )
+        return try {
+            database.withTransaction {
+                val session = sessions.activeForClass(classId)
+                if (session == null || session.status != SessionStatus.ACTIVE || session.mode != SessionMode.FACE) {
+                    android.util.Log.w("ATTRACT_ATTENDANCE_FALLBACK", "No active FACE session for classId=$classId")
+                    return@withTransaction FallbackMarkResult.NoActiveSession
+                }
+                val now = nowMillis()
+                if (!grant.isValid(
+                        currentSessionId = session.id,
+                        currentClassId = classId,
+                        targetStudentId = studentId,
+                        expectedAction = com.attract.attendance.domain.session.TeacherAuthAction.TEACHER_ASSISTED_CHECKIN,
+                        currentInteractionId = grant.interactionId,
+                        currentTimeMillis = now,
+                    )
+                ) {
+                    android.util.Log.e("ATTRACT_ATTENDANCE_FALLBACK", "markTeacherAssistedPresent: REJECTED invalid grant: $grant")
+                    return@withTransaction FallbackMarkResult.Failed("Unauthorized: Teacher authorization grant is invalid or expired.")
+                }
+                val student = students.find(studentId)
+                if (student == null) {
+                    android.util.Log.w("ATTRACT_ATTENDANCE_FALLBACK", "Student $studentId not found")
+                    return@withTransaction FallbackMarkResult.StudentNotFound
+                }
+                val command = com.attract.attendance.domain.RecordPresentCommand(
+                    sessionDao = sessions,
+                    studentDao = students,
+                    attendanceRecordDao = records,
+                )
+                when (val result = command.execute(
+                    sessionId = session.id,
+                    studentId = studentId,
+                    method = AttendanceSource.TEACHER_ASSISTED,
+                    confidence = null,
+                    metadata = "teacher_assisted_grant_${grant.token}",
+                )) {
+                    is com.attract.attendance.domain.RecordPresentResult.Success -> {
+                        android.util.Log.i(
+                            "ATTRACT_ATTENDANCE_FALLBACK",
+                            "Marked PRESENT: sessionId=${session.id} studentId=$studentId " +
+                                "name=${student.name} recordId=${result.recordId} source=TEACHER_ASSISTED",
+                        )
+                        FallbackMarkResult.Marked(result.recordId, student.name)
+                    }
+                    com.attract.attendance.domain.RecordPresentResult.AlreadyPresent -> {
+                        android.util.Log.i(
+                            "ATTRACT_ATTENDANCE_FALLBACK",
+                            "Already PRESENT: sessionId=${session.id} studentId=$studentId name=${student.name}",
+                        )
+                        FallbackMarkResult.AlreadyPresent(student.name)
+                    }
+                    com.attract.attendance.domain.RecordPresentResult.StudentNotEligible -> {
+                        android.util.Log.w(
+                            "ATTRACT_ATTENDANCE_FALLBACK",
+                            "Student $studentId (${student.name}) not eligible for session ${session.id}",
+                        )
+                        FallbackMarkResult.StudentNotEligible
+                    }
+                    com.attract.attendance.domain.RecordPresentResult.SessionNotActive ->
+                        FallbackMarkResult.NoActiveSession
+                    com.attract.attendance.domain.RecordPresentResult.StudentNotFound ->
+                        FallbackMarkResult.StudentNotFound
+                }
+            }
+        } catch (error: Throwable) {
+            android.util.Log.e("ATTRACT_ATTENDANCE_FALLBACK", "markTeacherAssistedPresent FAILED", error)
             FallbackMarkResult.Failed("${error::class.simpleName}: ${error.message}")
         }
     }
@@ -498,7 +577,7 @@ class AttractRepository(
             // RECONCILING end-save (LLD-06): recognition/fallback marks are persisted
             // IMMEDIATELY during the session; this final pass only fills in the students
             // that have NO record yet (mostly ABSENT). Existing rows keep their original
-            // source (AI_RECOGNITION / MANUAL) — never duplicated, never overwritten.
+            // source (AI_RECOGNITION / MANUAL) â€” never duplicated, never overwritten.
             val existingRows = records.forSession(sessionId)
             val existingByStudent = existingRows.associateBy { it.studentId }
             val missing = eligible.filter { it.id !in existingByStudent }
@@ -531,8 +610,114 @@ class AttractRepository(
      *
      * Templates whose decrypted embedding does not match the current model output
      * (e.g. 32-D vectors from an earlier prototype model on an upgraded phone) are
-     * NEVER returned â€” they can never reach TemplateMatcher.cosineSimilarity.
+     * NEVER returned Ã¢â‚¬â€ they can never reach TemplateMatcher.cosineSimilarity.
      */
+    /**
+     * Loads the template gallery for a class and returns a typed [com.attract.attendance.domain.face.GalleryLoadResult] (WP03 / R11).
+     *
+     * Ensures storage errors, Keystore invalidation, and template corruption are never
+     * misclassified as an empty gallery or an ordinary Unknown face.
+     */
+    suspend fun loadGallery(classId: Long): com.attract.attendance.domain.face.GalleryLoadResult {
+        return try {
+            val classStudents = students.activeForClass(classId)
+            val enrolledStudents = classStudents.filter { it.enrollmentStatus == EnrollmentStatus.ENROLLED }
+            val rows = templates.activeForClass(classId)
+
+            if (enrolledStudents.isEmpty() && rows.isEmpty()) {
+                return com.attract.attendance.domain.face.GalleryLoadResult.EmptyHealthy
+            }
+
+            val usable = mutableListOf<com.attract.attendance.domain.face.StudentTemplatePair>()
+            var staleCount = 0
+            var malformedCount = 0
+            var cryptoErrorCount = 0
+            val affectedStudentIds = mutableSetOf<Long>()
+
+            for (row in rows) {
+                val floats = try {
+                    com.attract.attendance.data.security.TemplateEnvelopeCodec.decode(
+                        cipher = embeddingCipher,
+                        studentId = row.studentId,
+                        modelVersion = row.modelVersion,
+                        stored = row.encryptedEmbedding,
+                        cryptoVersion = row.cryptoVersion,
+                    )
+                } catch (e: Exception) {
+                    cryptoErrorCount++
+                    null
+                }
+
+                if (floats == null) {
+                    malformedCount++
+                    affectedStudentIds.add(row.studentId)
+                    continue
+                }
+
+                when (com.attract.attendance.domain.face.TemplateCompatibility.classify(floats)) {
+                    com.attract.attendance.domain.face.TemplateCompatibility.VectorClass.CURRENT -> {
+                        usable.add(
+                            com.attract.attendance.domain.face.StudentTemplatePair(
+                                studentId = row.studentId,
+                                templateId = row.id,
+                                embedding = floats
+                            )
+                        )
+                    }
+                    com.attract.attendance.domain.face.TemplateCompatibility.VectorClass.STALE_DIMENSION -> {
+                        staleCount++
+                        affectedStudentIds.add(row.studentId)
+                    }
+                    else -> {
+                        malformedCount++
+                        affectedStudentIds.add(row.studentId)
+                    }
+                }
+            }
+
+            // Check if crypto is completely unavailable or key invalidated
+            if (rows.isNotEmpty() && cryptoErrorCount == rows.size) {
+                return com.attract.attendance.domain.face.GalleryLoadResult.Unavailable(
+                    errorCategory = "CRYPTO_KEYSTORE_UNAVAILABLE",
+                    message = "Biometric encryption key unavailable or invalidated. Teacher re-authentication required."
+                )
+            }
+
+            val studentsWithUsable = usable.map { it.studentId }.toSet()
+            val orphaned = enrolledStudents.filter { it.id !in studentsWithUsable }.map { it.id }
+            affectedStudentIds.addAll(orphaned)
+
+            val healthSummary = com.attract.attendance.domain.face.GalleryHealthSummary(
+                totalEnrolledStudents = enrolledStudents.size,
+                studentsWithTemplates = studentsWithUsable.size,
+                activeTemplatesCount = rows.size,
+                staleTemplatesCount = staleCount,
+                malformedTemplatesCount = malformedCount
+            )
+
+            if (affectedStudentIds.isNotEmpty()) {
+                return com.attract.attendance.domain.face.GalleryLoadResult.NeedsRepair(
+                    affectedStudentIds = affectedStudentIds.toList(),
+                    reason = "Gallery has $staleCount stale and $malformedCount malformed templates; ${orphaned.size} enrolled students lack usable templates."
+                )
+            }
+
+            com.attract.attendance.domain.face.GalleryLoadResult.Ready(
+                profileId = com.attract.attendance.domain.face.BiometricModelProfile.CURRENT.profileId,
+                version = nowMillis(),
+                templates = usable,
+                healthSummary = healthSummary
+            )
+        } catch (e: Exception) {
+            android.util.Log.e("ATTRACT_FACE", "loadGallery failed", e)
+            com.attract.attendance.domain.face.GalleryLoadResult.Unavailable(
+                errorCategory = "GALLERY_STORAGE_ERROR",
+                message = e.message ?: "Database error loading gallery",
+                cause = e
+            )
+        }
+    }
+
     suspend fun getActiveTemplatesForClass(classId: Long): List<com.attract.attendance.domain.face.StudentTemplatePair> {
         val rows = templates.activeForClass(classId)
         val usable = mutableListOf<com.attract.attendance.domain.face.StudentTemplatePair>()
@@ -581,59 +766,409 @@ class AttractRepository(
      * current model profile and reports which enrolled students lost ALL usable templates
      * (they must re-enroll before they can be recognized again).
      *
-     * Safe to call repeatedly (idempotent once swept). Never deletes raw rows â€” history
+     * Safe to call repeatedly (idempotent once swept). Never deletes raw rows Ã¢â‚¬â€ history
      * is retained with active=0 per LLD-10 retention rules.
      */
     suspend fun retireIncompatibleTemplates(classId: Long): StaleTemplateReport {
+        return database.withTransaction {
+            val rows = templates.activeForClass(classId)
+            var deactivated = 0
+            for (row in rows) {
+                val floats = com.attract.attendance.data.security.TemplateEnvelopeCodec.decode(
+                    cipher = embeddingCipher,
+                    studentId = row.studentId,
+                    modelVersion = row.modelVersion,
+                    stored = row.encryptedEmbedding,
+                    cryptoVersion = row.cryptoVersion,
+                )
+                val compatible = floats != null &&
+                    com.attract.attendance.domain.face.TemplateCompatibility.isUsableVector(floats)
+                if (!compatible) {
+                    templates.setInactive(row.id)
+                    deactivated++
+                }
+            }
+
+            // ALL-ROSTER RECONCILIATION: Check EVERY enrolled student in this class,
+            // not merely those touched during this sweep (fixes R04 orphaned students).
+            val classStudents = students.activeForClass(classId)
+            val enrolledStudents = classStudents.filter { it.enrollmentStatus == EnrollmentStatus.ENROLLED }
+            val needingReEnrollment = mutableListOf<Long>()
+
+            for (s in enrolledStudents) {
+                val activeStudentTemplates = templates.forStudent(s.id).filter { it.active }
+                val hasUsable = activeStudentTemplates.any { t ->
+                    if (t.embeddingDim != 0 && t.embeddingDim != com.attract.attendance.domain.face.TemplateCompatibility.CURRENT_EMBEDDING_DIM) {
+                        false
+                    } else {
+                        val decoded = com.attract.attendance.data.security.TemplateEnvelopeCodec.decode(
+                            cipher = embeddingCipher,
+                            studentId = s.id,
+                            modelVersion = t.modelVersion,
+                            stored = t.encryptedEmbedding,
+                            cryptoVersion = t.cryptoVersion,
+                        )
+                        decoded != null && com.attract.attendance.domain.face.TemplateCompatibility.isUsableVector(decoded)
+                    }
+                }
+
+                if (!hasUsable) {
+                    needingReEnrollment.add(s.id)
+                    students.update(
+                        s.copy(
+                            enrollmentStatus = EnrollmentStatus.REENROLL_REQUIRED,
+                            updatedAt = nowMillis(),
+                        )
+                    )
+                }
+            }
+
+            if (deactivated > 0 || needingReEnrollment.isNotEmpty()) {
+                android.util.Log.w(
+                    "ATTRACT_FACE",
+                    "Retired $deactivated face templates; ${needingReEnrollment.size} student(s) marked REENROLL_REQUIRED.",
+                )
+            }
+            StaleTemplateReport(deactivated, needingReEnrollment)
+        }
+    }
+
+    suspend fun attendanceRecordsForSession(sessionId: Long): List<AttendanceRecordEntity> =
+        records.forSession(sessionId)
+
+    fun observeSessionStudentRows(classId: Long, sessionId: Long): Flow<List<SessionStudentRow>> =
+        records.observeStudentsForSession(classId, sessionId)
+
+    /**
+     * Atomically validates approval and duplicates, deactivates stale templates,
+     * persists 3 enrollment templates, marks student ENROLLED, and logs PRESENT with source ENROLLMENT (WP09).
+     */
+    suspend fun firstEnrollAndCheckIn(
+        sessionContext: com.attract.attendance.domain.session.SessionContext,
+        studentId: Long,
+        batch: com.attract.attendance.domain.face.ValidatedEnrollmentBatch,
+        authorizationGrant: com.attract.attendance.domain.session.TeacherAuthorizationGrant?
+    ): com.attract.attendance.domain.face.EnrollmentResult {
+        // Step 1: Validate authorization grant (D-001)
+        val grant = authorizationGrant
+            ?: return com.attract.attendance.domain.face.EnrollmentResult.ApprovalExpired("Missing teacher authorization grant")
+        if (!grant.isValid(
+                currentClassId = sessionContext.classId,
+                targetStudentId = studentId,
+                expectedAction = com.attract.attendance.domain.session.TeacherAuthAction.FIRST_ENROLLMENT,
+                currentSessionId = sessionContext.sessionId
+            )
+        ) {
+            return com.attract.attendance.domain.face.EnrollmentResult.ApprovalExpired("Teacher authorization grant is invalid or expired")
+        }
+
+        // Step 2: Load gallery and run duplicate check against all active enrolled identities (R03)
+        val candidateEmbeddings = batch.samples.map { it.embedding }
+        val galleryResult = loadGallery(sessionContext.classId)
+        val activeTemplates = when (galleryResult) {
+            is com.attract.attendance.domain.face.GalleryLoadResult.Ready -> galleryResult.templates
+            is com.attract.attendance.domain.face.GalleryLoadResult.EmptyHealthy -> emptyList()
+            is com.attract.attendance.domain.face.GalleryLoadResult.NeedsRepair -> {
+                return com.attract.attendance.domain.face.EnrollmentResult.Failed(
+                    "Class gallery requires repair before new enrollments: ${galleryResult.reason}"
+                )
+            }
+            is com.attract.attendance.domain.face.GalleryLoadResult.Unavailable -> {
+                return com.attract.attendance.domain.face.EnrollmentResult.Failed(
+                    "Duplicate check unavailable: ${galleryResult.message}"
+                )
+            }
+        }
+
+        val dupResult = com.attract.attendance.domain.face.DuplicateCheckService.checkDuplicate(
+            candidateSamples = candidateEmbeddings,
+            galleryTemplates = activeTemplates,
+            excludeStudentId = null
+        )
+        if (dupResult is com.attract.attendance.domain.face.DuplicateResult.Suspicious) {
+            return com.attract.attendance.domain.face.EnrollmentResult.DuplicateSuspected(
+                dupResult.existingStudentId,
+                dupResult.score
+            )
+        }
+
+        // Step 3: Atomic database transaction (R18)
         return try {
             database.withTransaction {
-                val rows = templates.activeForClass(classId)
-                var deactivated = 0
-                val possiblyOrphaned = mutableSetOf<Long>()
-                for (row in rows) {
-                    val floats = com.attract.attendance.data.security.TemplateEnvelopeCodec.decode(
+                val student = students.find(studentId)
+                    ?: return@withTransaction com.attract.attendance.domain.face.EnrollmentResult.Failed("Student not found")
+                if (student.classId != sessionContext.classId) {
+                    return@withTransaction com.attract.attendance.domain.face.EnrollmentResult.Ineligible("Student does not belong to this class")
+                }
+                if (student.archived) {
+                    return@withTransaction com.attract.attendance.domain.face.EnrollmentResult.Ineligible("Student is archived")
+                }
+                if (student.enrollmentStatus == EnrollmentStatus.ENROLLED) {
+                    return@withTransaction com.attract.attendance.domain.face.EnrollmentResult.AlreadyEnrolled(studentId)
+                }
+
+                val session = sessions.find(sessionContext.sessionId)
+                    ?: return@withTransaction com.attract.attendance.domain.face.EnrollmentResult.Failed("Session not found")
+                if (session.status != SessionStatus.ACTIVE || session.mode != SessionMode.FACE) {
+                    return@withTransaction com.attract.attendance.domain.face.EnrollmentResult.Failed("Session is not active in FACE mode")
+                }
+
+                val now = nowMillis()
+                val templateIds = mutableListOf<Long>()
+
+                // Encode and insert templates
+                batch.samples.forEach { sample ->
+                    val (blob, cryptoVersion) = com.attract.attendance.data.security.TemplateEnvelopeCodec.encode(
                         cipher = embeddingCipher,
-                        studentId = row.studentId,
-                        modelVersion = row.modelVersion,
-                        stored = row.encryptedEmbedding,
-                        cryptoVersion = row.cryptoVersion,
+                        studentId = studentId,
+                        modelVersion = batch.profileId,
+                        plaintextFloats = sample.embedding,
                     )
-                    val compatible = floats != null &&
-                        com.attract.attendance.domain.face.TemplateCompatibility.isUsableVector(floats)
-                    if (!compatible) {
-                        templates.setInactive(row.id)
-                        deactivated++
-                        possiblyOrphaned.add(row.studentId)
+                    val id = templates.insert(
+                        FaceTemplateEntity(
+                            studentId = studentId,
+                            encryptedEmbedding = blob,
+                            cryptoVersion = cryptoVersion,
+                            modelVersion = batch.profileId,
+                            embeddingDim = sample.embedding.size,
+                            qualityScore = sample.qualityScore,
+                            capturedAt = now,
+                            source = "first_enrollment",
+                            active = true
+                        )
+                    )
+                    templateIds.add(id)
+                }
+
+                // Update student status to ENROLLED
+                students.update(
+                    student.copy(
+                        enrollmentStatus = EnrollmentStatus.ENROLLED,
+                        enrolledAt = now,
+                        updatedAt = now
+                    )
+                )
+
+                // Atomically mark PRESENT with source ENROLLMENT (idempotent)
+                val existingRecords = records.forSession(sessionContext.sessionId)
+                val existingRecord = existingRecords.find { it.studentId == studentId }
+                val attendanceRecordId = if (existingRecord != null) {
+                    if (existingRecord.status != AttendanceStatus.PRESENT) {
+                        records.updateStatus(sessionContext.sessionId, studentId, AttendanceStatus.PRESENT, now, now)
                     }
-                }
-                // A student needs re-enrollment only if NO active+compatible template remains.
-                val needingReEnrollment = possiblyOrphaned.filter { sid ->
-                    templates.forStudent(sid).isEmpty()
-                }
-                // Flip their enrollment status so the existing enrollment sheet offers them.
-                for (sid in needingReEnrollment) {
-                    students.find(sid)?.let { s ->
-                        if (s.enrollmentStatus == EnrollmentStatus.ENROLLED) {
-                            students.update(
-                                s.copy(
-                                    enrollmentStatus = EnrollmentStatus.NOT_ENROLLED,
-                                    updatedAt = nowMillis(),
-                                )
-                            )
-                        }
-                    }
-                }
-                if (deactivated > 0) {
-                    android.util.Log.w(
-                        "ATTRACT_FACE",
-                        "Retired $deactivated incompatible face templates; ${needingReEnrollment.size} student(s) need re-enrollment.",
+                    existingRecord.id
+                } else {
+                    records.insert(
+                        AttendanceRecordEntity(
+                            sessionId = sessionContext.sessionId,
+                            studentId = studentId,
+                            status = AttendanceStatus.PRESENT,
+                            checkInTime = now,
+                            attendanceMethod = AttendanceSource.ENROLLMENT,
+                            createdAt = now,
+                            updatedAt = now
+                        )
                     )
                 }
-                StaleTemplateReport(deactivated, needingReEnrollment)
+
+                com.attract.attendance.domain.face.EnrollmentResult.Committed(
+                    studentId = studentId,
+                    templateIds = templateIds,
+                    attendanceRecordId = attendanceRecordId,
+                    galleryVersion = now
+                )
             }
-        } catch (error: Throwable) {
-            android.util.Log.e("ATTRACT_FACE", "retireIncompatibleTemplates failed", error)
-            StaleTemplateReport(0, emptyList())
+        } catch (e: Exception) {
+            android.util.Log.e("ATTRACT_FACE", "firstEnrollAndCheckIn failed", e)
+            com.attract.attendance.domain.face.EnrollmentResult.Failed(e.message ?: "Database transaction error")
+        }
+    }
+
+    /**
+     * Standalone enrollment: persists templates without creating an attendance session or record (R08).
+     */
+    suspend fun standaloneEnrollStudentFace(
+        classId: Long,
+        studentId: Long,
+        batch: com.attract.attendance.domain.face.ValidatedEnrollmentBatch,
+        authorizationGrant: com.attract.attendance.domain.session.TeacherAuthorizationGrant?
+    ): com.attract.attendance.domain.face.EnrollmentResult {
+        if (authorizationGrant != null && !authorizationGrant.isValid(
+                currentClassId = classId,
+                targetStudentId = studentId,
+                expectedAction = com.attract.attendance.domain.session.TeacherAuthAction.FIRST_ENROLLMENT,
+                currentSessionId = authorizationGrant.sessionId
+            )
+        ) {
+            return com.attract.attendance.domain.face.EnrollmentResult.ApprovalExpired("Teacher authorization grant is invalid or expired")
+        }
+
+        val candidateEmbeddings = batch.samples.map { it.embedding }
+        val galleryResult = loadGallery(classId)
+        val activeTemplates = when (galleryResult) {
+            is com.attract.attendance.domain.face.GalleryLoadResult.Ready -> galleryResult.templates
+            is com.attract.attendance.domain.face.GalleryLoadResult.EmptyHealthy -> emptyList()
+            is com.attract.attendance.domain.face.GalleryLoadResult.NeedsRepair -> emptyList()
+            is com.attract.attendance.domain.face.GalleryLoadResult.Unavailable -> {
+                return com.attract.attendance.domain.face.EnrollmentResult.Failed("Duplicate check unavailable: ${galleryResult.message}")
+            }
+        }
+
+        val dupResult = com.attract.attendance.domain.face.DuplicateCheckService.checkDuplicate(
+            candidateSamples = candidateEmbeddings,
+            galleryTemplates = activeTemplates,
+            excludeStudentId = studentId
+        )
+        if (dupResult is com.attract.attendance.domain.face.DuplicateResult.Suspicious) {
+            return com.attract.attendance.domain.face.EnrollmentResult.DuplicateSuspected(dupResult.existingStudentId, dupResult.score)
+        }
+
+        return try {
+            database.withTransaction {
+                val student = students.find(studentId)
+                    ?: return@withTransaction com.attract.attendance.domain.face.EnrollmentResult.Failed("Student not found")
+                if (student.classId != classId) {
+                    return@withTransaction com.attract.attendance.domain.face.EnrollmentResult.Ineligible("Student does not belong to this class")
+                }
+                val now = nowMillis()
+                templates.deactivateForStudent(studentId)
+                val templateIds = mutableListOf<Long>()
+
+                batch.samples.forEach { sample ->
+                    val (blob, cryptoVersion) = com.attract.attendance.data.security.TemplateEnvelopeCodec.encode(
+                        cipher = embeddingCipher,
+                        studentId = studentId,
+                        modelVersion = batch.profileId,
+                        plaintextFloats = sample.embedding,
+                    )
+                    val id = templates.insert(
+                        FaceTemplateEntity(
+                            studentId = studentId,
+                            encryptedEmbedding = blob,
+                            cryptoVersion = cryptoVersion,
+                            modelVersion = batch.profileId,
+                            embeddingDim = sample.embedding.size,
+                            qualityScore = sample.qualityScore,
+                            capturedAt = now,
+                            source = "standalone_enrollment",
+                            active = true
+                        )
+                    )
+                    templateIds.add(id)
+                }
+
+                students.update(
+                    student.copy(
+                        enrollmentStatus = EnrollmentStatus.ENROLLED,
+                        enrolledAt = now,
+                        updatedAt = now
+                    )
+                )
+
+                // NO ATTENDANCE SESSION CREATED OR RECORD WRITTEN (resolves R08)
+                com.attract.attendance.domain.face.EnrollmentResult.Committed(
+                    studentId = studentId,
+                    templateIds = templateIds,
+                    attendanceRecordId = null,
+                    galleryVersion = now
+                )
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("ATTRACT_FACE", "standaloneEnrollStudentFace failed", e)
+            com.attract.attendance.domain.face.EnrollmentResult.Failed(e.message ?: "Database transaction error")
+        }
+    }
+
+    /**
+     * Re-enrollment / profile repair: replaces old templates atomically after teacher authorization (D-001, R18).
+     */
+    suspend fun reEnrollStudentFace(
+        classId: Long,
+        studentId: Long,
+        batch: com.attract.attendance.domain.face.ValidatedEnrollmentBatch,
+        authorizationGrant: com.attract.attendance.domain.session.TeacherAuthorizationGrant?
+    ): com.attract.attendance.domain.face.EnrollmentResult {
+        val grant = authorizationGrant
+            ?: return com.attract.attendance.domain.face.EnrollmentResult.ApprovalExpired("Teacher authorization required for profile repair")
+        if (!grant.isValid(
+                currentClassId = classId,
+                targetStudentId = studentId,
+                expectedAction = com.attract.attendance.domain.session.TeacherAuthAction.RE_ENROLLMENT,
+                currentSessionId = grant.sessionId
+            )
+        ) {
+            return com.attract.attendance.domain.face.EnrollmentResult.ApprovalExpired("Teacher authorization grant is invalid or expired")
+        }
+
+        val candidateEmbeddings = batch.samples.map { it.embedding }
+        val galleryResult = loadGallery(classId)
+        val activeTemplates = when (galleryResult) {
+            is com.attract.attendance.domain.face.GalleryLoadResult.Ready -> galleryResult.templates
+            is com.attract.attendance.domain.face.GalleryLoadResult.EmptyHealthy -> emptyList()
+            is com.attract.attendance.domain.face.GalleryLoadResult.NeedsRepair -> emptyList()
+            is com.attract.attendance.domain.face.GalleryLoadResult.Unavailable -> {
+                return com.attract.attendance.domain.face.EnrollmentResult.Failed("Duplicate check unavailable: ${galleryResult.message}")
+            }
+        }
+
+        val dupResult = com.attract.attendance.domain.face.DuplicateCheckService.checkDuplicate(
+            candidateSamples = candidateEmbeddings,
+            galleryTemplates = activeTemplates,
+            excludeStudentId = studentId
+        )
+        if (dupResult is com.attract.attendance.domain.face.DuplicateResult.Suspicious) {
+            return com.attract.attendance.domain.face.EnrollmentResult.DuplicateSuspected(dupResult.existingStudentId, dupResult.score)
+        }
+
+        return try {
+            database.withTransaction {
+                val student = students.find(studentId)
+                    ?: return@withTransaction com.attract.attendance.domain.face.EnrollmentResult.Failed("Student not found")
+                val now = nowMillis()
+                templates.deactivateForStudent(studentId)
+                val templateIds = mutableListOf<Long>()
+
+                batch.samples.forEach { sample ->
+                    val (blob, cryptoVersion) = com.attract.attendance.data.security.TemplateEnvelopeCodec.encode(
+                        cipher = embeddingCipher,
+                        studentId = studentId,
+                        modelVersion = batch.profileId,
+                        plaintextFloats = sample.embedding,
+                    )
+                    val id = templates.insert(
+                        FaceTemplateEntity(
+                            studentId = studentId,
+                            encryptedEmbedding = blob,
+                            cryptoVersion = cryptoVersion,
+                            modelVersion = batch.profileId,
+                            embeddingDim = sample.embedding.size,
+                            qualityScore = sample.qualityScore,
+                            capturedAt = now,
+                            source = "re_enrollment",
+                            active = true
+                        )
+                    )
+                    templateIds.add(id)
+                }
+
+                students.update(
+                    student.copy(
+                        enrollmentStatus = EnrollmentStatus.ENROLLED,
+                        enrolledAt = now,
+                        updatedAt = now
+                    )
+                )
+
+                com.attract.attendance.domain.face.EnrollmentResult.Committed(
+                    studentId = studentId,
+                    templateIds = templateIds,
+                    attendanceRecordId = null,
+                    galleryVersion = now
+                )
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("ATTRACT_FACE", "reEnrollStudentFace failed", e)
+            com.attract.attendance.domain.face.EnrollmentResult.Failed(e.message ?: "Database transaction error")
         }
     }
 
@@ -659,7 +1194,7 @@ class AttractRepository(
             database.withTransaction {
             val student = students.find(studentId) ?: return@withTransaction CommandResult.Failure(AppError.NotFound)
             val now = nowMillis()
-            // Per LLD-10 re-enrollment: replace old templates â€” deactivate stale rows so
+            // Per LLD-10 re-enrollment: replace old templates Ã¢â‚¬â€ deactivate stale rows so
             // outdated embeddings never participate in future matches. This also replaces
             // stale-dimension (e.g. 32-D legacy) templates with current 192-D format.
             templates.deactivateForStudent(studentId)
@@ -722,7 +1257,7 @@ class AttractRepository(
     /**
      * THE canonical session entry point for the attendance screen (LLD-06 amendment
      * 2026-08-26): resolves the CURRENT ACTIVE FACE SESSION for [classId], creating it
-     * if none exists. The database row is the single source of truth — no in-memory
+     * if none exists. The database row is the single source of truth â€” no in-memory
      * `isSessionActive` flag anywhere.
      *
      * Returns Success(activeSessionId) when an ACTIVE FACE session for this class exists

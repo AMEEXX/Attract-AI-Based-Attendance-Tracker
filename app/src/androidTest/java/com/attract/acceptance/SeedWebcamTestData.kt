@@ -20,7 +20,7 @@ class SeedWebcamTestData {
     fun seed() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val db = Room.databaseBuilder(context, AttractDatabase::class.java, "attract.db")
-            .addMigrations(AttractDatabase.MIGRATION_1_2, AttractDatabase.MIGRATION_2_3)
+            .addMigrations(AttractDatabase.MIGRATION_1_2, AttractDatabase.MIGRATION_2_3, AttractDatabase.MIGRATION_3_4)
             .build()
         val repo = AttractRepository(db, PinHasher(), embeddingCipher = null)
         repo.registerTeacher("Test Teacher", "1234".toCharArray())

@@ -25,15 +25,17 @@ object LivenessEngine {
         previousSignals: FaceQualitySignals? = null,
         presentationAttackSignals: PresentationAttackSignals? = null,
     ): LivenessResult {
-        // 1. Basic Eye Openness Gate
-        val leftEye = signals.leftEyeOpenProbability ?: 1.0f
-        val rightEye = signals.rightEyeOpenProbability ?: 1.0f
+        // 1. Basic Eye Openness Gate (evaluated only when eye signals are provided by detector)
+        val leftEye = signals.leftEyeOpenProbability
+        val rightEye = signals.rightEyeOpenProbability
 
-        if (leftEye < 0.25f || rightEye < 0.25f) {
-            return LivenessResult.Rejected(
-                LivenessReason.EYES_CLOSED_OR_STATIC,
-                "Please keep eyes open and face straight."
-            )
+        if (leftEye != null && rightEye != null) {
+            if (leftEye < 0.25f || rightEye < 0.25f) {
+                return LivenessResult.Rejected(
+                    LivenessReason.EYES_CLOSED_OR_STATIC,
+                    "Please keep eyes open and face straight."
+                )
+            }
         }
 
         // 2. Presentation-attack gates (LLD-12): screen-replay / printed-photo detection.
@@ -56,10 +58,11 @@ object LivenessEngine {
             )
         }
 
-        // 4. Eye open probability variance check across consecutive frames if available
-        if (previousSignals != null) {
-            val prevLeft = previousSignals.leftEyeOpenProbability ?: leftEye
-            val prevRight = previousSignals.rightEyeOpenProbability ?: rightEye
+        // 4. Eye open probability variance check across consecutive frames if REAL eye signals are available
+        if (previousSignals != null && leftEye != null && rightEye != null &&
+            previousSignals.leftEyeOpenProbability != null && previousSignals.rightEyeOpenProbability != null) {
+            val prevLeft = previousSignals.leftEyeOpenProbability
+            val prevRight = previousSignals.rightEyeOpenProbability
             val leftDiff = kotlin.math.abs(leftEye - prevLeft)
             val rightDiff = kotlin.math.abs(rightEye - prevRight)
 

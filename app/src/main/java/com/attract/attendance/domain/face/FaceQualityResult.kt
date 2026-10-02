@@ -36,4 +36,5 @@ enum class QualityReason {
     DARK,
     OVEREXPOSED,
     EYES_UNCLEAR,
+    CORRUPTED,
 }

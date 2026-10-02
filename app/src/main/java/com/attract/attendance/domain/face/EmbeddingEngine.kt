@@ -39,10 +39,23 @@ object EmbeddingEngine {
             // Fixed small thread pool: deterministic latency and avoids device-specific
             // delegate/threading faults on heterogeneous-core ARM phones.
             val options = Interpreter.Options().setNumThreads(2)
-            interpreter = Interpreter(buffer, options)
+            val interp = Interpreter(buffer, options)
+
+            // Validate tensor contracts against BiometricModelProfile (WP02 / R11)
+            val inShape = interp.getInputTensor(0).shape()
+            val outShape = interp.getOutputTensor(0).shape()
+            val profile = BiometricModelProfile.CURRENT
+            check(inShape.contentEquals(intArrayOf(1, profile.recognizerInputHeight, profile.recognizerInputWidth, profile.recognizerInputChannels))) {
+                "Input tensor shape mismatch: expected [1, ${profile.recognizerInputHeight}, ${profile.recognizerInputWidth}, ${profile.recognizerInputChannels}], got ${inShape.contentToString()}"
+            }
+            check(outShape.contentEquals(intArrayOf(1, profile.embeddingDim))) {
+                "Output tensor shape mismatch: expected [1, ${profile.embeddingDim}], got ${outShape.contentToString()}"
+            }
+
+            interpreter = interp
             isModelLoaded = true
             lastInitError = null
-            interpreter
+            interp
         } catch (e: Exception) {
             interpreter = null
             isModelLoaded = false

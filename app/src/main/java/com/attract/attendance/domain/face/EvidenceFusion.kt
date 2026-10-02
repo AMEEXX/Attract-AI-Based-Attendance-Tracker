@@ -217,8 +217,7 @@ object EvidenceFusion {
     //    matches a DIFFERENT identity (conflict -> Ambiguous).
     //  * Otherwise falls back to merged max-similarity decision rules (strategy A).
     // Guarantees parity with today's single-frame security for frame-1 accepts.
-    // ------------------------------------------------------------------
-    fun conservativeBestFrame(): EvidenceFusionStrategy = object : EvidenceFusionStrategy {
+    fun conservativeBestFrame(allowUncalibratedRescue: Boolean = false): EvidenceFusionStrategy = object : EvidenceFusionStrategy {
         override val name = "PROD_CONSERVATIVE"
         override fun fuse(
             frames: List<EvidenceFusionStrategy.FrameAnalysis>,
@@ -236,7 +235,21 @@ object EvidenceFusion {
                     FusedOutcome.Ambiguous(first.studentId, first.confidence, conflicting.studentId, conflicting.confidence, frames.size)
                 }
             }
-            return bestIndividualFrameScore().fuse(frames, templates, decisionEngine)
+            val ambiguousFrame = frames.firstOrNull { it.decision is RecognitionOutcome.Ambiguous }?.decision as? RecognitionOutcome.Ambiguous
+            if (ambiguousFrame != null) {
+                return FusedOutcome.Ambiguous(
+                    ambiguousFrame.topStudentId,
+                    ambiguousFrame.topConfidence,
+                    ambiguousFrame.secondStudentId,
+                    ambiguousFrame.secondConfidence,
+                    frames.size
+                )
+            }
+            // R17: Freeze uncalibrated merged-max rescue behind explicit calibration gate
+            if (allowUncalibratedRescue) {
+                return bestIndividualFrameScore().fuse(frames, templates, decisionEngine)
+            }
+            return FusedOutcome.Unknown(frames.size)
         }
     }
 
@@ -247,7 +260,7 @@ object EvidenceFusion {
         majorityIdentity(),
         allFrameConsistency(),
         crossFrameEmbeddingAgreement(),
-        conservativeBestFrame(),
+        conservativeBestFrame(allowUncalibratedRescue = true),
     )
 
     // ------------------------- shared helpers -------------------------
@@ -255,13 +268,16 @@ object EvidenceFusion {
     private fun bestScoreFor(frames: List<EvidenceFusionStrategy.FrameAnalysis>, id: Long): Float =
         frames.maxOfOrNull { it.scores[id] ?: Float.NEGATIVE_INFINITY }?.takeUnless { it == Float.NEGATIVE_INFINITY } ?: 0f
 
-    /** Applies the UNCHANGED production accept/margin semantics to merged scores. */
+    /** Applies the UNCHANGED production accept/margin semantics to merged scores with stable tie-breaking. */
     private fun decideFromMerged(
         merged: Map<Long, Float>,
         framesUsed: Int,
         decisionEngine: RecognitionDecisionEngine,
     ): FusedOutcome {
-        val ranked = merged.entries.sortedByDescending { it.value }
+        val ranked = merged.entries.sortedWith(
+            compareByDescending<Map.Entry<Long, Float>> { it.value }
+                .thenBy { it.key }
+        )
         val top = ranked.getOrNull(0) ?: return FusedOutcome.Unknown(framesUsed)
         if (top.value < decisionEngine.acceptThreshold) return FusedOutcome.Unknown(framesUsed)
         val second = ranked.getOrNull(1)

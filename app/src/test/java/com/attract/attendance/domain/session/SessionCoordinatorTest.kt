@@ -171,12 +171,15 @@ class SessionCoordinatorTest {
         )
         coordinator.processEvent(SessionEvent.QualityEvaluated(attemptId = attemptId, result = qualityResult))
         coordinator.processEvent(SessionEvent.RecognitionEvaluated(attemptId = attemptId, matchedStudent = null, confidence = 0.0f))
+        assertTrue(coordinator.state.value is SessionState.RetryFeedback)
+        coordinator.processEvent(SessionEvent.RetryFeedbackExpired(attemptId = attemptId))
         assertTrue(coordinator.state.value is SessionState.Ready)
 
         // Attempt 2: Unknown identity -> Triggers TeacherAssistance
-        coordinator.processEvent(SessionEvent.CheckInPressed(attemptId = attemptId))
-        coordinator.processEvent(SessionEvent.QualityEvaluated(attemptId = attemptId, result = qualityResult))
-        coordinator.processEvent(SessionEvent.RecognitionEvaluated(attemptId = attemptId, matchedStudent = null, confidence = 0.0f))
+        val secondAttemptId = coordinator.currentAttemptId
+        coordinator.processEvent(SessionEvent.CheckInPressed(attemptId = secondAttemptId))
+        coordinator.processEvent(SessionEvent.QualityEvaluated(attemptId = secondAttemptId, result = qualityResult))
+        coordinator.processEvent(SessionEvent.RecognitionEvaluated(attemptId = secondAttemptId, matchedStudent = null, confidence = 0.0f))
 
         assertTrue(coordinator.state.value is SessionState.TeacherAssistance)
         val assistance = coordinator.state.value as SessionState.TeacherAssistance

@@ -7,15 +7,13 @@ from inspect_tflite import inspect_model
 MODELS = {
     "yolov8n_face.tflite": {
         "url": "https://github.com/sanjaysharmajw/flutter_face_liveness/releases/download/v3.2.0-models/yolov8n-face.tflite",
-        "target": "app/src/main/assets/yolov8n_face.tflite"
+        "target": "app/src/main/assets/yolov8n_face.tflite",
+        "sha256": "85a19457127249bb7f2a0875ff344b9dc6021a2a371e14c77d4c0e5f22f7ed54"
     },
     "arcface_mobilefacenet.tflite": {
         "url": "https://github.com/sanjaysharmajw/flutter_face_liveness/releases/download/v3.2.0-models/arcface_mobilefacenet_v1.tflite",
-        "target": "app/src/main/assets/arcface_mobilefacenet.tflite"
-    },
-    "arcface_secondary.tflite": {
-        "url": "https://github.com/sanjaysharmajw/flutter_face_liveness/releases/download/v3.2.0-models/arcface_secondary_v1.tflite",
-        "target": "app/src/main/assets/arcface_secondary.tflite"
+        "target": "app/src/main/assets/arcface_mobilefacenet.tflite",
+        "sha256": "dfac9cfe6517a9c4c3969b6ff0c2a0ac112cdf67a287d8218b60636810f0b576"
     }
 }
 

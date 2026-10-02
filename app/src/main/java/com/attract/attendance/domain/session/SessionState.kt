@@ -40,7 +40,6 @@ sealed interface SessionState {
         val qualityResult: QualityResult,
     ) : SessionState
 
-
     data class PersistingPresent(
         override val sessionId: Long,
         override val attemptId: Long,
@@ -53,6 +52,67 @@ sealed interface SessionState {
         override val attemptId: Long,
         val studentName: String,
         val rollNumber: String,
+        val isAlreadyPresent: Boolean = false,
+    ) : SessionState
+
+    data class RetryFeedback(
+        override val sessionId: Long,
+        override val attemptId: Long,
+        val attemptIndex: Int,
+        val maxAttempts: Int,
+        val message: String,
+    ) : SessionState
+
+    data class UnknownOptions(
+        override val sessionId: Long,
+        override val attemptId: Long,
+        val reason: String = "Face not recognized",
+    ) : SessionState
+
+    data class Ambiguous(
+        override val sessionId: Long,
+        override val attemptId: Long,
+        val reason: String = "Multiple close candidate matches",
+    ) : SessionState
+
+    data class EnrollmentSelection(
+        override val sessionId: Long,
+        override val attemptId: Long,
+    ) : SessionState
+
+    data class AwaitingTeacherApproval(
+        override val sessionId: Long,
+        override val attemptId: Long,
+        val targetStudent: StudentSummary,
+    ) : SessionState
+
+    data class EnrollmentCapture(
+        override val sessionId: Long,
+        override val attemptId: Long,
+        val targetStudent: StudentSummary,
+        val slot: Int, // 0 = FRONTAL, 1 = LEFT, 2 = RIGHT
+        val grant: TeacherAuthorizationGrant,
+    ) : SessionState
+
+    data class EnrollmentValidation(
+        override val sessionId: Long,
+        override val attemptId: Long,
+        val targetStudent: StudentSummary,
+        val grant: TeacherAuthorizationGrant,
+    ) : SessionState
+
+    data class DuplicateChecking(
+        override val sessionId: Long,
+        override val attemptId: Long,
+        val targetStudent: StudentSummary,
+        val grant: TeacherAuthorizationGrant,
+    ) : SessionState
+
+    data class EnrollmentCommitting(
+        override val sessionId: Long,
+        override val attemptId: Long,
+        val targetStudent: StudentSummary,
+        val grant: TeacherAuthorizationGrant,
     ) : SessionState
 
     data class EnrollmentRequest(
@@ -65,6 +125,12 @@ sealed interface SessionState {
         override val sessionId: Long,
         override val attemptId: Long,
         val reason: String,
+    ) : SessionState
+
+    data class AssistedActionSelection(
+        override val sessionId: Long,
+        override val attemptId: Long,
+        val grant: TeacherAuthorizationGrant,
     ) : SessionState
 
     data class Ending(

@@ -3,7 +3,7 @@ package com.attract.attendance.core.model
 import java.math.BigDecimal
 import java.math.RoundingMode
 
-enum class EnrollmentStatus { NOT_ENROLLED, ENROLLED }
+enum class EnrollmentStatus { NOT_ENROLLED, ENROLLED, REENROLL_REQUIRED }
 enum class AttendanceStatus { PRESENT, ABSENT }
 enum class AttendanceSource { MANUAL, AI_RECOGNITION, ENROLLMENT, TEACHER_ASSISTED, CORRECTION, BULK_IMPORT, RESTORED, MIGRATED }
 typealias AttendanceMethod = AttendanceSource

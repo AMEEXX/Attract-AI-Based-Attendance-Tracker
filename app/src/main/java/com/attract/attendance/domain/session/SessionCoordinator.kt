@@ -9,13 +9,19 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.atomic.AtomicLong
 
 class SessionCoordinator(
     val sessionId: Long,
     private val recordPresentCommand: RecordPresentCommand,
+    val classId: Long = 0L,
 ) {
     private val attemptCounter = AtomicLong(1)
+    private val interactionCounter = AtomicLong(1)
+    private val mutex = Mutex()
+
     private val _state = MutableStateFlow<SessionState>(
         SessionState.Initializing(sessionId = sessionId, attemptId = attemptCounter.get())
     )
@@ -27,17 +33,30 @@ class SessionCoordinator(
         get() = attemptCounter.get()
         private set(value) = attemptCounter.set(value)
 
+    var currentInteractionId: Long
+        get() = interactionCounter.get()
+        private set(value) = interactionCounter.set(value)
+
     var currentPresentCount: Int = 0
+        private set
+
+    var activeGrant: TeacherAuthorizationGrant? = null
         private set
 
     private var attemptFailCount = 0
 
     fun nextAttempt(): Long {
-        attemptFailCount = 0
         return attemptCounter.incrementAndGet()
     }
 
-    suspend fun processEvent(event: SessionEvent) {
+    fun nextInteraction(): Long {
+        attemptFailCount = 0
+        activeGrant = null
+        attemptCounter.incrementAndGet()
+        return interactionCounter.incrementAndGet()
+    }
+
+    suspend fun processEvent(event: SessionEvent) = mutex.withLock {
         if (event.attemptId != currentAttemptId) {
             return
         }
@@ -66,9 +85,17 @@ class SessionCoordinator(
                 }
             }
 
-
             is SessionEvent.RecognitionEvaluated -> {
                 if (currentState is SessionState.Recognizing || currentState is SessionState.LivenessChecking) {
+                    if (event.isAmbiguous) {
+                        _state.value = SessionState.Ambiguous(
+                            sessionId = sessionId,
+                            attemptId = currentAttemptId,
+                            reason = "Multiple close candidate matches",
+                        )
+                        return
+                    }
+
                     val matchedStudent = event.matchedStudent
                     if (matchedStudent != null) {
                         _state.value = SessionState.PersistingPresent(
@@ -94,6 +121,7 @@ class SessionCoordinator(
                                 attemptId = currentAttemptId,
                                 studentName = matchedStudent.name,
                                 rollNumber = matchedStudent.rollNumber,
+                                isAlreadyPresent = recordResult is RecordPresentResult.AlreadyPresent,
                             )
                         } else {
                             _state.value = SessionState.Error(
@@ -112,14 +140,95 @@ class SessionCoordinator(
                                 reason = "Unrecognized face after multiple attempts",
                             )
                         } else {
-                            _state.value = SessionState.Ready(sessionId, currentAttemptId, currentPresentCount)
+                            _state.value = SessionState.RetryFeedback(
+                                sessionId = sessionId,
+                                attemptId = currentAttemptId,
+                                attemptIndex = attemptFailCount,
+                                maxAttempts = 2,
+                                message = "Couldn't verify clearly, please try again (Attempt $attemptFailCount/2).",
+                            )
                         }
                     }
                 }
             }
 
+            is SessionEvent.RetryFeedbackExpired -> {
+                if (currentState is SessionState.RetryFeedback) {
+                    val newAttempt = nextAttempt()
+                    _state.value = SessionState.Ready(sessionId, newAttempt, currentPresentCount)
+                }
+            }
+
+            is SessionEvent.StudentSelectedForEnrollment -> {
+                _state.value = SessionState.AwaitingTeacherApproval(
+                    sessionId = sessionId,
+                    attemptId = currentAttemptId,
+                    targetStudent = event.targetStudent,
+                )
+            }
+
+            is SessionEvent.TeacherApprovalGranted -> {
+                activeGrant = event.grant
+                when (currentState) {
+                    is SessionState.AwaitingTeacherApproval -> {
+                        _state.value = SessionState.EnrollmentCapture(
+                            sessionId = sessionId,
+                            attemptId = currentAttemptId,
+                            targetStudent = currentState.targetStudent,
+                            slot = 0,
+                            grant = event.grant,
+                        )
+                    }
+                    is SessionState.TeacherAssistance -> {
+                        _state.value = SessionState.AssistedActionSelection(
+                            sessionId = sessionId,
+                            attemptId = currentAttemptId,
+                            grant = event.grant,
+                        )
+                    }
+                    else -> {}
+                }
+            }
+
+            is SessionEvent.TeacherApprovalRejected -> {
+                activeGrant = null
+                val newAttempt = nextAttempt()
+                _state.value = SessionState.Ready(sessionId, newAttempt, currentPresentCount)
+            }
+
+            is SessionEvent.EnrollmentSlotCaptured -> {
+                if (currentState is SessionState.EnrollmentCapture) {
+                    if (event.slot >= 2) {
+                        _state.value = SessionState.EnrollmentValidation(
+                            sessionId = sessionId,
+                            attemptId = currentAttemptId,
+                            targetStudent = currentState.targetStudent,
+                            grant = currentState.grant,
+                        )
+                    } else {
+                        _state.value = currentState.copy(slot = event.slot + 1)
+                    }
+                }
+            }
+
+            is SessionEvent.EnrollmentSlotRetake -> {
+                if (currentState is SessionState.EnrollmentCapture) {
+                    _state.value = currentState.copy(slot = event.slot)
+                }
+            }
+
+            is SessionEvent.EnrollmentCompleted -> {
+                currentPresentCount++
+                _state.value = SessionState.SuccessFeedback(
+                    sessionId = sessionId,
+                    attemptId = currentAttemptId,
+                    studentName = event.student.name,
+                    rollNumber = event.student.rollNumber,
+                )
+            }
+
             is SessionEvent.EnrollmentRequested -> {
-                _state.value = SessionState.EnrollmentRequest(sessionId, currentAttemptId, event.reason)
+                _state.value = SessionState.EnrollmentSelection(sessionId, currentAttemptId)
             }
 
             is SessionEvent.TeacherAssistRequested -> {
@@ -146,6 +255,7 @@ class SessionCoordinator(
             }
 
             is SessionEvent.Cancel -> {
+                activeGrant = null
                 val newAttempt = nextAttempt()
                 _state.value = SessionState.Ready(sessionId, newAttempt, currentPresentCount)
             }
@@ -164,6 +274,8 @@ class SessionCoordinator(
     }
 
     fun resetToReady() {
+        attemptFailCount = 0
+        activeGrant = null
         val newAttempt = nextAttempt()
         _state.value = SessionState.Ready(sessionId, newAttempt, currentPresentCount)
     }

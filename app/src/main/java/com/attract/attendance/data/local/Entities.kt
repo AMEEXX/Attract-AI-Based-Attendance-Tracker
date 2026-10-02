@@ -92,6 +92,7 @@ data class FaceTemplateEntity(
      * whose dim != current model output are STALE and never reach TemplateMatcher.
      */
     @ColumnInfo(name = "embedding_dim", defaultValue = "0") val embeddingDim: Int = 0,
+    @ColumnInfo(name = "pose_bucket", defaultValue = "FRONTAL") val poseBucket: String = "FRONTAL",
     @ColumnInfo(name = "quality_score") val qualityScore: Float,
     @ColumnInfo(name = "captured_at") val capturedAt: Long,
     val source: String,

@@ -249,11 +249,17 @@ def main():
     print(f"  Genuine  : min={np.min(gen_vals):.4f}, mean={np.mean(gen_vals):.4f}, max={np.max(gen_vals):.4f}")
     print(f"  Impostor : min={np.min(imp_vals):.4f}, mean={np.mean(imp_vals):.4f}, max={np.max(imp_vals):.4f}")
     margin = np.min(gen_vals) - np.max(imp_vals)
-    print(f"  Separation Margin (Min Genuine - Max Impostor): {margin:.4f}")
-    if margin > 0:
-        print("  >>> PERFECT SEPARATION! 100% accuracy, 0% FAR, 0% FRR at any threshold between Max Impostor and Min Genuine! <<<")
-    else:
-        print(f"  Overlap: {margin:.4f}")
+    print(f"  Separation Gap (Min Genuine - Max Impostor): {margin:.4f}")
+    
+    # Production Policy Evaluation at threshold=0.25f
+    ACCEPT_THRESHOLD = 0.25
+    false_accepts = sum(1 for s in imp_vals if s >= ACCEPT_THRESHOLD)
+    false_rejects = sum(1 for s in gen_vals if s < ACCEPT_THRESHOLD)
+    far = (false_accepts / len(imp_vals) * 100) if imp_vals else 0.0
+    frr = (false_rejects / len(gen_vals) * 100) if gen_vals else 0.0
+    print(f"\nEvaluation at Production Threshold ({ACCEPT_THRESHOLD}):")
+    print(f"  FAR (False Accept Rate): {far:.2f}% ({false_accepts}/{len(imp_vals)})")
+    print(f"  FRR (False Reject Rate): {frr:.2f}% ({false_rejects}/{len(gen_vals)})")
 
 if __name__ == '__main__':
     main()

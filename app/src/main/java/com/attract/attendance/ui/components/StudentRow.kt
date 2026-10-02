@@ -76,30 +76,29 @@ fun StudentRow(
         }
 
         // Biometric Status Chip
+        val (chipText, chipColor, chipBg) = when (student.enrollmentStatus) {
+            EnrollmentStatus.ENROLLED -> Triple("Enrolled", SuccessGreen, SuccessGreen.copy(alpha = 0.12f))
+            EnrollmentStatus.REENROLL_REQUIRED -> Triple("Re-enroll needed", MaterialTheme.colorScheme.error, MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f))
+            EnrollmentStatus.NOT_ENROLLED -> Triple("Not enrolled", MaterialTheme.colorScheme.onSurfaceVariant, MaterialTheme.colorScheme.surfaceVariant)
+        }
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier
                 .clip(Shapes.pill)
-                .background(
-                    if (isEnrolled) SuccessGreen.copy(alpha = 0.12f)
-                    else MaterialTheme.colorScheme.surfaceVariant
-                )
+                .background(chipBg)
                 .padding(horizontal = 10.dp, vertical = 4.dp)
         ) {
             Box(
                 modifier = Modifier
                     .size(6.dp)
                     .clip(CircleShape)
-                    .background(
-                        if (isEnrolled) SuccessGreen
-                        else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    .background(chipColor)
             )
             Text(
-                text = if (isEnrolled) "Enrolled" else "Not enrolled",
+                text = chipText,
                 style = MaterialTheme.typography.bodySmall,
-                color = if (isEnrolled) SuccessGreen else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = chipColor,
                 fontWeight = FontWeight.Medium
             )
         }

@@ -1,4 +1,4 @@
-﻿package com.attract.attendance.data.local
+package com.attract.attendance.data.local
 
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -69,13 +69,21 @@ class TemplateMigrationAndroidTest {
         updatedAt = 1L,
     )
 
-    private fun vec192(seed: Float = 1f): ByteArray {
-        val v = FloatArray(EmbeddingEngine.EMBEDDING_SIZE) { i -> ((i % 9) + seed).toFloat() }
+    private fun vec512(seed: Float = 1f): ByteArray {
+        val raw = FloatArray(EmbeddingEngine.EMBEDDING_SIZE) { i -> ((i % 9) + seed) }
+        var sumSq = 0f
+        for (f in raw) sumSq += f * f
+        val norm = kotlin.math.sqrt(sumSq)
+        val v = FloatArray(EmbeddingEngine.EMBEDDING_SIZE) { i -> raw[i] / norm }
         return with(com.attract.attendance.domain.face.TemplateMatcher) { v.toByteArray() }
     }
 
     private fun vec32(): ByteArray {
-        val v = FloatArray(32) { i -> (i % 5 + 1).toFloat() / 5f }
+        val raw = FloatArray(32) { i -> (i % 5 + 1).toFloat() / 5f }
+        var sumSq = 0f
+        for (f in raw) sumSq += f * f
+        val norm = kotlin.math.sqrt(sumSq)
+        val v = FloatArray(32) { i -> raw[i] / norm }
         return with(com.attract.attendance.domain.face.TemplateMatcher) { v.toByteArray() }
     }
 
@@ -96,7 +104,7 @@ class TemplateMigrationAndroidTest {
 
     @Test
     fun legacyZeroDimRow_isInvisibleToRecognition_andRetiredBySweep() = runBlocking {
-        val sid = database.studentDao().insert(studentEntity("Legacy"))
+        val sid = database.studentDao().insert(studentEntity("Legacy").copy(enrollmentStatus = EnrollmentStatus.ENROLLED))
         // Simulate a legacy phone row: 32-D payload, no dimension stamp (dim=0 default).
         insertLegacyRow(sid)
 
@@ -107,8 +115,8 @@ class TemplateMigrationAndroidTest {
         assertEquals(1, report.deactivatedTemplates)
         assertEquals(listOf(sid), report.studentsNeedingReEnrollment)
 
-        // Student flipped back to NOT_ENROLLED so the enrollment sheet offers them.
-        assertEquals(EnrollmentStatus.NOT_ENROLLED, database.studentDao().find(sid)?.enrollmentStatus)
+        // Student marked REENROLL_REQUIRED (R04 repair status).
+        assertEquals(EnrollmentStatus.REENROLL_REQUIRED, database.studentDao().find(sid)?.enrollmentStatus)
         // Sweep is idempotent.
         assertEquals(0, repository.retireIncompatibleTemplates(classId).deactivatedTemplates)
     }
@@ -116,7 +124,7 @@ class TemplateMigrationAndroidTest {
     @Test
     fun enrollmentStoresCurrentDimension_andTemplateIsUsableForRecognition() = runBlocking {
         val sid = database.studentDao().insert(studentEntity("Fresh"))
-        val result = repository.enrollStudentFace(sid, listOf(vec192(), vec192(2f)))
+        val result = repository.enrollStudentFace(sid, listOf(vec512(), vec512(2f)))
         assertTrue(result.toString(), result is CommandResult.Success)
 
         val rows = database.faceTemplateDao().forStudent(sid)
@@ -129,7 +137,7 @@ class TemplateMigrationAndroidTest {
     @Test
     fun enrollmentRejectsWrongDimensionObservations_beforeAnyWrite() = runBlocking {
         val sid = database.studentDao().insert(studentEntity("Bad"))
-        val result = repository.enrollStudentFace(sid, listOf(vec192(), vec32()))
+        val result = repository.enrollStudentFace(sid, listOf(vec512(), vec32()))
         assertTrue(result is CommandResult.Failure)
         // Nothing persisted.
         assertTrue(database.faceTemplateDao().forStudent(sid).isEmpty())
@@ -147,19 +155,88 @@ class TemplateMigrationAndroidTest {
         assertTrue(repository.getActiveTemplatesForClass(classId).isEmpty())
 
         // Re-enroll with current model → replaces stale templates entirely.
-        val result = repository.enrollStudentFace(sid, listOf(vec192()))
+        val result = repository.enrollStudentFace(sid, listOf(vec512()))
         assertTrue(result is CommandResult.Success)
 
         val activeRows = database.faceTemplateDao().forStudent(sid)
         assertEquals(1, activeRows.size)
         assertEquals(TemplateCompatibility.CURRENT_EMBEDDING_DIM, activeRows.single().embeddingDim)
 
-        // Recognition now sees exactly one usable 192-D template.
+        // Recognition now sees exactly one usable 512-D template.
         val usable = repository.getActiveTemplatesForClass(classId)
         assertEquals(1, usable.size)
         assertEquals(EmbeddingEngine.EMBEDDING_SIZE, usable.single().embedding.size)
 
         // And the sweep has nothing left to retire.
         assertEquals(0, repository.retireIncompatibleTemplates(classId).deactivatedTemplates)
+    }
+
+    @Test
+    fun migration_2_3_deactivates192DAndMarksReenrollRequired() {
+        val openHelper = androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory().create(
+            androidx.sqlite.db.SupportSQLiteOpenHelper.Configuration.builder(ApplicationProvider.getApplicationContext())
+                .name(null) // in-memory
+                .callback(object : androidx.sqlite.db.SupportSQLiteOpenHelper.Callback(2) {
+                    override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                        db.execSQL("CREATE TABLE students (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, class_id INTEGER NOT NULL, name TEXT NOT NULL, roll_number TEXT NOT NULL, serial_number INTEGER, enrollment_status TEXT NOT NULL, enrolled_at INTEGER, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)")
+                        db.execSQL("CREATE TABLE face_templates (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, student_id INTEGER NOT NULL, encrypted_embedding BLOB NOT NULL, crypto_version INTEGER NOT NULL, model_version TEXT NOT NULL, embedding_dim INTEGER NOT NULL DEFAULT 0, quality_score REAL NOT NULL, captured_at INTEGER NOT NULL, source TEXT NOT NULL, active INTEGER NOT NULL)")
+                    }
+                    override fun onUpgrade(db: androidx.sqlite.db.SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {}
+                })
+                .build()
+        )
+        val db = openHelper.writableDatabase
+        try {
+            // Seed student enrolled with 192-D template
+            db.execSQL("INSERT INTO students (id, class_id, name, roll_number, enrollment_status, created_at, updated_at) VALUES (1, 10, 'Alice', 'R1', 'ENROLLED', 100, 100)")
+            db.execSQL("INSERT INTO face_templates (student_id, encrypted_embedding, crypto_version, model_version, embedding_dim, quality_score, captured_at, source, active) VALUES (1, X'00', 1, 'v1', 192, 1.0, 100, 'test', 1)")
+
+            // Execute migration 2 -> 3
+            AttractDatabase.MIGRATION_2_3.migrate(db)
+
+            val cursorTemplate = db.query("SELECT active FROM face_templates WHERE student_id = 1")
+            cursorTemplate.moveToFirst()
+            assertEquals(0, cursorTemplate.getInt(0)) // deactivated
+            cursorTemplate.close()
+
+            val cursorStudent = db.query("SELECT enrollment_status FROM students WHERE id = 1")
+            cursorStudent.moveToFirst()
+            assertEquals("REENROLL_REQUIRED", cursorStudent.getString(0)) // marked REENROLL_REQUIRED
+            cursorStudent.close()
+        } finally {
+            db.close()
+        }
+    }
+
+    @Test
+    fun migration_3_4_reconcilesOrphanedEnrolledStudents() {
+        val openHelper = androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory().create(
+            androidx.sqlite.db.SupportSQLiteOpenHelper.Configuration.builder(ApplicationProvider.getApplicationContext())
+                .name(null) // in-memory
+                .callback(object : androidx.sqlite.db.SupportSQLiteOpenHelper.Callback(3) {
+                    override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                        db.execSQL("CREATE TABLE students (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, class_id INTEGER NOT NULL, name TEXT NOT NULL, roll_number TEXT NOT NULL, serial_number INTEGER, enrollment_status TEXT NOT NULL, enrolled_at INTEGER, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)")
+                        db.execSQL("CREATE TABLE face_templates (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, student_id INTEGER NOT NULL, encrypted_embedding BLOB NOT NULL, crypto_version INTEGER NOT NULL, model_version TEXT NOT NULL, embedding_dim INTEGER NOT NULL DEFAULT 0, quality_score REAL NOT NULL, captured_at INTEGER NOT NULL, source TEXT NOT NULL, active INTEGER NOT NULL)")
+                    }
+                    override fun onUpgrade(db: androidx.sqlite.db.SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {}
+                })
+                .build()
+        )
+        val db = openHelper.writableDatabase
+        try {
+            // Seed student orphaned with NO active templates (only inactive)
+            db.execSQL("INSERT INTO students (id, class_id, name, roll_number, enrollment_status, created_at, updated_at) VALUES (2, 10, 'Bob', 'R2', 'ENROLLED', 100, 100)")
+            db.execSQL("INSERT INTO face_templates (student_id, encrypted_embedding, crypto_version, model_version, embedding_dim, quality_score, captured_at, source, active) VALUES (2, X'00', 1, 'v1', 192, 1.0, 100, 'test', 0)")
+
+            // Execute migration 3 -> 4
+            AttractDatabase.MIGRATION_3_4.migrate(db)
+
+            val cursorStudent = db.query("SELECT enrollment_status FROM students WHERE id = 2")
+            cursorStudent.moveToFirst()
+            assertEquals("REENROLL_REQUIRED", cursorStudent.getString(0)) // marked REENROLL_REQUIRED
+            cursorStudent.close()
+        } finally {
+            db.close()
+        }
     }
 }

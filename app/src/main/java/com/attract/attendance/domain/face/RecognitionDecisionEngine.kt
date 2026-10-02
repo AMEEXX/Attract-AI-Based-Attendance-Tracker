@@ -51,72 +51,44 @@ class RecognitionDecisionEngine(
             return RecognitionOutcome.NoTemplatesAvailable
         }
 
-        // Fail-closed (LLD-11): a malformed/NaN query never matches anything.
-        if (targetEmbedding.any { !it.isFinite() }) {
+        // Fail-closed (LLD-11 / R07): malformed/non-finite or degenerate norm query never matches.
+        if (!TemplateCompatibility.isStrictlyUsableVector(targetEmbedding)) {
             return RecognitionOutcome.Unknown
         }
 
-        // Biometric-format gate (LLD-10 migration amendment): a stored template whose
-        // dimension differs from the query embedding belongs to a DIFFERENT model
-        // representation (e.g. 32-D prototype vs 192-D MobileFaceNet). It must NEVER
-        // reach cosine similarity — such comparisons are meaningless and previously
-        // crashed with IllegalArgumentException. Skipped, never accepted.
         val compatibleTemplates = activeTemplates.filter { it.embedding.size == targetEmbedding.size }
         if (compatibleTemplates.size < activeTemplates.size) {
             logDimensionSkip(activeTemplates.size - compatibleTemplates.size, targetEmbedding.size)
         }
 
-        // Compute similarity for each template; non-finite scores (corrupt templates)
-        // are excluded rather than compared — NaN would otherwise bypass thresholds
-        // because all NaN comparisons are false.
-        val scored = compatibleTemplates.mapNotNull { pair ->
-            val score = TemplateMatcher.cosineSimilarity(targetEmbedding, pair.embedding)
-            if (score.isFinite()) Pair(pair.studentId, score) else null
-        }
-
-        // Group by studentId and take maximum score per student
-        val studentScores = scored.groupBy { it.first }
-            .mapValues { entry -> entry.value.maxOf { it.second } }
-            .toList()
-            .sortedByDescending { it.second }
-
-        if (studentScores.isEmpty()) {
+        val ranked = IdentityScorer.scoreGroupedMax(targetEmbedding, compatibleTemplates)
+        if (ranked.isEmpty()) {
             return RecognitionOutcome.Unknown
         }
 
-        val (topStudentId, topScore) = studentScores[0]
-
-        if (topScore < acceptThreshold) {
-            return RecognitionOutcome.Unknown
+        val evalResult = IdentityScorer.evaluate(ranked, acceptThreshold, ambiguousMargin)
+        val decision = when (evalResult) {
+            is ScoreEvaluationResult.Match -> RecognitionOutcome.Match(evalResult.studentId, evalResult.score)
+            is ScoreEvaluationResult.Ambiguous -> RecognitionOutcome.Ambiguous(
+                evalResult.topStudentId, evalResult.topScore, evalResult.secondStudentId, evalResult.secondScore
+            )
+            is ScoreEvaluationResult.Unknown -> RecognitionOutcome.Unknown
+            is ScoreEvaluationResult.EmptyGallery -> RecognitionOutcome.NoTemplatesAvailable
+            is ScoreEvaluationResult.MalformedQuery -> RecognitionOutcome.Unknown
         }
-
-        // Check for ambiguity (second best candidate score within margin)
-        if (studentScores.size >= 2) {
-            val (secondStudentId, secondScore) = studentScores[1]
-            if ((topScore - secondScore) < ambiguousMargin) {
-                return RecognitionOutcome.Ambiguous(
-                    topStudentId = topStudentId,
-                    topConfidence = topScore,
-                    secondStudentId = secondStudentId,
-                    secondConfidence = secondScore,
-                )
-            }
-        }
-
-        val ranked = studentScores
 
         // PHASE-1 DIAGNOSTIC (LLD-11): full decision transparency, JVM-safe.
         run {
             val t1 = ranked.getOrNull(0)
             val t2 = ranked.getOrNull(1)
-            val margin = if (t1 != null && t2 != null) t1.second - t2.second else Float.NaN
+            val margin = if (t1 != null && t2 != null) t1.bestScore - t2.bestScore else Float.NaN
             val msg = "DECIDE: gallery=${activeTemplates.size} compatible=${compatibleTemplates.size} " +
-                "top1=${t1?.first}:${t1?.second} top2=${t2?.first}:${t2?.second} " +
-                "margin=$margin thr=$acceptThreshold margReq=$ambiguousMargin -> MATCH"
+                "top1=${t1?.studentId}:${t1?.bestScore} top2=${t2?.studentId}:${t2?.bestScore} " +
+                "margin=$margin thr=$acceptThreshold margReq=$ambiguousMargin -> $decision"
             try { android.util.Log.i("ATTRACT_RECOGNITION", msg) } catch (_: Throwable) { println("[ATTRACT_RECOGNITION] $msg") }
         }
 
-        return RecognitionOutcome.Match(studentId = topStudentId, confidence = topScore)
+        return decision
     }
 
     /** JVM-test-safe warning (android.util.Log is unmocked on the host JVM). */

@@ -3,38 +3,36 @@ package com.attract.attendance.domain.face
 import kotlin.math.abs
 import kotlin.math.max
 
+/**
+ * Pure, platform-independent quality evaluator.
+ *
+ * Runs deterministic checks on [FaceQualitySignals] against a versioned
+ * [FaceQualityConfig]. Rejects bad frames with a single, human-actionable reason.
+ */
 object FaceQualityEngine {
 
-    /** Minimum yaw separation between accepted captures so three near-identical frontal frames never pass. */
     const val MIN_CAPTURE_YAW_SEPARATION_DEGREES = 15f
-
-    fun evaluate(signals: FaceQualitySignals, config: FaceQualityConfig): QualityResult =
-        evaluate(signals, config, ExpectedPose.STRAIGHT)
 
     fun evaluate(
         signals: FaceQualitySignals,
         config: FaceQualityConfig,
-        expected: ExpectedPose,
+        expectedPose: ExpectedPose = ExpectedPose.STRAIGHT,
     ): QualityResult {
         if (!signals.isFinite) return QualityResult.Rejected(QualityReason.NO_FACE)
-
         if (signals.faceCount == 0) return QualityResult.Rejected(QualityReason.NO_FACE)
         if (signals.faceCount > 1) return QualityResult.Rejected(QualityReason.MULTIPLE_FACES)
         if (signals.faceRatio < config.minFaceRatio) return QualityResult.Rejected(QualityReason.TOO_SMALL)
         if (!isInFrame(signals, config)) return QualityResult.Rejected(QualityReason.OFF_CENTER)
-        // Step-aware pose gating per LLD-09: pitch stays globally bounded; the yaw window
-        // depends on the capture step so genuine LEFT/RIGHT profiles are accepted.
         if (abs(signals.pitchDegrees) > config.maxPoseDegrees) {
             return QualityResult.Rejected(QualityReason.POSE)
         }
-        if (!yawInWindow(signals.yawDegrees, config, expected)) {
-            return QualityResult.Rejected(
-                when (expected) {
-                    ExpectedPose.STRAIGHT -> QualityReason.POSE_NOT_STRAIGHT
-                    ExpectedPose.LEFT -> QualityReason.POSE_NOT_LEFT
-                    ExpectedPose.RIGHT -> QualityReason.POSE_NOT_RIGHT
-                },
-            )
+        if (!yawInWindow(signals.yawDegrees, config, expectedPose)) {
+            val reason = when (expectedPose) {
+                ExpectedPose.STRAIGHT -> QualityReason.POSE_NOT_STRAIGHT
+                ExpectedPose.LEFT -> QualityReason.POSE_NOT_LEFT
+                ExpectedPose.RIGHT -> QualityReason.POSE_NOT_RIGHT
+            }
+            return QualityResult.Rejected(reason)
         }
         if (signals.blurVariance < config.minBlurVariance) return QualityResult.Rejected(QualityReason.BLUR)
         if (signals.brightness < config.minBrightness) return QualityResult.Rejected(QualityReason.DARK)
@@ -44,7 +42,7 @@ object FaceQualityEngine {
         }
 
         return QualityResult.Accepted(
-            score = score(signals, config),
+            score = score(signals, config, expectedPose),
             poseBucket = poseBucket(signals, config.frontalThresholdDegrees),
             configVersion = config.version,
         )
@@ -74,8 +72,18 @@ object FaceQualityEngine {
         return left >= minProbability && right >= minProbability
     }
 
-    private fun score(signals: FaceQualitySignals, config: FaceQualityConfig): Float {
-        val poseScore = (1f - max(abs(signals.yawDegrees), abs(signals.pitchDegrees)) / config.maxPoseDegrees)
+    fun score(
+        signals: FaceQualitySignals,
+        config: FaceQualityConfig,
+        expected: ExpectedPose = ExpectedPose.STRAIGHT,
+    ): Float {
+        val targetYaw = when (expected) {
+            ExpectedPose.STRAIGHT -> 0f
+            ExpectedPose.LEFT -> -(config.profileMinYawDegrees + config.profileMaxYawDegrees) / 2f
+            ExpectedPose.RIGHT -> (config.profileMinYawDegrees + config.profileMaxYawDegrees) / 2f
+        }
+        val yawDeviation = abs(signals.yawDegrees - targetYaw)
+        val poseScore = (1f - max(yawDeviation, abs(signals.pitchDegrees)) / config.maxPoseDegrees)
             .coerceIn(0f, 1f)
         val sharpnessScore = (signals.blurVariance / config.targetBlurVariance).coerceIn(0f, 1f)
         val lightingScore = (1f - abs(signals.brightness - config.idealBrightness) / config.maxBrightnessDeviation)

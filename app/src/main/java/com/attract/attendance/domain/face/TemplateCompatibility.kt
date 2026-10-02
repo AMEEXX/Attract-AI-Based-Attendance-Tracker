@@ -30,15 +30,35 @@ object TemplateCompatibility {
 
     fun currentProfile() = ModelProfile(CURRENT_MODEL_ID, CURRENT_EMBEDDING_DIM)
 
-    /** A query/template vector usable for cosine similarity against current-model data. */
-    fun isUsableVector(vector: FloatArray?): Boolean =
-        vector != null && vector.size == CURRENT_EMBEDDING_DIM && vector.all { it.isFinite() }
+    /** Computes L2 norm of float vector; returns 0f if non-finite. */
+    fun computeL2Norm(vector: FloatArray): Float {
+        var sum = 0f
+        for (x in vector) {
+            if (!x.isFinite()) return 0f
+            sum += x * x
+        }
+        return kotlin.math.sqrt(sum)
+    }
 
-    /** Malformed but not merely stale: wrong size OR non-finite values. */
+    /**
+     * A query/template vector usable for cosine similarity against current-model data.
+     * Enforces correct dimension (if specified), finite values, and unit-normalized L2 norm (0.8f..1.2f).
+     */
+    fun isStrictlyUsableVector(vector: FloatArray?, expectedDim: Int? = null): Boolean {
+        if (vector == null || vector.isEmpty()) return false
+        if (expectedDim != null && vector.size != expectedDim) return false
+        val norm = computeL2Norm(vector)
+        return norm in 0.8f..1.2f
+    }
+
+    /** Legacy compatibility check delegating to strict check with CURRENT_EMBEDDING_DIM. */
+    fun isUsableVector(vector: FloatArray?): Boolean = isStrictlyUsableVector(vector, CURRENT_EMBEDDING_DIM)
+
+    /** Malformed but not merely stale: wrong size, non-finite values, or degenerate norm. */
     fun classify(vector: FloatArray?): VectorClass = when {
         vector == null -> VectorClass.MISSING
         vector.size != CURRENT_EMBEDDING_DIM -> VectorClass.STALE_DIMENSION
-        vector.any { !it.isFinite() } -> VectorClass.MALFORMED
+        vector.any { !it.isFinite() } || computeL2Norm(vector) !in 0.8f..1.2f -> VectorClass.MALFORMED
         else -> VectorClass.CURRENT
     }
 
@@ -83,10 +103,16 @@ object TemplateCompatibility {
             EnrollmentValidation.Ok(embeddings.map { it.size }.distinct().single())
         } else {
             val (i, v) = bad.first()
-            EnrollmentValidation.Rejected(
-                "Observation #$i is not in the current biometric format " +
-                    "(dim=${v?.size}, expected=$CURRENT_EMBEDDING_DIM). Re-capture required.",
-            )
+            val reason = when (classify(v)) {
+                VectorClass.STALE_DIMENSION ->
+                    "Observation #$i is not in the current biometric format (dim=${v?.size}, expected=$CURRENT_EMBEDDING_DIM). Re-capture required."
+                VectorClass.MALFORMED ->
+                    "Observation #$i is malformed (dim=${v?.size}, non-finite or degenerate norm). Re-capture required."
+                VectorClass.MISSING ->
+                    "Observation #$i is missing. Re-capture required."
+                VectorClass.CURRENT -> "Ok"
+            }
+            EnrollmentValidation.Rejected(reason)
         }
     }
 

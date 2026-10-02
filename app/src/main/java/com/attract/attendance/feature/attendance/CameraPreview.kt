@@ -23,6 +23,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.attract.attendance.domain.face.FaceAligner
 import com.attract.attendance.domain.face.FaceQualitySignals
+import com.attract.attendance.domain.face.FrameBundle
 import com.attract.attendance.domain.face.YoloFaceDetector
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.Executors
@@ -32,6 +33,7 @@ import java.util.concurrent.Executors
  *   - [FaceQualitySignals] — live quality/pose signals for every analysis frame
  *   - [Bitmap]? — face-cropped bitmap (tight crop with margin) when exactly one face
  *     is detected, or null when no face / multiple faces detected.
+ *   - [FrameBundle] — immutable timestamped bundle containing detections, signals, and crop
  *
  * Per LLD-08: the cropped pixel buffer is short-lived and must NOT be persisted
  * to gallery or stored outside the active attempt scope.
@@ -42,6 +44,7 @@ fun CameraPreview(
     modifier: Modifier = Modifier,
     cameraSelector: CameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA,
     onFrameAnalyzed: ((FaceQualitySignals, Bitmap?) -> Unit)? = null,
+    onFrameBundleAnalyzed: ((FrameBundle) -> Unit)? = null,
     onProviderInitialized: ((ProcessCameraProvider) -> Unit)? = null
 ) {
     val context = LocalContext.current
@@ -73,7 +76,18 @@ fun CameraPreview(
             lastAnalyzedTimestampMs = now
 
             val frameBitmap = toBitmap(imageProxy)
+            val nowNanos = System.nanoTime()
+            val frameId = System.currentTimeMillis()
+
             if (frameBitmap == null) {
+                val errorBundle = FrameBundle(
+                    frameId = frameId,
+                    timestampNanos = nowNanos,
+                    error = "Frame bitmap conversion failed"
+                )
+                mainExecutor.execute {
+                    onFrameBundleAnalyzed?.invoke(errorBundle)
+                }
                 imageProxy.close()
                 return@setAnalyzer
             }
@@ -96,7 +110,15 @@ fun CameraPreview(
                         blurVariance = 0f,
                         brightness = 0f
                     )
+                    val bundle = FrameBundle(
+                        frameId = frameId,
+                        timestampNanos = nowNanos,
+                        detections = emptyList(),
+                        qualitySignals = emptySignals,
+                        alignedCrop = null
+                    )
                     mainExecutor.execute {
+                        onFrameBundleAnalyzed?.invoke(bundle)
                         onFrameAnalyzed?.invoke(emptySignals, null)
                     }
                     return@setAnalyzer
@@ -117,7 +139,15 @@ fun CameraPreview(
                         blurVariance = 0f,
                         brightness = 0f
                     )
+                    val bundle = FrameBundle(
+                        frameId = frameId,
+                        timestampNanos = nowNanos,
+                        detections = detections,
+                        qualitySignals = multipleSignals,
+                        alignedCrop = null
+                    )
                     mainExecutor.execute {
+                        onFrameBundleAnalyzed?.invoke(bundle)
                         onFrameAnalyzed?.invoke(multipleSignals, null)
                     }
                     return@setAnalyzer
@@ -135,8 +165,8 @@ fun CameraPreview(
                     yawDegrees = primaryFace.estimatedYaw,
                     pitchDegrees = primaryFace.estimatedPitch,
                     rollDegrees = primaryFace.estimatedRoll,
-                    leftEyeOpenProbability = 1.0f, // Unavailable from YOLO, treated as open per LLD-09
-                    rightEyeOpenProbability = 1.0f,
+                    leftEyeOpenProbability = null, // R13: Leave null (unavailable), do not fabricate 1.0f
+                    rightEyeOpenProbability = null,
                     faceRatio = primaryFace.faceRatio,
                     centerX = primaryFace.centerX,
                     centerY = primaryFace.centerY,
@@ -147,26 +177,27 @@ fun CameraPreview(
                 // FaceAligner produces 112x112 canonical ArcFace aligned face bitmap
                 val alignedFace = FaceAligner.align(frameBitmap, primaryFace.landmarks)
 
+                val bundle = FrameBundle(
+                    frameId = frameId,
+                    timestampNanos = nowNanos,
+                    detections = detections,
+                    qualitySignals = liveSignals,
+                    alignedCrop = alignedFace
+                )
+
                 mainExecutor.execute {
+                    onFrameBundleAnalyzed?.invoke(bundle)
                     onFrameAnalyzed?.invoke(liveSignals, alignedFace)
                 }
             } catch (e: Exception) {
                 android.util.Log.e("CameraPreview", "YOLO frame analysis error: ${e.message}", e)
-                val errorSignals = FaceQualitySignals(
-                    faceCount = 0,
-                    yawDegrees = 0f,
-                    pitchDegrees = 0f,
-                    rollDegrees = 0f,
-                    leftEyeOpenProbability = 0f,
-                    rightEyeOpenProbability = 0f,
-                    faceRatio = 0f,
-                    centerX = 0.5f,
-                    centerY = 0.5f,
-                    blurVariance = 0f,
-                    brightness = 0f
+                val errorBundle = FrameBundle(
+                    frameId = frameId,
+                    timestampNanos = nowNanos,
+                    error = "YOLO detector error: ${e.message}"
                 )
                 mainExecutor.execute {
-                    onFrameAnalyzed?.invoke(errorSignals, null)
+                    onFrameBundleAnalyzed?.invoke(errorBundle)
                 }
             } finally {
                 imageProxy.close()

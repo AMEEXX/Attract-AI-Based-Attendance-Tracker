@@ -135,10 +135,15 @@ class SessionStateMachineComprehensiveFunctionalTest {
         coordinator.processEvent(SessionEvent.QualityEvaluated(attemptId, quality))
         coordinator.processEvent(SessionEvent.RecognitionEvaluated(attemptId, null, 0.0f))
 
+        assertTrue(coordinator.state.value is SessionState.RetryFeedback)
+        coordinator.processEvent(SessionEvent.RetryFeedbackExpired(attemptId))
+        assertTrue(coordinator.state.value is SessionState.Ready)
+
         // Attempt 2: unknown
-        coordinator.processEvent(SessionEvent.CheckInPressed(attemptId))
-        coordinator.processEvent(SessionEvent.QualityEvaluated(attemptId, quality))
-        coordinator.processEvent(SessionEvent.RecognitionEvaluated(attemptId, null, 0.0f))
+        val attempt2 = coordinator.currentAttemptId
+        coordinator.processEvent(SessionEvent.CheckInPressed(attempt2))
+        coordinator.processEvent(SessionEvent.QualityEvaluated(attempt2, quality))
+        coordinator.processEvent(SessionEvent.RecognitionEvaluated(attempt2, null, 0.0f))
 
         assertTrue(coordinator.state.value is SessionState.TeacherAssistance)
     }

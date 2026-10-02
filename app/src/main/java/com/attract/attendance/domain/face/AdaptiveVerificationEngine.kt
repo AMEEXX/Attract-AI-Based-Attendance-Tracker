@@ -96,6 +96,8 @@ class AdaptiveVerificationEngine(
             crossFrameEmbeddingSimilarity = lastCrossFrameSim,
         )
 
+    val isFinished: Boolean get() = finished
+
     /**
      * Submits the next observation. Returns either [Step.NeedMoreFrames] or [Step.Final].
      * Callers must stop submitting after any [Step.Final].
@@ -109,10 +111,10 @@ class AdaptiveVerificationEngine(
         // ---- Model-fault guard: an embedding of wrong dimension/NaN is a recoverable ERROR,
         // not a recognition failure (test matrix #17).
         val embeddingMalformed = observation.embedding != null &&
-            (!observation.hasValidEmbedding)
+            (!observation.hasValidEmbedding || !TemplateCompatibility.isStrictlyUsableVector(observation.embedding))
         if (embeddingMalformed) {
             finished = true
-            return Step.Final(Outcome.Error("Embedding malformed (dimension/NaN)"))
+            return Step.Final(Outcome.Error("Embedding malformed (dimension/NaN/degenerate norm)"))
         }
 
         // ---- Static replay detection (S4): never counts as new independent evidence.
@@ -132,12 +134,11 @@ class AdaptiveVerificationEngine(
         if (isReplay) replayCount++
 
         val analysis = if (usable) {
-            // Biometric-format gate (LLD-10): only templates in the SAME representation
-            // as the query may be scored; stale-dimension templates are never compared.
+            // Biometric-format gate (LLD-10 / R06): only templates in the SAME representation
+            // as the query may be scored; grouped-maximum retains the best score per student.
             val compatibleTemplates = templates.filter { it.embedding.size == observation.embedding!!.size }
-            val scores = compatibleTemplates.associate {
-                it.studentId to TemplateMatcher.cosineSimilarity(observation.embedding!!, it.embedding)
-            }
+            val ranked = IdentityScorer.scoreGroupedMax(observation.embedding!!, compatibleTemplates)
+            val scores = ranked.associate { it.studentId to it.bestScore }
             val decision = decisionEngine.evaluate(observation.embedding!!, compatibleTemplates)
             // PHASE-1 DIAGNOSTIC: per-frame recognition transparency.
             run {

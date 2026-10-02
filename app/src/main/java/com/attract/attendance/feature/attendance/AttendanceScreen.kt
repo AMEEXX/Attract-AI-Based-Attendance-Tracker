@@ -47,9 +47,11 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -58,6 +60,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import com.attract.attendance.domain.session.TeacherAuthAction
+import com.attract.attendance.domain.session.TeacherAuthorizationGrant
+import kotlinx.coroutines.Job
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -215,9 +220,9 @@ fun AttendanceScreen(
 
     // 2c. CANONICAL SESSION START (LLD-06 amendment, 2026-08-26): the attendance
     // session is created/resolved HERE — the DB row is the single source of truth.
-    // Without this, every recognition/fallback persistence correctly refused with
-    // NoActiveSession (the phone deadlock-loop bug).
+    // In standalone enrollment mode, we do NOT create an attendance session (fixes R08).
     LaunchedEffect(Unit) {
+        if (isStandaloneMode) return@LaunchedEffect
         withContext(Dispatchers.IO) {
             when (val ensured = repository.ensureFaceSession(classId)) {
                 is com.attract.attendance.core.model.CommandResult.Success -> {
@@ -233,6 +238,19 @@ fun AttendanceScreen(
         }
     }
 
+    // Sync presentIds from Room database on activeSessionId resolution (resolves R09 & WP11)
+    LaunchedEffect(activeSessionId) {
+        val sId = activeSessionId ?: return@LaunchedEffect
+        withContext(Dispatchers.IO) {
+            val existing = repository.attendanceRecordsForSession(sId)
+                .filter { it.status == com.attract.attendance.core.model.AttendanceStatus.PRESENT }
+                .map { it.studentId }
+                .toSet()
+            presentIds = existing
+            Log.i("ATTRACT_ATTENDANCE_PIPELINE", "[RECOVERED_SESSION_ATTENDANCE] presentCount=${existing.size}")
+        }
+    }
+
     var showPinDialog by remember { mutableStateOf(false) }
     var teacherPinInput by remember { mutableStateOf("") }
     var pinError by remember { mutableStateOf<String?>(null) }
@@ -241,6 +259,21 @@ fun AttendanceScreen(
     var showEnrollBottomSheet by remember { mutableStateOf(false) }
     var selectedStudentForEnroll by remember(targetStudentForStandalone) { mutableStateOf<StudentSummary?>(targetStudentForStandalone) }
 
+    // R04/R05: attempt tokens, feedback job tracking, and active teacher authorization grant
+    var currentInteractionToken by remember { mutableLongStateOf(0L) }
+    var feedbackJob by remember { mutableStateOf<Job?>(null) }
+    var activeTeacherGrant by remember { mutableStateOf<TeacherAuthorizationGrant?>(null) }
+
+    // D-001 & R01/R02: Teacher confirmation dialog & assisted check-in states
+    var showTeacherConfirmDialog by remember { mutableStateOf(false) }
+    var pendingEnrollmentStudent by remember { mutableStateOf<StudentSummary?>(null) }
+    var showTeacherAssistDialog by remember { mutableStateOf(false) }
+    var showTeacherAssistPinDialog by remember { mutableStateOf(false) }
+    var teacherAssistPinInput by remember { mutableStateOf("") }
+    var teacherAssistPinError by remember { mutableStateOf<String?>(null) }
+    var isAuthenticatingAssist by remember { mutableStateOf(false) }
+
+    var latestFrameBundle by remember { mutableStateOf<com.attract.attendance.domain.face.FrameBundle?>(null) }
     var latestFrameSignals by remember { mutableStateOf<FaceQualitySignals?>(null) }
     var latestFrameBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var lastQualitySignals by remember { mutableStateOf<FaceQualitySignals?>(null) }
@@ -265,6 +298,14 @@ fun AttendanceScreen(
     // enrolls them, and marks the student PRESENT — all without leaving the session.
     var inlineEnrollmentTarget by remember { mutableStateOf<StudentSummary?>(null) }
 
+    DisposableEffect(Unit) {
+        onDispose {
+            feedbackJob?.cancel()
+            adaptiveEngine = null
+            activeTeacherGrant = null
+        }
+    }
+
     fun stepPrompt(step: Int): String {
         if (isStandaloneMode) return when (step) {
             0 -> "📷 Step 1/3 (STRAIGHT): Position face straight in ample lighting & tap CLICK"
@@ -278,10 +319,14 @@ fun AttendanceScreen(
         }
     }
 
-    fun resetToReady(resetAttempts: Boolean = false) {
+    fun resetToReady(resetAttempts: Boolean = false, clearEnrollmentTarget: Boolean = true) {
+        feedbackJob?.cancel()
+        feedbackJob = null
+        adaptiveEngine = null
         Log.i("ATTRACT_ATTENDANCE_PIPELINE", "[READY] sessionId=$activeSessionId classId=$classId presentCount=${presentIds.size}")
         if (resetAttempts) {
             recognitionAttemptCount = 0
+            currentInteractionToken++
         }
         state = SessionScreenState.READY
         collectedFrames = 0
@@ -293,10 +338,12 @@ fun AttendanceScreen(
         captureStep = 0
         capturedYawDegrees = emptyList()
         capturedQualityScores = emptyList()
-        adaptiveEngine = null
         lastFrameQualityScore = 0f
         lastFrameLive = false
-        inlineEnrollmentTarget = null
+        if (clearEnrollmentTarget) {
+            inlineEnrollmentTarget = null
+            activeTeacherGrant = null
+        }
     }
 
 
@@ -311,25 +358,20 @@ fun AttendanceScreen(
             ?: com.attract.attendance.domain.face.EmbeddingEngine.lastInitError ?: ""
         return if (detail.isBlank()) base else "$base [$detail]"
     }
+
     fun handleNoEnrolledStudents() {
-        // Fallback roster = every student in the class not yet marked PRESENT this session
-        // (enrolled or not — an unrecognized ENROLLED student must also be selectable).
-        Log.i("ATTRACT_ATTENDANCE_FALLBACK", "Fallback roster offered: classId=$classId candidates=${students.size - presentIds.size}")
-        val selectable = students.filter { it.id !in presentIds }
-        if (selectable.isEmpty()) {
-            state = SessionScreenState.READY
-            statusMessage = "All students are already marked present."
-        } else {
-            recognitionAttemptCount = 0
-            state = SessionScreenState.UNKNOWN_STUDENT
-            statusMessage = "Face not recognized. Select the student below."
-            showEnrollBottomSheet = true
-        }
+        feedbackJob?.cancel()
+        adaptiveEngine = null
+        recognitionAttemptCount = 0
+        state = SessionScreenState.UNKNOWN_STUDENT
+        statusMessage = "Face not recognized. Choose an option below."
+        showEnrollBottomSheet = true
     }
 
-    /** Starts the 3-pose inline enrollment capture within the attendance screen. */
-    fun startInlineEnrollment(selected: StudentSummary) {
+    /** Starts the 3-pose inline enrollment capture within the attendance screen with valid teacher authorization. */
+    fun startInlineEnrollment(selected: StudentSummary, grant: TeacherAuthorizationGrant) {
         inlineEnrollmentTarget = selected
+        activeTeacherGrant = grant
         captureStep = 0
         collectedFrames = 0
         capturedPoseBitmaps = emptyList()
@@ -340,22 +382,22 @@ fun AttendanceScreen(
         isValidatingFrame = false
         state = SessionScreenState.CAPTURING
         statusMessage = "📋 Enrolling ${selected.name} — Step 1/3 (STRAIGHT): Look at camera & tap CLICK"
-        Log.i("ATTRACT_ATTENDANCE_FALLBACK", "Inline enrollment started for studentId=${selected.id} name=${selected.name}")
+        Log.i("ATTRACT_ATTENDANCE_FALLBACK", "Inline enrollment started for studentId=${selected.id} name=${selected.name} grant=${grant.token}")
     }
 
-    /** Marks an already-enrolled student as present via MANUAL fallback. */
-    fun markFallbackAttendance(selected: StudentSummary) {
+    /** Marks an already-enrolled student as present via authenticated TEACHER_ASSISTED fallback (fixes R02). */
+    fun markTeacherAssistedPresent(selected: StudentSummary, grant: TeacherAuthorizationGrant) {
         state = SessionScreenState.PROCESSING
-        statusMessage = "Marking ${selected.name} present..."
+        statusMessage = "Marking ${selected.name} present (Teacher Assisted)..."
         scope.launch {
-            Log.i("ATTRACT_ATTENDANCE_FALLBACK", "[ATTENDANCE_WRITE_STARTED] sessionId=$activeSessionId studentId=${selected.id} source=MANUAL")
-            when (val result = repository.markFallbackPresent(classId, selected.id)) {
+            Log.i("ATTRACT_ATTENDANCE_FALLBACK", "[TEACHER_ASSISTED_WRITE_STARTED] sessionId=$activeSessionId studentId=${selected.id}")
+            when (val result = repository.markTeacherAssistedPresent(classId, selected.id, grant)) {
                 is com.attract.attendance.data.repository.AttractRepository.FallbackMarkResult.Marked -> {
                     Log.i("ATTRACT_ATTENDANCE_PIPELINE", "[ATTENDANCE_WRITE_SUCCESS] sessionId=$activeSessionId studentId=${selected.id} recordId=${result.recordId}")
                     presentIds = presentIds + selected.id
                     lastRecognizedStudent = selected
                     state = SessionScreenState.MATCH_SUCCESS
-                    statusMessage = "PRESENT: ${result.studentName}"
+                    statusMessage = "PRESENT: ${result.studentName} (Assisted)"
                     delay(2000)
                     resetToReady(resetAttempts = true)
                 }
@@ -393,33 +435,7 @@ fun AttendanceScreen(
         }
     }
 
-    /**
-     * Teacher selects a student from the UNKNOWN roster (LLD-06).
-     *
-     * Routes based on enrollment status:
-     *  - NOT_ENROLLED → start INLINE enrollment: capture 3 poses right here in the
-     *    attendance screen, enroll, then auto-mark PRESENT.
-     *  - ENROLLED → mark PRESENT directly via MANUAL fallback.
-     */
-    fun onRosterStudentSelected(selected: StudentSummary) {
-        Log.i("ATTRACT_ATTENDANCE_PIPELINE",
-            "[ROSTER_SELECTION] sessionId=$activeSessionId classId=$classId studentId=${selected.id} " +
-                "studentName=${selected.name} enrollmentStatus=${selected.enrollmentStatus} uiState=$state")
-        selectedStudentForEnroll = selected
-        showEnrollBottomSheet = false
-
-        if (selected.enrollmentStatus == EnrollmentStatus.NOT_ENROLLED) {
-            // Inline enrollment: capture 3 poses right here, then enroll + mark present
-            startInlineEnrollment(selected)
-        } else {
-            // Already enrolled but just not recognized → mark present via MANUAL fallback
-            markFallbackAttendance(selected)
-        }
-    }
-
-    fun markSelectedStudentPresent(selected: StudentSummary) = onRosterStudentSelected(selected)
-
-    /** Completes inline enrollment: extracts embeddings from captured frames, enrolls, marks PRESENT. */
+    /** Completes inline enrollment: extracts embeddings from captured frames, validates batch, checks duplicates, enrolls, marks PRESENT. */
     fun completeInlineEnrollment() {
         val target = inlineEnrollmentTarget ?: return
         Log.i("ATTRACT_ATTENDANCE_FALLBACK", "[INLINE_ENROLLMENT] completing for studentId=${target.id} name=${target.name} frames=${capturedPoseBitmaps.size}")
@@ -435,62 +451,130 @@ fun AttendanceScreen(
         statusMessage = "Saving ${target.name}'s face data..."
 
         scope.launch {
-            runCatching {
-                val realEmbeddings = withContext(Dispatchers.IO) {
-                    capturedPoseBitmaps.mapNotNull { bitmap ->
-                        try {
-                            com.attract.attendance.domain.face.EmbeddingEngine.extractEmbedding(context, bitmap)
-                        } catch (_: Exception) { null }
-                    }
-                }
-                if (realEmbeddings.isEmpty()) {
+            val extractedSamples = mutableListOf<com.attract.attendance.domain.face.EnrollmentSample>()
+            for (i in 0 until 3) {
+                val bitmap = capturedPoseBitmaps.getOrNull(i) ?: run {
+                    statusMessage = "Missing capture for step ${i + 1}."
                     state = SessionScreenState.ERROR
-                    statusMessage = "Face capture failed. Please retake photos."
-                    delay(2000); resetToReady(); return@runCatching
+                    isValidatingFrame = false
+                    delay(2000)
+                    resetToReady(clearEnrollmentTarget = false)
+                    return@launch
                 }
-
-                val byteEmbeddings = realEmbeddings.map { emb ->
-                    with(com.attract.attendance.domain.face.TemplateMatcher) { emb.toByteArray() }
-                }
-                Log.i("ATTRACT_ATTENDANCE_FALLBACK", "[INLINE_ENROLLMENT] calling onEnrollStudent for ${target.id}, ${byteEmbeddings.size} embeddings")
-
-                onEnrollStudent(target.id, byteEmbeddings, capturedQualityScores) {
-                    scope.launch {
-                        Log.i("ATTRACT_ATTENDANCE_FALLBACK", "[INLINE_ENROLLMENT] enrollment succeeded, now marking PRESENT")
-                        // After enrollment succeeds → mark PRESENT immediately
-                        when (val result = repository.markFallbackPresent(classId, target.id)) {
-                            is com.attract.attendance.data.repository.AttractRepository.FallbackMarkResult.Marked -> {
-                                Log.i("ATTRACT_ATTENDANCE_PIPELINE", "[ATTENDANCE_WRITE_SUCCESS] sessionId=$activeSessionId studentId=${target.id} recordId=${result.recordId} source=MANUAL(enrolled)")
-                                presentIds = presentIds + target.id
-                                lastRecognizedStudent = target
-                                state = SessionScreenState.MATCH_SUCCESS
-                                statusMessage = "ENROLLED & PRESENT: ${target.name}"
-                                delay(2500)
-                                resetToReady(resetAttempts = true)
-                            }
-                            is com.attract.attendance.data.repository.AttractRepository.FallbackMarkResult.AlreadyPresent -> {
-                                state = SessionScreenState.ALREADY_PRESENT
-                                statusMessage = "Already Checked In: ${target.name}"
-                                delay(2000)
-                                resetToReady(resetAttempts = true)
-                            }
-                            else -> {
-                                // Enrollment succeeded but attendance marking failed — still a win
-                                state = SessionScreenState.MATCH_SUCCESS
-                                statusMessage = "ENROLLED: ${target.name}"
-                                delay(2500)
-                                resetToReady(resetAttempts = true)
-                            }
-                        }
+                val embedding = try {
+                    withContext(Dispatchers.IO) {
+                        com.attract.attendance.domain.face.EmbeddingEngine.extractEmbedding(context, bitmap)
                     }
+                } catch (_: Exception) { null }
+
+                if (embedding == null) {
+                    statusMessage = "Failed to extract face features for step ${i + 1}. Please retake."
+                    state = SessionScreenState.ERROR
+                    isValidatingFrame = false
+                    delay(2000)
+                    resetToReady(clearEnrollmentTarget = false)
+                    return@launch
                 }
-            }.onFailure { error ->
-                Log.e(TAG, "Inline enrollment error", error)
-                isValidatingFrame = false
-                state = SessionScreenState.ERROR
-                statusMessage = "Enrollment failed. Please try again."
-                delay(2500)
-                resetToReady()
+                extractedSamples.add(
+                    com.attract.attendance.domain.face.EnrollmentSample(
+                        slotIndex = i,
+                        embedding = embedding,
+                        qualityScore = capturedQualityScores.getOrElse(i) { 1.0f },
+                        yawDegrees = capturedYawDegrees.getOrElse(i) { 0f },
+                        timestampNanos = System.nanoTime() + i
+                    )
+                )
+            }
+
+            val validation = com.attract.attendance.domain.face.EnrollmentBatchValidator.validate(
+                studentId = target.id,
+                classId = classId,
+                samples = extractedSamples,
+                authorizationGrant = activeTeacherGrant
+            )
+            val batch = when (validation) {
+                is com.attract.attendance.domain.face.EnrollmentBatchValidator.ValidationResult.Valid -> validation.batch
+                is com.attract.attendance.domain.face.EnrollmentBatchValidator.ValidationResult.Invalid -> {
+                    statusMessage = "⚠️ ${validation.reason}"
+                    state = SessionScreenState.ERROR
+                    isValidatingFrame = false
+                    delay(2500)
+                    resetToReady(clearEnrollmentTarget = false)
+                    return@launch
+                }
+            }
+
+            val isReEnroll = target.enrollmentStatus == EnrollmentStatus.REENROLL_REQUIRED
+            val enrollResult = withContext(Dispatchers.IO) {
+                if (isReEnroll) {
+                    repository.reEnrollStudentFace(classId, target.id, batch, activeTeacherGrant)
+                } else {
+                    val sId = activeSessionId ?: 0L
+                    val sessionContext = com.attract.attendance.domain.session.SessionContext(
+                        sessionId = sId,
+                        classId = classId,
+                        mode = com.attract.attendance.core.model.SessionMode.FACE
+                    )
+                    repository.firstEnrollAndCheckIn(sessionContext, target.id, batch, activeTeacherGrant)
+                }
+            }
+
+            when (enrollResult) {
+                is com.attract.attendance.domain.face.EnrollmentResult.Committed -> {
+                    Log.i("ATTRACT_ATTENDANCE_FALLBACK", "[INLINE_ENROLLMENT] enrollment succeeded for ${target.id}")
+                    if (enrollResult.attendanceRecordId != null) {
+                        presentIds = presentIds + target.id
+                    }
+                    lastRecognizedStudent = target
+                    state = SessionScreenState.MATCH_SUCCESS
+                    statusMessage = if (isReEnroll) "PROFILE REPAIRED: ${target.name}" else "ENROLLED & PRESENT: ${target.name}"
+                    delay(2500)
+                    resetToReady(resetAttempts = true)
+                }
+                is com.attract.attendance.domain.face.EnrollmentResult.DuplicateSuspected -> {
+                    val dupStudent = students.find { it.id == enrollResult.existingStudentId }
+                    val name = dupStudent?.name ?: "ID ${enrollResult.existingStudentId}"
+                    statusMessage = "⚠️ Duplicate face detected matching enrolled student $name. Registration blocked."
+                    state = SessionScreenState.ERROR
+                    isValidatingFrame = false
+                    delay(3000)
+                    resetToReady()
+                }
+                is com.attract.attendance.domain.face.EnrollmentResult.ApprovalExpired -> {
+                    statusMessage = "⚠️ Teacher authorization expired: ${enrollResult.reason}"
+                    state = SessionScreenState.ERROR
+                    isValidatingFrame = false
+                    delay(2500)
+                    resetToReady()
+                }
+                is com.attract.attendance.domain.face.EnrollmentResult.AlreadyEnrolled -> {
+                    statusMessage = "⚠️ ${target.name} is already enrolled."
+                    state = SessionScreenState.ERROR
+                    isValidatingFrame = false
+                    delay(2000)
+                    resetToReady()
+                }
+                is com.attract.attendance.domain.face.EnrollmentResult.Ineligible -> {
+                    statusMessage = "⚠️ Ineligible: ${enrollResult.reason}"
+                    state = SessionScreenState.ERROR
+                    isValidatingFrame = false
+                    delay(2500)
+                    resetToReady()
+                }
+                is com.attract.attendance.domain.face.EnrollmentResult.Failed -> {
+                    statusMessage = "⚠️ Enrollment failed: ${enrollResult.reason}"
+                    state = SessionScreenState.ERROR
+                    isValidatingFrame = false
+                    delay(2500)
+                    resetToReady()
+                }
+                else -> {
+                    statusMessage = "⚠️ Enrollment could not be completed."
+                    state = SessionScreenState.ERROR
+                    isValidatingFrame = false
+                    delay(2000)
+                    resetToReady()
+                }
             }
         }
     }
@@ -543,6 +627,8 @@ fun AttendanceScreen(
     }
 
     fun onAdaptiveMatch(studentId: Long, confidence: Float) {
+        adaptiveEngine = null // R05: terminal engine must be cleared immediately
+        feedbackJob?.cancel()
         Log.i(
             "ATTRACT_ATTENDANCE_PIPELINE",
             "RECOGNITION match: sessionId=$activeSessionId classId=$classId studentId=$studentId confidence=$confidence uiState=$state",
@@ -557,11 +643,20 @@ fun AttendanceScreen(
             "[UNKNOWN] sessionId=$activeSessionId attempt=${recognitionAttemptCount + 1} presentCount=${presentIds.size}",
         )
         isValidatingFrame = false // terminal outcome must release the capture lock
+        adaptiveEngine = null // R05: terminal engine must be cleared immediately before enabling capture
+        feedbackJob?.cancel()
+        val attemptToken = ++currentInteractionToken
+
         if (recognitionAttemptCount < 1) {
             recognitionAttemptCount += 1
             state = SessionScreenState.READY
             statusMessage = "Couldn't verify clearly, please try again (Attempt 1/2)."
-            scope.launch { delay(2000); resetToReady(resetAttempts = false) }
+            feedbackJob = scope.launch {
+                delay(2000)
+                if (currentInteractionToken == attemptToken) {
+                    resetToReady(resetAttempts = false)
+                }
+            }
         } else {
             recognitionAttemptCount = 0
             handleNoEnrolledStudents()
@@ -570,10 +665,18 @@ fun AttendanceScreen(
 
     fun captureClick() {
         if (state == SessionScreenState.PROCESSING || state == SessionScreenState.MATCH_SUCCESS || isValidatingFrame) return
+        feedbackJob?.cancel()
+        feedbackJob = null
         Log.i("ATTRACT_ATTENDANCE_PIPELINE", "[CAPTURE_STARTED] sessionId=$activeSessionId classId=$classId uiState=$state")
 
-        val signals = latestFrameSignals
-        val frameBitmap = latestFrameBitmap
+        val bundle = latestFrameBundle
+        if (bundle?.error != null) {
+            statusMessage = "⚠️ Camera/detector error: ${bundle.error}"
+            return
+        }
+
+        val signals = bundle?.qualitySignals ?: latestFrameSignals
+        val frameBitmap = bundle?.alignedCrop ?: latestFrameBitmap
 
         if (signals == null || signals.faceCount == 0) {
             statusMessage = "⚠️ No face detected. Position your face in the frame."
@@ -752,6 +855,7 @@ fun AttendanceScreen(
                         isValidatingFrame = false
                     }
                     is com.attract.attendance.domain.face.AdaptiveVerificationEngine.Step.Final -> {
+                        adaptiveEngine = null // R05: clear terminal engine immediately
                         when (val outcome = step.outcome) {
                             is com.attract.attendance.domain.face.AdaptiveVerificationEngine.Outcome.Match -> {
                                 onAdaptiveMatch(outcome.studentId, outcome.confidence)
@@ -994,6 +1098,9 @@ fun AttendanceScreen(
                 if (hasCameraPermission) {
                     CameraPreview(
                         modifier = Modifier.fillMaxSize(),
+                        onFrameBundleAnalyzed = { bundle ->
+                            latestFrameBundle = bundle
+                        },
                         onFrameAnalyzed = { signals, frameBitmap ->
                             latestFrameSignals = signals
                             latestFrameBitmap = frameBitmap
@@ -1095,7 +1202,7 @@ fun AttendanceScreen(
                         onClick = { showEnrollBottomSheet = true },
                         modifier = Modifier.height(48.dp)
                     ) {
-                        Text(if (isStandaloneMode) "ðŸ“‹ Select ID to Enroll" else "ðŸ“‹ Select Student to Mark Present", color = Color(0xFF8AB4F8), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
+                        Text(if (isStandaloneMode) "📋 Select ID to Enroll" else "📋 Options: New Profile / Ask Teacher", color = Color(0xFF8AB4F8), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
                     }
                 } else {
                     com.attract.attendance.ui.components.biometric.GlowCaptureButton(
@@ -1103,56 +1210,90 @@ fun AttendanceScreen(
                         onClick = {
                             if (state == SessionScreenState.PROCESSING || isValidatingFrame) return@GlowCaptureButton
                             if (state == SessionScreenState.FRAMES_COLLECTED) {
-                                submitRecognition()
-                            } else if (state == SessionScreenState.UNKNOWN_STUDENT) {
                                 if (isStandaloneMode) {
-                                    // Standalone mode keeps the dedicated enrollment flow.
-                                    if (selectedStudentForEnroll != null) {
-                                        val targetStudent = selectedStudentForEnroll!!
+                                    val target = targetStudentForStandalone ?: selectedStudentForEnroll
+                                    if (target != null) {
                                         state = SessionScreenState.PROCESSING
-                                        statusMessage = "Enrolling ${targetStudent.name}..."
-
+                                        statusMessage = "Enrolling ${target.name}..."
                                         scope.launch {
-                                            val realEmbeddings = withContext(Dispatchers.IO) {
-                                                capturedPoseBitmaps.map { bitmap ->
-                                                    com.attract.attendance.domain.face.EmbeddingEngine.extractEmbedding(context, bitmap)
+                                            val extractedSamples = mutableListOf<com.attract.attendance.domain.face.EnrollmentSample>()
+                                            for (i in 0 until 3) {
+                                                val bitmap = capturedPoseBitmaps.getOrNull(i) ?: run {
+                                                    statusMessage = "Missing capture for step ${i + 1}."
+                                                    state = SessionScreenState.ERROR
+                                                    delay(2000)
+                                                    resetToReady(clearEnrollmentTarget = false)
+                                                    return@launch
+                                                }
+                                                val embedding = try {
+                                                    withContext(Dispatchers.IO) {
+                                                        com.attract.attendance.domain.face.EmbeddingEngine.extractEmbedding(context, bitmap)
+                                                    }
+                                                } catch (_: Exception) { null }
+                                                if (embedding == null) {
+                                                    statusMessage = "Failed to extract face features for step ${i + 1}."
+                                                    state = SessionScreenState.ERROR
+                                                    delay(2000)
+                                                    resetToReady(clearEnrollmentTarget = false)
+                                                    return@launch
+                                                }
+                                                extractedSamples.add(
+                                                    com.attract.attendance.domain.face.EnrollmentSample(
+                                                        slotIndex = i,
+                                                        embedding = embedding,
+                                                        qualityScore = capturedQualityScores.getOrElse(i) { 1.0f },
+                                                        yawDegrees = capturedYawDegrees.getOrElse(i) { 0f },
+                                                        timestampNanos = System.nanoTime() + i
+                                                    )
+                                                )
+                                            }
+
+                                            val validation = com.attract.attendance.domain.face.EnrollmentBatchValidator.validate(
+                                                studentId = target.id,
+                                                classId = classId,
+                                                samples = extractedSamples,
+                                                authorizationGrant = activeTeacherGrant
+                                            )
+                                            val batch = when (validation) {
+                                                is com.attract.attendance.domain.face.EnrollmentBatchValidator.ValidationResult.Valid -> validation.batch
+                                                is com.attract.attendance.domain.face.EnrollmentBatchValidator.ValidationResult.Invalid -> {
+                                                    statusMessage = "⚠️ ${validation.reason}"
+                                                    state = SessionScreenState.ERROR
+                                                    delay(2500)
+                                                    resetToReady(clearEnrollmentTarget = false)
+                                                    return@launch
                                                 }
                                             }
 
-                                            if (realEmbeddings.isEmpty()) {
-                                                state = SessionScreenState.ERROR
-                                                statusMessage = "Face capture failed. Please retake photos."
-                                                delay(2000)
-                                                resetToReady()
-                                                return@launch
+                                            val enrollResult = withContext(Dispatchers.IO) {
+                                                repository.standaloneEnrollStudentFace(classId, target.id, batch, activeTeacherGrant)
                                             }
-
-                                            // Duplicate face check across all enrolled class templates
-                                            val combinedQuery = com.attract.attendance.domain.face.EmbeddingEngine.combineEmbeddings(realEmbeddings)
-                                            val activeTemplates = repository.getActiveTemplatesForClass(classId)
-                                            val checkOutcome = com.attract.attendance.domain.face.RecognitionDecisionEngine(
-                                                acceptThreshold = 0.25f,
-                                                ambiguousMargin = 0.05f
-                                            ).evaluate(combinedQuery, activeTemplates)
-
-                                            if (checkOutcome is com.attract.attendance.domain.face.RecognitionOutcome.Match && checkOutcome.studentId != targetStudent.id) {
-                                                state = SessionScreenState.ERROR
-                                                statusMessage = "⚠️ Face already enrolled under another student."
-                                                delay(2500)
-                                                resetToReady()
-                                                return@launch
-                                            }
-
-                                            val byteEmbeddings = realEmbeddings.map { emb ->
-                                                with(com.attract.attendance.domain.face.TemplateMatcher) { emb.toByteArray() }
-                                            }
-
-                                            onEnrollStudent(targetStudent.id, byteEmbeddings, capturedQualityScores) {
-                                                state = SessionScreenState.MATCH_SUCCESS
-                                                statusMessage = "ENROLLED SUCCESSFULLY: ${targetStudent.name}"
-                                                scope.launch {
+                                            when (enrollResult) {
+                                                is com.attract.attendance.domain.face.EnrollmentResult.Committed -> {
+                                                    state = SessionScreenState.MATCH_SUCCESS
+                                                    statusMessage = "ENROLLED SUCCESSFULLY: ${target.name}"
                                                     delay(1500)
                                                     onBack()
+                                                }
+                                                is com.attract.attendance.domain.face.EnrollmentResult.DuplicateSuspected -> {
+                                                    val dupStudent = students.find { it.id == enrollResult.existingStudentId }
+                                                    val name = dupStudent?.name ?: "ID ${enrollResult.existingStudentId}"
+                                                    statusMessage = "⚠️ Duplicate face detected matching $name. Registration blocked."
+                                                    state = SessionScreenState.ERROR
+                                                    delay(3000)
+                                                    resetToReady()
+                                                }
+                                                is com.attract.attendance.domain.face.EnrollmentResult.Failed -> {
+                                                    statusMessage = "⚠️ Enrollment failed: ${enrollResult.reason}"
+                                                    state = SessionScreenState.ERROR
+                                                    delay(2500)
+                                                    resetToReady()
+                                                }
+                                                else -> {
+                                                    statusMessage = "⚠️ Enrollment could not be completed."
+                                                    state = SessionScreenState.ERROR
+                                                    delay(2000)
+                                                    resetToReady()
                                                 }
                                             }
                                         }
@@ -1160,16 +1301,10 @@ fun AttendanceScreen(
                                         showEnrollBottomSheet = true
                                     }
                                 } else {
-                                    // LLD-06 fallback: open roster, or mark the already-selected
-                                    // student present immediately (idempotent via AlreadyPresent).
-                                    Log.i("ATTRACT_ATTENDANCE_FALLBACK", "Fallback button tapped: selected=${selectedStudentForEnroll?.id}")
-                                    val selected = selectedStudentForEnroll
-                                    if (selected == null) {
-                                        showEnrollBottomSheet = true
-                                    } else {
-                                        markSelectedStudentPresent(selected)
-                                    }
+                                    submitRecognition()
                                 }
+                            } else if (state == SessionScreenState.UNKNOWN_STUDENT) {
+                                showEnrollBottomSheet = true
                             } else {
                                 captureClick()
                             }
@@ -1210,45 +1345,111 @@ fun AttendanceScreen(
             }
         }
 
-        // Un-enrolled Roster Selection dialog (Bottom Sheet emulation)
+        // Roster Selection dialog: ONLY NOT_ENROLLED students for new profile, or Ask Teacher path (fixes R01 & R02)
         if (showEnrollBottomSheet) {
-            val selectable = students.filter { it.id !in presentIds }
+            var selectedTab by remember { mutableIntStateOf(0) }
+            val unenrolledStudents = students.filter { it.enrollmentStatus == EnrollmentStatus.NOT_ENROLLED && it.id !in presentIds }
+
             AlertDialog(
                 onDismissRequest = { showEnrollBottomSheet = false },
-                title = { Text(if (isStandaloneMode) "Select your Name & ID to Enroll" else "Select Student to Mark Present", fontWeight = FontWeight.Bold) },
+                title = { Text(if (isStandaloneMode) "Select Student to Enroll" else "Recognition Options", fontWeight = FontWeight.Bold) },
                 text = {
-                    Column(modifier = Modifier.height(280.dp)) {
-                        Text(if (isStandaloneMode) "Only un-enrolled students are listed:" else "Students not yet marked present:", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(6.dp),
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            items(selectable, key = { it.id }) { student ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(if (selectedStudentForEnroll?.id == student.id) Color(0xFF333333) else Color.Transparent)
-                                        .clickable {
-                                            if (isStandaloneMode) {
-                                                // Standalone enrollment flow keeps its dedicated behavior.
-                                                selectedStudentForEnroll = student
-                                                showEnrollBottomSheet = false
-                                            } else {
-                                                // LLD-06: selecting a student routes to inline
-                                                // enrollment (if NOT_ENROLLED) or MANUAL fallback.
-                                                onRosterStudentSelected(student)
+                    Column(modifier = Modifier.height(320.dp).fillMaxWidth()) {
+                        if (!isStandaloneMode) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color.White.copy(alpha = 0.08f))
+                                    .padding(4.dp),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                Button(
+                                    onClick = { selectedTab = 0 },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (selectedTab == 0) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                        contentColor = if (selectedTab == 0) MaterialTheme.colorScheme.onPrimary else Color.Gray,
+                                    ),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("New Profile", style = MaterialTheme.typography.bodySmall)
+                                }
+                                Button(
+                                    onClick = { selectedTab = 1 },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (selectedTab == 1) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                        contentColor = if (selectedTab == 1) MaterialTheme.colorScheme.onPrimary else Color.Gray,
+                                    ),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Ask Teacher", style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
+
+                        if (selectedTab == 0 || isStandaloneMode) {
+                            Text(
+                                "Un-enrolled students only (Teacher confirmation required):",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            if (unenrolledStudents.isEmpty()) {
+                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Text("No un-enrolled students available.", color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
+                                }
+                            } else {
+                                LazyColumn(
+                                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    items(unenrolledStudents, key = { it.id }) { student ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(if (selectedStudentForEnroll?.id == student.id) Color(0xFF333333) else Color.Transparent)
+                                                .clickable {
+                                                    if (isStandaloneMode) {
+                                                        selectedStudentForEnroll = student
+                                                        showEnrollBottomSheet = false
+                                                    } else {
+                                                        // D-001: Student selects name -> Request Teacher confirmation PIN
+                                                        pendingEnrollmentStudent = student
+                                                        showEnrollBottomSheet = false
+                                                        showTeacherConfirmDialog = true
+                                                    }
+                                                }
+                                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(student.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                                                Text(student.rollNumber, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                                             }
                                         }
-                                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(student.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
-                                        Text(student.rollNumber, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                                     }
                                 }
+                            }
+                        } else {
+                            // Ask Teacher path: opens PIN dialog
+                            Text("Teacher-Assisted Check-In & Profile Repair:", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                "If you are already enrolled and could not be verified by camera, request teacher assistance.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.LightGray
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = {
+                                    showEnrollBottomSheet = false
+                                    showTeacherAssistPinDialog = true
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Teacher Login for Assisted Check-in")
                             }
                         }
                     }
@@ -1257,6 +1458,238 @@ fun AttendanceScreen(
                 dismissButton = {
                     TextButton(onClick = { showEnrollBottomSheet = false }) {
                         Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        // D-001 Teacher Confirmation Dialog for First-Time Enrollment
+        if (showTeacherConfirmDialog && pendingEnrollmentStudent != null) {
+            val student = pendingEnrollmentStudent!!
+            var pinInput by remember { mutableStateOf("") }
+            var pinErrorMsg by remember { mutableStateOf<String?>(null) }
+            var isVerifying by remember { mutableStateOf(false) }
+
+            AlertDialog(
+                onDismissRequest = {
+                    if (!isVerifying) {
+                        showTeacherConfirmDialog = false
+                        pendingEnrollmentStudent = null
+                    }
+                },
+                title = { Text("Teacher Confirmation (D-001)", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            "Confirm student identity:\n${student.name} (${student.rollNumber})\n\nEnter Teacher PIN to authorize face enrollment:",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        OutlinedTextField(
+                            value = pinInput,
+                            onValueChange = {
+                                pinInput = it.filter(Char::isDigit).take(12)
+                                pinErrorMsg = null
+                            },
+                            label = { Text("Teacher PIN") },
+                            visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                            singleLine = true,
+                            isError = pinErrorMsg != null,
+                            supportingText = { pinErrorMsg?.let { Text(it, color = MaterialTheme.colorScheme.error) } },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (pinInput.isBlank()) {
+                                pinErrorMsg = "PIN is required."
+                                return@Button
+                            }
+                            isVerifying = true
+                            scope.launch {
+                                val success = repository.authenticate(pinInput.toCharArray())
+                                isVerifying = false
+                                if (success) {
+                                    val grant = TeacherAuthorizationGrant(
+                                        sessionId = activeSessionId ?: 0L,
+                                        classId = classId,
+                                        studentId = student.id,
+                                        action = TeacherAuthAction.FIRST_ENROLLMENT,
+                                        interactionId = currentInteractionToken,
+                                        expiresAtMillis = System.currentTimeMillis() + 120_000L,
+                                    )
+                                    showTeacherConfirmDialog = false
+                                    pendingEnrollmentStudent = null
+                                    startInlineEnrollment(student, grant)
+                                } else {
+                                    pinErrorMsg = "Incorrect PIN. Try again."
+                                }
+                            }
+                        },
+                        enabled = !isVerifying
+                    ) {
+                        Text(if (isVerifying) "Verifying..." else "Authorize Enrollment")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showTeacherConfirmDialog = false
+                            pendingEnrollmentStudent = null
+                        },
+                        enabled = !isVerifying
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        // Teacher Assist PIN Dialog
+        if (showTeacherAssistPinDialog) {
+            AlertDialog(
+                onDismissRequest = {
+                    if (!isAuthenticatingAssist) {
+                        showTeacherAssistPinDialog = false
+                        teacherAssistPinInput = ""
+                        teacherAssistPinError = null
+                    }
+                },
+                title = { Text("Teacher Authorization", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("Enter Teacher PIN to unlock assisted check-in & profile repair:")
+                        OutlinedTextField(
+                            value = teacherAssistPinInput,
+                            onValueChange = {
+                                teacherAssistPinInput = it.filter(Char::isDigit).take(12)
+                                teacherAssistPinError = null
+                            },
+                            label = { Text("Teacher PIN") },
+                            visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                            singleLine = true,
+                            isError = teacherAssistPinError != null,
+                            supportingText = { teacherAssistPinError?.let { Text(it, color = MaterialTheme.colorScheme.error) } },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (teacherAssistPinInput.isBlank()) {
+                                teacherAssistPinError = "PIN is required."
+                                return@Button
+                            }
+                            isAuthenticatingAssist = true
+                            scope.launch {
+                                val success = repository.authenticate(teacherAssistPinInput.toCharArray())
+                                isAuthenticatingAssist = false
+                                if (success) {
+                                    showTeacherAssistPinDialog = false
+                                    teacherAssistPinInput = ""
+                                    showTeacherAssistDialog = true
+                                } else {
+                                    teacherAssistPinError = "Incorrect PIN. Try again."
+                                }
+                            }
+                        },
+                        enabled = !isAuthenticatingAssist
+                    ) {
+                        Text(if (isAuthenticatingAssist) "Verifying..." else "Authorize")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showTeacherAssistPinDialog = false
+                            teacherAssistPinInput = ""
+                            teacherAssistPinError = null
+                        },
+                        enabled = !isAuthenticatingAssist
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        // Teacher Assist Student Selection Dialog
+        if (showTeacherAssistDialog) {
+            val enrolledNotPresent = students.filter {
+                (it.enrollmentStatus == EnrollmentStatus.ENROLLED || it.enrollmentStatus == EnrollmentStatus.REENROLL_REQUIRED) &&
+                    it.id !in presentIds
+            }
+
+            AlertDialog(
+                onDismissRequest = { showTeacherAssistDialog = false },
+                title = { Text("Teacher Assisted Check-in", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column(modifier = Modifier.fillMaxWidth().height(300.dp)) {
+                        Text("Select student to mark present or repair profile:", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        if (enrolledNotPresent.isEmpty()) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("No pending enrolled students.", color = Color.Gray)
+                            }
+                        } else {
+                            LazyColumn(
+                                verticalArrangement = Arrangement.spacedBy(6.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(enrolledNotPresent, key = { it.id }) { student ->
+                                    val isReenroll = student.enrollmentStatus == EnrollmentStatus.REENROLL_REQUIRED
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Color.White.copy(alpha = 0.05f))
+                                            .clickable {
+                                                val grant = TeacherAuthorizationGrant(
+                                                    sessionId = activeSessionId ?: 0L,
+                                                    classId = classId,
+                                                    studentId = student.id,
+                                                    action = if (isReenroll) TeacherAuthAction.RE_ENROLLMENT
+                                                             else TeacherAuthAction.TEACHER_ASSISTED_CHECKIN,
+                                                    interactionId = currentInteractionToken,
+                                                    expiresAtMillis = System.currentTimeMillis() + 120_000L,
+                                                )
+                                                showTeacherAssistDialog = false
+                                                if (isReenroll) {
+                                                    startInlineEnrollment(student, grant)
+                                                } else {
+                                                    markTeacherAssistedPresent(student, grant)
+                                                }
+                                            }
+                                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(student.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                                            Text(
+                                                if (isReenroll) "${student.rollNumber} • [Re-Enroll Required]" else student.rollNumber,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = if (isReenroll) MaterialTheme.colorScheme.error else Color.Gray
+                                            )
+                                        }
+                                        Text(
+                                            if (isReenroll) "Repair" else "Mark Present",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {},
+                dismissButton = {
+                    TextButton(onClick = { showTeacherAssistDialog = false }) {
+                        Text("Close")
                     }
                 }
             )
@@ -1308,19 +1741,16 @@ fun AttendanceScreen(
                                 if (success) {
                                     showPinDialog = false
                                     teacherPinInput = ""
-                                    // Per LLD-13 end order: finalize attendance  ->  clear cache  ->  stopLockTask()
-                                    // Stop lock task BEFORE calling onEndSession so the app unpins properly.
-                                    try {
-                                        lockTaskController?.stop()
-                                        isScreenPinned = false
-                                        Log.d(TAG, "Screen pinning stopped on teacher auth success")
-                                    } catch (e: Exception) {
-                                        Log.w(TAG, "stopLockTask failed: ${e.message}")
-                                        // Continue  —  don't block session end if unpin fails
-                                    }
                                     if (presentIds.isEmpty()) {
                                         showZeroConfirmDialog = true
                                     } else {
+                                        try {
+                                            lockTaskController?.stop()
+                                            isScreenPinned = false
+                                            Log.d(TAG, "Screen pinning stopped on session exit")
+                                        } catch (e: Exception) {
+                                            Log.w(TAG, "stopLockTask failed: ${e.message}")
+                                        }
                                         onEndSession(presentIds)
                                     }
                                 } else {
@@ -1377,7 +1807,13 @@ fun AttendanceScreen(
                         Button(
                             onClick = {
                                 showZeroConfirmDialog = false
-                                onEndSession(emptySet())
+                                scope.launch {
+                                    try {
+                                        lockTaskController?.stop()
+                                        isScreenPinned = false
+                                    } catch (_: Exception) {}
+                                    onEndSession(emptySet())
+                                }
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -1386,7 +1822,13 @@ fun AttendanceScreen(
                         OutlinedButton(
                             onClick = {
                                 showZeroConfirmDialog = false
-                                onDiscardSession()
+                                scope.launch {
+                                    try {
+                                        lockTaskController?.stop()
+                                        isScreenPinned = false
+                                    } catch (_: Exception) {}
+                                    onDiscardSession()
+                                }
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
