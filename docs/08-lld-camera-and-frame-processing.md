@@ -23,15 +23,13 @@ The attendance screen owns a lifecycle-aware `CameraController`; the session coo
 ## Pipeline
 
 1. Bind front camera only when session state permits acquisition.
-2. Analyze latest frame using ML Kit detection/tracking at a device-tested analysis resolution.
+2. Analyze latest frame using on-device `YOLOv8n-face` (`yolov8n_face.tflite`) TFLite detector.
 3. Reject zero-face frames (emptySignals, null crop) and multiple-face frames (multipleSignals, null crop) explicitly before passing to quality gate.
-4. For exactly one detected face: pass detection data and **face-cropped bitmap** (20% margin via `cropFaceFromBitmap()`) to LLD-09 quality gate.
+4. For exactly one detected face: extract 5 facial landmarks and landmark-derived pose angles, then generate a canonical 112×112 **ArcFace similarity-aligned bitmap** (`FaceAligner.align()`) to pass downstream.
 5. CandidateSelector accepts at most one useful candidate per configurable minimum interval and never starts a second expensive pipeline while one attempt is running.
 6. Close original frame immediately; downstream copies expire on attempt cancellation.
 
-**Critical invariant (implemented 2026-08-23):** The `onFrameAnalyzed` callback second parameter is the **face-cropped bitmap** when exactly one face is detected, `null` otherwise. The full camera frame is NEVER passed downstream — the face region occupies <5% of a typical 640×480 frame, which would produce garbage TFLite embeddings if the full frame were used.
-
-`cropFaceFromBitmap(bitmap, box, marginFraction=0.20)` in `CameraPreview.kt` is the authoritative central crop utility per LLD-08 spec: "rotation, mirror transform, crop, color-space conversion are central utilities with golden tests." Do not crop differently in each ML adapter.
+**Critical invariant (updated 2026-10-02):** The `onFrameAnalyzed` callback second parameter is the **112×112 ArcFace aligned face bitmap** (`FaceAligner.align(bitmap, primaryFace.landmarks)`) when exactly one face is detected, `null` otherwise. The full camera frame is NEVER passed downstream. 5-point similarity alignment normalizes roll tilt, eye line horizon, and scale.
 
 ## Lifecycle/error behavior
 

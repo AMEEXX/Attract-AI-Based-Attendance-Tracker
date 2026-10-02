@@ -1,4 +1,4 @@
-﻿package com.attract.attendance.acceptance
+package com.attract.attendance.acceptance
 
 import android.content.Context
 import androidx.room.Room
@@ -26,10 +26,8 @@ import com.attract.attendance.domain.face.QualityResult
 import com.attract.attendance.domain.face.RecognitionDecisionEngine
 import com.attract.attendance.domain.face.StudentTemplatePair
 import com.attract.attendance.domain.face.TemplateCompatibility
-import com.google.android.gms.tasks.Tasks
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.face.FaceDetection
-import com.google.mlkit.vision.face.FaceDetectorOptions
+import com.attract.attendance.domain.face.FaceAligner
+import com.attract.attendance.domain.face.YoloFaceDetector
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -111,31 +109,20 @@ class FullWorkflowAcceptanceTest {
         val bitmap = android.graphics.BitmapFactory.decodeStream(am.open("test-data/lfw-bench/$assetRelative"))
         assertNotNull(bitmap)
         try {
-            val options = FaceDetectorOptions.Builder()
-                .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
-                .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
-                .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
-                .build()
-            val detector = FaceDetection.getClient(options)
-            val faces = Tasks.await(detector.process(InputImage.fromBitmap(bitmap, 0)))
-            detector.close()
-            val filtered = faces.filter { f ->
-                val b = f.boundingBox
-                b.left > 2 && b.right < bitmap.width - 2 && b.width() >= bitmap.width * 0.20
-            }
-            val face = (if (filtered.isNotEmpty()) filtered else faces).firstOrNull() ?: return null
+            val faces = YoloFaceDetector.detect(context, bitmap)
+            val face = faces.maxByOrNull { it.confidence } ?: return null
             val box = face.boundingBox
             val cfg = FaceQualityConfig.calibrationDefaults()
             val signals = com.attract.attendance.domain.face.FaceQualitySignals(
-                faceCount = 1,
-                yawDegrees = face.headEulerAngleY,
-                pitchDegrees = face.headEulerAngleX,
-                rollDegrees = face.headEulerAngleZ,
-                leftEyeOpenProbability = face.leftEyeOpenProbability ?: 1f,
-                rightEyeOpenProbability = face.rightEyeOpenProbability ?: 1f,
-                faceRatio = (box.width().toFloat() * box.height()) / (bitmap.width * bitmap.height),
-                centerX = box.centerX().toFloat() / bitmap.width,
-                centerY = box.centerY().toFloat() / bitmap.height,
+                faceCount = faces.size,
+                yawDegrees = face.estimatedYaw,
+                pitchDegrees = face.estimatedPitch,
+                rollDegrees = face.estimatedRoll,
+                leftEyeOpenProbability = 1f,
+                rightEyeOpenProbability = 1f,
+                faceRatio = face.faceRatio,
+                centerX = face.centerX,
+                centerY = face.centerY,
                 blurVariance = laplacian(bitmap, box),
                 brightness = brightness(bitmap, box),
             )
@@ -145,8 +132,8 @@ class FullWorkflowAcceptanceTest {
                 println("[ACCEPTANCE] frame $assetRelative rejected: quality=${quality::class.simpleName}")
                 return null
             }
-            val crop = EmbeddingEngine.cropFaceForEmbedding(bitmap, box, 0.20f)
-            val embedding = EmbeddingEngine.extractEmbedding(context, crop)
+            val alignedFace = FaceAligner.align(bitmap, face.landmarks)
+            val embedding = EmbeddingEngine.extractEmbedding(context, alignedFace)
             assertEquals(TemplateCompatibility.CURRENT_EMBEDDING_DIM, embedding.size)
             return FrameObservation(
                 signals = signals,
@@ -357,9 +344,9 @@ class FullWorkflowAcceptanceTest {
         // Re-enrollment replaces it with current format:
         enrollReal(dId, bobAssets.reversed())
         val dTemplates = database.faceTemplateDao().forStudent(dId)
-        assertTrue(dTemplates.all { it.embeddingDim == 192 && it.modelVersion == TemplateCompatibility.CURRENT_MODEL_ID })
+        assertTrue(dTemplates.all { it.embeddingDim == TemplateCompatibility.CURRENT_EMBEDDING_DIM && it.modelVersion == TemplateCompatibility.CURRENT_MODEL_ID })
         assertEquals(0, repository.retireIncompatibleTemplates(classId).deactivatedTemplates)
-        println("[ACCEPTANCE] PHASE 14 OK: 32-D retired â†’ re-enrollment stored 192-D ${TemplateCompatibility.CURRENT_MODEL_ID}")
+        println("[ACCEPTANCE] PHASE 14 OK: 32-D retired → re-enrollment stored ${TemplateCompatibility.CURRENT_EMBEDDING_DIM}-D ${TemplateCompatibility.CURRENT_MODEL_ID}")
 
         // ---------------- PHASE 15: adaptive 1â†’2â†’3 real-flow variants ---------------
         // B: frame-1 uncertain â†’ frame-2 resolves.

@@ -1,11 +1,8 @@
-﻿package com.attract.attendance.domain.face
+package com.attract.attendance.domain.face
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.google.android.gms.tasks.Tasks
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.face.FaceDetection
-import com.google.mlkit.vision.face.FaceDetectorOptions
+
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -62,13 +59,6 @@ class AdaptiveStrategyBenchmarkTest {
         assertTrue("bench assets missing", manifest.isNotEmpty())
 
         // ---------------- PHASE 1: pipeline over all images (same as LfwThreeFrameBenchmarkTest) ----------------
-        val detectorOptions = FaceDetectorOptions.Builder()
-            .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
-            .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
-            .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
-            .build()
-        val detector = FaceDetection.getClient(detectorOptions)
-
         val images = mutableListOf<BenchImage>()
         manifest.forEachIndexed { idx, row ->
             val identity = row[0]
@@ -77,27 +67,22 @@ class AdaptiveStrategyBenchmarkTest {
                 android.graphics.BitmapFactory.decodeStream(assetManager.open("$benchDir/$identity/$fileName"))
             } catch (_: Exception) { null } ?: return@forEachIndexed
             try {
-                val faces = Tasks.await(detector.process(InputImage.fromBitmap(bitmap, 0)))
-                val filtered = faces.filter { f ->
-                    val b = f.boundingBox
-                    b.left > 2 && b.right < bitmap.width - 2 && b.width() >= bitmap.width * 0.20
-                }
-                val active = if (filtered.isNotEmpty()) filtered else faces
-                if (active.size != 1) return@forEachIndexed
-                val f = active[0]
+                val faces = YoloFaceDetector.detect(appContext, bitmap)
+                if (faces.size != 1) return@forEachIndexed
+                val f = faces[0]
                 val box = f.boundingBox
-                val yaw = f.headEulerAngleY
-                val pitch = f.headEulerAngleX
+                val yaw = f.estimatedYaw
+                val pitch = f.estimatedPitch
                 val signals = FaceQualitySignals(
                     faceCount = 1,
                     yawDegrees = yaw,
                     pitchDegrees = pitch,
-                    rollDegrees = f.headEulerAngleZ,
-                    leftEyeOpenProbability = f.leftEyeOpenProbability ?: 1f,
-                    rightEyeOpenProbability = f.rightEyeOpenProbability ?: 1f,
-                    faceRatio = (box.width().toFloat() * box.height()) / (bitmap.width * bitmap.height),
-                    centerX = box.centerX().toFloat() / bitmap.width,
-                    centerY = box.centerY().toFloat() / bitmap.height,
+                    rollDegrees = f.estimatedRoll,
+                    leftEyeOpenProbability = 1f,
+                    rightEyeOpenProbability = 1f,
+                    faceRatio = f.faceRatio,
+                    centerX = f.centerX,
+                    centerY = f.centerY,
                     blurVariance = laplacianVariance(bitmap, box),
                     brightness = brightness(bitmap, box),
                 )
@@ -119,8 +104,8 @@ class AdaptiveStrategyBenchmarkTest {
                 var embedding: FloatArray? = null
                 if (quality is QualityResult.Accepted && liveness is LivenessResult.Passed) {
                     embedding = try {
-                        val crop = EmbeddingEngine.cropFaceForEmbedding(bitmap, box, 0.20f)
-                        EmbeddingEngine.extractEmbedding(appContext, crop)
+                        val alignedFace = FaceAligner.align(bitmap, f.landmarks)
+                        EmbeddingEngine.extractEmbedding(appContext, alignedFace)
                     } catch (_: Exception) { null }
                 }
                 images.add(BenchImage(identity, fileName, FrameObservation(signals, quality, liveness, embedding), poseBin))
@@ -129,7 +114,6 @@ class AdaptiveStrategyBenchmarkTest {
             }
             if ((idx + 1) % 200 == 0) println("[ADAPTIVE_BENCH] phase1 $idx/${manifest.size}")
         }
-        detector.close()
 
         val rng = Random(20260825L)
         val byIdentity = images.groupBy { it.identity }

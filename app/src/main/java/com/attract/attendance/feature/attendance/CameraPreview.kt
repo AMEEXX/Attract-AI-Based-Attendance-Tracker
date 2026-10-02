@@ -21,11 +21,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.attract.attendance.domain.face.FaceAligner
 import com.attract.attendance.domain.face.FaceQualitySignals
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.face.Face
-import com.google.mlkit.vision.face.FaceDetection
-import com.google.mlkit.vision.face.FaceDetectorOptions
+import com.attract.attendance.domain.face.YoloFaceDetector
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.Executors
 
@@ -60,14 +58,6 @@ fun CameraPreview(
         val mainExecutor = ContextCompat.getMainExecutor(context)
         val analysisExecutor = Executors.newSingleThreadExecutor()
 
-        val faceDetectorOptions = FaceDetectorOptions.Builder()
-            .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
-            .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
-            .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
-            .setMinFaceSize(0.15f)
-            .build()
-
-        val faceDetector = FaceDetection.getClient(faceDetectorOptions)
         var lastAnalyzedTimestampMs = 0L
 
         val imageAnalysis = ImageAnalysis.Builder()
@@ -82,144 +72,103 @@ fun CameraPreview(
             }
             lastAnalyzedTimestampMs = now
 
-            val mediaImage = imageProxy.image
-            if (mediaImage == null) {
+            val frameBitmap = toBitmap(imageProxy)
+            if (frameBitmap == null) {
                 imageProxy.close()
                 return@setAnalyzer
             }
 
-            val rotationDegrees = imageProxy.imageInfo.rotationDegrees
-            val inputImage = InputImage.fromMediaImage(mediaImage, rotationDegrees)
-            val frameWidth = imageProxy.width
-            val frameHeight = imageProxy.height
-
             try {
-                faceDetector.process(inputImage)
-                    .addOnSuccessListener { faces ->
-                        val faceCount = faces.size
-                        if (faceCount == 0) {
-                            val emptySignals = FaceQualitySignals(
-                                faceCount = 0,
-                                yawDegrees = 0f,
-                                pitchDegrees = 0f,
-                                rollDegrees = 0f,
-                                leftEyeOpenProbability = null,
-                                rightEyeOpenProbability = null,
-                                faceRatio = 0f,
-                                centerX = 0.5f,
-                                centerY = 0.5f,
-                                blurVariance = 0f,
-                                brightness = 0f
-                            )
-                            mainExecutor.execute {
-                                onFrameAnalyzed?.invoke(emptySignals, null)
-                            }
-                            return@addOnSuccessListener
-                        }
+                val detections = YoloFaceDetector.detect(context, frameBitmap)
+                val faceCount = detections.size
 
-                        // Multiple faces: signal but pass null crop — quality engine will reject
-                        if (faceCount > 1) {
-                            val multipleSignals = FaceQualitySignals(
-                                faceCount = faceCount,
-                                yawDegrees = 0f,
-                                pitchDegrees = 0f,
-                                rollDegrees = 0f,
-                                leftEyeOpenProbability = null,
-                                rightEyeOpenProbability = null,
-                                faceRatio = 0f,
-                                centerX = 0.5f,
-                                centerY = 0.5f,
-                                blurVariance = 0f,
-                                brightness = 0f
-                            )
-                            mainExecutor.execute {
-                                onFrameAnalyzed?.invoke(multipleSignals, null)
-                            }
-                            return@addOnSuccessListener
-                        }
-
-                        val primaryFace = faces[0]
-                        val box = primaryFace.boundingBox
-
-                        val frameBitmap = toBitmap(imageProxy)
-                        if (frameBitmap == null) {
-                            val errorSignals = FaceQualitySignals(
-                                faceCount = faceCount,
-                                yawDegrees = primaryFace.headEulerAngleY,
-                                pitchDegrees = primaryFace.headEulerAngleX,
-                                rollDegrees = primaryFace.headEulerAngleZ,
-                                leftEyeOpenProbability = primaryFace.leftEyeOpenProbability,
-                                rightEyeOpenProbability = primaryFace.rightEyeOpenProbability,
-                                faceRatio = 0f,
-                                centerX = 0.5f,
-                                centerY = 0.5f,
-                                blurVariance = 0f,
-                                brightness = 0f
-                            )
-                            mainExecutor.execute {
-                                onFrameAnalyzed?.invoke(errorSignals, null)
-                            }
-                            return@addOnSuccessListener
-                        }
-
-                        val isRotated = rotationDegrees == 90 || rotationDegrees == 270
-                        val rotatedWidth = if (isRotated) frameHeight else frameWidth
-                        val rotatedHeight = if (isRotated) frameWidth else frameHeight
-
-                        // Quality signals computed on full frame with bounding-box crop region
-                        val brightness = computeBitmapBrightness(frameBitmap, box)
-                        val blurVariance = computeBitmapLaplacianVariance(frameBitmap, box)
-
-                        val faceRatio = (box.width() * box.height()).toFloat() / (rotatedWidth * rotatedHeight).coerceAtLeast(1)
-                        val centerX = box.centerX().toFloat() / rotatedWidth.coerceAtLeast(1)
-                        val centerY = box.centerY().toFloat() / rotatedHeight.coerceAtLeast(1)
-
-                        val liveSignals = FaceQualitySignals(
-                            faceCount = faceCount,
-                            yawDegrees = primaryFace.headEulerAngleY,
-                            pitchDegrees = primaryFace.headEulerAngleX,
-                            rollDegrees = primaryFace.headEulerAngleZ,
-                            leftEyeOpenProbability = primaryFace.leftEyeOpenProbability,
-                            rightEyeOpenProbability = primaryFace.rightEyeOpenProbability,
-                            faceRatio = faceRatio,
-                            centerX = centerX,
-                            centerY = centerY,
-                            blurVariance = blurVariance,
-                            brightness = brightness
-                        )
-
-                        // Per LLD-08: pass face-cropped bitmap only (not full frame).
-                        // The crop (20% margin) ensures TFLite receives the face region,
-                        // not the full camera frame. Full frame caused near-zero embedding
-                        // quality because the face occupied <5% of image pixels.
-                        val faceCrop = cropFaceFromBitmap(frameBitmap, box, marginFraction = 0.20f)
-
-                        mainExecutor.execute {
-                            onFrameAnalyzed?.invoke(liveSignals, faceCrop)
-                        }
+                if (faceCount == 0) {
+                    val emptySignals = FaceQualitySignals(
+                        faceCount = 0,
+                        yawDegrees = 0f,
+                        pitchDegrees = 0f,
+                        rollDegrees = 0f,
+                        leftEyeOpenProbability = null,
+                        rightEyeOpenProbability = null,
+                        faceRatio = 0f,
+                        centerX = 0.5f,
+                        centerY = 0.5f,
+                        blurVariance = 0f,
+                        brightness = 0f
+                    )
+                    mainExecutor.execute {
+                        onFrameAnalyzed?.invoke(emptySignals, null)
                     }
-                    .addOnFailureListener {
-                        val errorSignals = FaceQualitySignals(
-                            faceCount = 0,
-                            yawDegrees = 0f,
-                            pitchDegrees = 0f,
-                            rollDegrees = 0f,
-                            leftEyeOpenProbability = 0f,
-                            rightEyeOpenProbability = 0f,
-                            faceRatio = 0f,
-                            centerX = 0.5f,
-                            centerY = 0.5f,
-                            blurVariance = 0f,
-                            brightness = 0f
-                        )
-                        mainExecutor.execute {
-                            onFrameAnalyzed?.invoke(errorSignals, null)
-                        }
+                    return@setAnalyzer
+                }
+
+                // Multiple faces: signal but pass null crop — quality engine will reject
+                if (faceCount > 1) {
+                    val multipleSignals = FaceQualitySignals(
+                        faceCount = faceCount,
+                        yawDegrees = 0f,
+                        pitchDegrees = 0f,
+                        rollDegrees = 0f,
+                        leftEyeOpenProbability = null,
+                        rightEyeOpenProbability = null,
+                        faceRatio = 0f,
+                        centerX = 0.5f,
+                        centerY = 0.5f,
+                        blurVariance = 0f,
+                        brightness = 0f
+                    )
+                    mainExecutor.execute {
+                        onFrameAnalyzed?.invoke(multipleSignals, null)
                     }
-                    .addOnCompleteListener {
-                        imageProxy.close()
-                    }
+                    return@setAnalyzer
+                }
+
+                val primaryFace = detections[0]
+                val box = primaryFace.boundingBox
+
+                // Quality signals computed on full frame with bounding-box region
+                val brightness = computeBitmapBrightness(frameBitmap, box)
+                val blurVariance = computeBitmapLaplacianVariance(frameBitmap, box)
+
+                val liveSignals = FaceQualitySignals(
+                    faceCount = 1,
+                    yawDegrees = primaryFace.estimatedYaw,
+                    pitchDegrees = primaryFace.estimatedPitch,
+                    rollDegrees = primaryFace.estimatedRoll,
+                    leftEyeOpenProbability = 1.0f, // Unavailable from YOLO, treated as open per LLD-09
+                    rightEyeOpenProbability = 1.0f,
+                    faceRatio = primaryFace.faceRatio,
+                    centerX = primaryFace.centerX,
+                    centerY = primaryFace.centerY,
+                    blurVariance = blurVariance,
+                    brightness = brightness
+                )
+
+                // FaceAligner produces 112x112 canonical ArcFace aligned face bitmap
+                val alignedFace = FaceAligner.align(frameBitmap, primaryFace.landmarks)
+
+                mainExecutor.execute {
+                    onFrameAnalyzed?.invoke(liveSignals, alignedFace)
+                }
             } catch (e: Exception) {
+                android.util.Log.e("CameraPreview", "YOLO frame analysis error: ${e.message}", e)
+                val errorSignals = FaceQualitySignals(
+                    faceCount = 0,
+                    yawDegrees = 0f,
+                    pitchDegrees = 0f,
+                    rollDegrees = 0f,
+                    leftEyeOpenProbability = 0f,
+                    rightEyeOpenProbability = 0f,
+                    faceRatio = 0f,
+                    centerX = 0.5f,
+                    centerY = 0.5f,
+                    blurVariance = 0f,
+                    brightness = 0f
+                )
+                mainExecutor.execute {
+                    onFrameAnalyzed?.invoke(errorSignals, null)
+                }
+            } finally {
                 imageProxy.close()
             }
         }
@@ -257,7 +206,6 @@ fun CameraPreview(
 
         onDispose {
             try {
-                faceDetector.close()
                 analysisExecutor.shutdown()
                 val cameraProvider = cameraProviderFuture.get()
                 cameraProvider.unbindAll()

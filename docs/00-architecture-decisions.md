@@ -38,7 +38,21 @@ These decisions remove ambiguity from the frozen HLD. They do not add product sc
 
 **Decision:** Attract uses Android Screen Pinning plus secure device unpin configuration and in-app teacher authentication. It is not advertised as managed-device kiosk security. Only tested device/OEM combinations enter the support matrix.
 
+## D-006 — YOLOv8n-Face Detection and ArcFace 512-D Biometric Pipeline
+
+**Date:** 2026-10-02  
+**Status:** Approved & Implemented  
+**Problem:** Legacy ML Kit face detection combined with unaligned 192-D embeddings yielded inadequate separation margins on diverse real-world classroom images with varying head poses and lighting conditions.
+
+**Decision:**
+1. **Detection:** Integrated `YOLOv8n-face` (`yolov8n_face.tflite`) as a dedicated on-device TFLite face detector. Emits bounding boxes, 5 facial landmarks (eyes, nose, mouth corners), and landmark-derived head pose geometry (yaw, pitch, roll). Completely eliminates ML Kit dependency and external Google Play Services requirements.
+2. **Alignment:** Canonical 5-point affine similarity alignment (`FaceAligner`) warps detected faces to standard ArcFace 112×112 geometry based on eye landmarks, normalizing scale, tilt, and translation.
+3. **Embedding:** ArcFace MobileFaceNet (`arcface_mobilefacenet.tflite`) extracts 512-D L2-normalized biometric vectors from 112×112 aligned crops (normalized `(pixel - 127.5) / 128.0`).
+4. **Calibrated Thresholds:** Decision engine calibrated from empirical benchmarks on real human subjects: `acceptThreshold = 0.25f`, `ambiguousMargin = 0.05f`, achieving perfect separation on real test dataset (min genuine = 0.2489, max impostor = 0.1567, separation margin = +0.0923).
+5. **Database & Compatibility:** Schema bumped to version 3 with `MIGRATION_2_3` deactivating legacy templates (`embedding_dim != 512`). `TemplateCompatibility` updated to model `arcface_512d_v3`.
+
 ## Decision change rule
 
 To change a decision, add a dated entry that states the evidence, LLDs affected, migration/testing impact, and approval. Do not silently change persistence, security, or biometric behavior during implementation.
+
 

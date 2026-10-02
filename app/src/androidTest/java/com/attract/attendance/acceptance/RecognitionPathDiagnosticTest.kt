@@ -1,4 +1,4 @@
-﻿package com.attract.attendance.acceptance
+package com.attract.attendance.acceptance
 
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -22,13 +22,11 @@ import com.attract.attendance.domain.face.LivenessEngine
 import com.attract.attendance.domain.face.EmbeddingEngine
 import com.attract.attendance.domain.face.PresentationAttackSignals
 import com.attract.attendance.domain.face.QualityResult
+import com.attract.attendance.domain.face.FaceAligner
 import com.attract.attendance.domain.face.RecognitionDecisionEngine
 import com.attract.attendance.domain.face.StudentTemplatePair
 import com.attract.attendance.domain.face.TemplateCompatibility
-import com.google.android.gms.tasks.Tasks
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.face.FaceDetection
-import com.google.mlkit.vision.face.FaceDetectorOptions
+import com.attract.attendance.domain.face.YoloFaceDetector
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -250,31 +248,20 @@ class RecognitionPathDiagnosticTest {
             android.graphics.BitmapFactory.decodeStream(am.open(pathInAssets))
         } catch (_: Exception) { null } ?: return null
         try {
-            val options = FaceDetectorOptions.Builder()
-                .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
-                .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
-                .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
-                .build()
-            val detector = FaceDetection.getClient(options)
-            val faces = Tasks.await(detector.process(InputImage.fromBitmap(bitmap, 0)))
-            detector.close()
-            val filtered = faces.filter { f ->
-                val b = f.boundingBox
-                b.left > 2 && b.right < bitmap.width - 2 && b.width() >= bitmap.width * 0.20
-            }
-            val face = (if (filtered.isNotEmpty()) filtered else faces).firstOrNull() ?: return null
+            val faces = YoloFaceDetector.detect(context, bitmap)
+            val face = faces.maxByOrNull { it.confidence } ?: return null
             val box = face.boundingBox
             val cfg = FaceQualityConfig.calibrationDefaults()
             val signals = com.attract.attendance.domain.face.FaceQualitySignals(
-                faceCount = 1,
-                yawDegrees = face.headEulerAngleY,
-                pitchDegrees = face.headEulerAngleX,
-                rollDegrees = face.headEulerAngleZ,
-                leftEyeOpenProbability = face.leftEyeOpenProbability ?: 1f,
-                rightEyeOpenProbability = face.rightEyeOpenProbability ?: 1f,
-                faceRatio = (box.width().toFloat() * box.height()) / (bitmap.width * bitmap.height),
-                centerX = box.centerX().toFloat() / bitmap.width,
-                centerY = box.centerY().toFloat() / bitmap.height,
+                faceCount = faces.size,
+                yawDegrees = face.estimatedYaw,
+                pitchDegrees = face.estimatedPitch,
+                rollDegrees = face.estimatedRoll,
+                leftEyeOpenProbability = 1f,
+                rightEyeOpenProbability = 1f,
+                faceRatio = face.faceRatio,
+                centerX = face.centerX,
+                centerY = face.centerY,
                 blurVariance = lap(bitmap, box),
                 brightness = bright(bitmap, box),
             )
@@ -284,8 +271,8 @@ class RecognitionPathDiagnosticTest {
                 println("[DIAG] $pathInAssets rejected: Q=${quality::class.simpleName}")
                 return null
             }
-            val crop = EmbeddingEngine.cropFaceForEmbedding(bitmap, box, 0.20f)
-            val emb = EmbeddingEngine.extractEmbedding(context, crop)
+            val alignedFace = FaceAligner.align(bitmap, face.landmarks)
+            val emb = EmbeddingEngine.extractEmbedding(context, alignedFace)
             return FrameObservation(signals, quality, liveness, emb)
         } finally { bitmap.recycle() }
     }

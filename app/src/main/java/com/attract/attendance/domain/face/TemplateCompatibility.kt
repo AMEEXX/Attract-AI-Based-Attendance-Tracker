@@ -19,13 +19,12 @@ package com.attract.attendance.domain.face
 object TemplateCompatibility {
 
     /** Dimensionality produced by the current production model profile. */
-    val CURRENT_EMBEDDING_DIM: Int = EmbeddingEngine.EMBEDDING_SIZE // 192
+    val CURRENT_EMBEDDING_DIM: Int = EmbeddingEngine.EMBEDDING_SIZE // 512
 
     /**
-     * Distinguishes model profiles. "v1" historically covered two different models
-     * (32-D prototype and the 192-D MobileFaceNet), so the id now encodes dimension.
+     * Distinguishes model profiles. Encodes model name and dimension.
      */
-    const val CURRENT_MODEL_ID = "mobilefacenet_192d_v2"
+    const val CURRENT_MODEL_ID = "arcface_512d_v3"
 
     data class ModelProfile(val modelId: String, val embeddingDim: Int)
 

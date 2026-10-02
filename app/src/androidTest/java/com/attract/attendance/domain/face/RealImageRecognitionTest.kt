@@ -62,7 +62,7 @@ class RealImageRecognitionTest {
             // Pass real image Bitmap through MobileFaceNet TFLite pipeline
             val embedding = EmbeddingEngine.extractEmbedding(context, bitmap)
             assertNotNull(embedding)
-            assertEquals(192, embedding.size)
+            assertEquals(TemplateCompatibility.CURRENT_EMBEDDING_DIM, embedding.size)
 
             // Verify L2 normalization magnitude
             var normSquare = 0.0f

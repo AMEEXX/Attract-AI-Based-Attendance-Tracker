@@ -1,7 +1,7 @@
-﻿# LLD-06 â€” Live Attendance Session Engine
+﻿# LLD-06  —  Live Attendance Session Engine
 
-**Status:** Draft â€” ready for review and freeze  
-**Requirements source:** SDD Â§Â§6â€“8, 13â€“15, 28â€“40, 58â€“59  
+**Status:** Draft  —  ready for review and freeze  
+**Requirements source:** SDD §§6–8, 13–15, 28–40, 58–59  
 **Depends on:** LLD-01, LLD-02, LLD-05, LLD-13
 
 ## Goal
@@ -11,12 +11,12 @@ Coordinate one pinned face-attendance session as a deterministic state machine. 
 ## State machine
 
 ```text
-Initializing â†’ Ready â†’ Acquiring â†’ QualityChecking â†’ LivenessChecking â†’ Recognizing
-       â†‘          â†‘          â†“             â†“                 â†“              â†“
-       â””â”€â”€ Error/Retry â† Feedback â† retryable result â† retryable result â† accepted/unknown
-Recognizing â†’ PersistingPresent â†’ SuccessFeedback â†’ Ready
-Recognizing â†’ EnrollmentRequest | TeacherAssistance | Ready
-Any active state â†’ Ending â†’ Ended
+Initializing  →  Ready  →  Acquiring  →  QualityChecking  →  LivenessChecking  →  Recognizing
+       ↑          ↑          ↓             ↓                 ↓              ↓
+       └── Error/Retry ← Feedback ← retryable result ← retryable result ← accepted/unknown
+Recognizing  →  PersistingPresent  →  SuccessFeedback  →  Ready
+Recognizing  →  EnrollmentRequest | TeacherAssistance | Ready
+Any active state  →  Ending  →  Ended
 ```
 
 Each state carries `sessionId`, a monotonic `attemptId`, and render-safe message IDs. Increment attempt ID on Check In, cancellation, or exit from acquisition. Any callback with a non-current attempt ID is discarded. This stops a late inference from marking the next student's attendance.
@@ -29,18 +29,18 @@ Heavy child jobs belong to their attempt and are cancelled before state exit. A 
 
 ## Start, decision, and end rules
 
-Start: validate prerequisites â†’ create ACTIVE session â†’ replace root graph â†’ acquire pinning â†’ load/decrypt class cache â†’ bind camera â†’ Ready. Do not expose Ready until dependencies are usable.
+Start: validate prerequisites  →  create ACTIVE session  →  replace root graph  →  acquire pinning  →  load/decrypt class cache  →  bind camera  →  Ready. Do not expose Ready until dependencies are usable.
 
 Map face outcomes:
-- `ACCEPTED` identity â†’ LLD-05 `RecordPresent` (`AttendanceSource.AI_RECOGNITION`);
-- `ALREADY_PRESENT` â†’ show feedback pill, maintain present set;
-- Quality/no/multiple face â†’ short guidance alert, return to Ready/Capturing;
-- `UNKNOWN` / `AMBIGUOUS` â†’ bounded retry, then route to `EnrollmentRequest` / `UNKNOWN_STUDENT` with "Select ID to Enroll" action;
-- Face-engine unavailable / error â†’ safe `Error` state, teacher assist/manual fallback.
+- `ACCEPTED` identity  →  LLD-05 `RecordPresent` (`AttendanceSource.AI_RECOGNITION`);
+- `ALREADY_PRESENT`  →  show feedback pill, maintain present set;
+- Quality/no/multiple face  →  short guidance alert, return to Ready/Capturing;
+- `UNKNOWN` / `AMBIGUOUS`  →  bounded retry, then route to `EnrollmentRequest` / `UNKNOWN_STUDENT` with "Select ID to Enroll" action;
+- Face-engine unavailable / error  →  safe `Error` state, teacher assist/manual fallback.
 
 End / Discard:
-- On Save & Exit: authenticate PIN â†’ finalize ABSENT for un-marked eligible students â†’ mark `ENDED` â†’ clear memory cache â†’ stop lock task.
-- On Discard & Exit: authenticate PIN â†’ mark `ABORTED` (0 attendance records written) â†’ clear memory cache â†’ stop lock task.
+- On Save & Exit: authenticate PIN  →  finalize ABSENT for un-marked eligible students  →  mark `ENDED`  →  clear memory cache  →  stop lock task.
+- On Discard & Exit: authenticate PIN  →  mark `ABORTED` (0 attendance records written)  →  clear memory cache  →  stop lock task.
 - On Cancel: dismiss dialog, maintain active session in camera mode without calling `stopLockTask()`.
 
 ## Build order
@@ -48,7 +48,7 @@ End / Discard:
 1. Write sealed states/events and exhaustive reducer tests with fake dependencies.
 2. Add attempt token/cancellation tests.
 3. Connect start/end/persistence/navigation.
-4. Attach LLD-08â€“12 adapters as event sources only.
+4. Attach LLD-08–12 adapters as event sources only.
 
 ## Tests
 

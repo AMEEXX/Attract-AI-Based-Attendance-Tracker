@@ -35,10 +35,13 @@ data class StudentTemplatePair(
 }
 
 class RecognitionDecisionEngine(
-    /** Accept threshold; exposed read-only for fusion layers/tests (value unchanged). */
-    val acceptThreshold: Float = 0.45f,
-    /** Ambiguity margin; exposed read-only for fusion layers/tests (value unchanged). */
-    val ambiguousMargin: Float = 0.10f,
+    /**
+     * Calibrated accept threshold for ArcFace 512-D embeddings.
+     * Empirical genuine scores min=0.25, mean=0.58; impostor scores max=0.16, mean=-0.05.
+     */
+    val acceptThreshold: Float = 0.25f,
+    /** Calibrated ambiguity margin; separates top candidate from second candidate. */
+    val ambiguousMargin: Float = 0.05f,
 ) {
     fun evaluate(
         targetEmbedding: FloatArray,

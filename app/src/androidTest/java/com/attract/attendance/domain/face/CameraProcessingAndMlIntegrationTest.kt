@@ -95,7 +95,7 @@ class CameraProcessingAndMlIntegrationTest {
         val embedding = EmbeddingEngine.extractEmbedding(context, faceCrop)
 
         assertNotNull(embedding)
-        assertEquals(192, embedding.size)
+        assertEquals(TemplateCompatibility.CURRENT_EMBEDDING_DIM, embedding.size)
 
         // Verify output is L2-normalized (magnitude close to 1.0)
         var magnitude = 0.0f
@@ -149,7 +149,7 @@ class CameraProcessingAndMlIntegrationTest {
         assertEquals(EnrollmentStatus.NOT_ENROLLED, originalStudent?.enrollmentStatus)
 
         // Setup dummy templates
-        val templateBytes = ByteArray(192 * 4) { 0x01.toByte() }
+        val templateBytes = ByteArray(TemplateCompatibility.CURRENT_EMBEDDING_DIM * 4) { 0x01.toByte() }
 
         // Success Path enrollment transaction
         val result = repository.enrollStudentFace(studentId, listOf(templateBytes))

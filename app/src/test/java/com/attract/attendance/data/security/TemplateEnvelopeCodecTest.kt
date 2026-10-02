@@ -53,24 +53,27 @@ class TemplateEnvelopeCodecTest {
     }
 
     private fun sampleFloats(): FloatArray {
-        val raw = FloatArray(192) { (it - 96f) / 192f }
+        val dim = com.attract.attendance.domain.face.EmbeddingEngine.EMBEDDING_SIZE
+        val raw = FloatArray(dim) { (it - dim / 2f) / dim.toFloat() }
         return com.attract.attendance.domain.face.EmbeddingEngine.l2Normalize(raw)
     }
 
     @Test
     fun encode_withCipher_producesAeadEnvelope() {
+        val dim = com.attract.attendance.domain.face.EmbeddingEngine.EMBEDDING_SIZE
         val (blob, version) = TemplateEnvelopeCodec.encode(XorCipher(), studentId = 5L, modelVersion = "v1", plaintextFloats = sampleFloats())
         assertEquals(TemplateEnvelopeCodec.CRYPTO_VERSION_AEAD, version)
-        assertEquals(1 + TemplateEnvelopeCodec.IV_SIZE_BYTES + 192 * 4 + 2, blob.size)
+        assertEquals(1 + TemplateEnvelopeCodec.IV_SIZE_BYTES + dim * 4 + 2, blob.size)
     }
 
     @Test
     fun roundTrip_withCipher_restoresNormalizedFloats() {
+        val dim = com.attract.attendance.domain.face.EmbeddingEngine.EMBEDDING_SIZE
         val original = sampleFloats()
         val (blob, version) = TemplateEnvelopeCodec.encode(XorCipher(), 5L, "v1", original)
         val decoded = TemplateEnvelopeCodec.decode(XorCipher(), 5L, "v1", blob, version)
         assertNotNull(decoded)
-        assertEquals(192, decoded!!.size)
+        assertEquals(dim, decoded!!.size)
         original.forEachIndexed { i, v -> assertEquals(v, decoded[i], 1e-6f) }
     }
 
@@ -106,10 +109,10 @@ class TemplateEnvelopeCodecTest {
 
     @Test
     fun decode_legacyPlaintextRow_stillReadableAfterUpgrade() {
-        // Rows written before encryption was wired remain readable.
+        val dim = com.attract.attendance.domain.face.EmbeddingEngine.EMBEDDING_SIZE
         val legacy = with(com.attract.attendance.domain.face.TemplateMatcher) { sampleFloats().toByteArray() }
         val decoded = TemplateEnvelopeCodec.decode(XorCipher(), 5L, "v1", legacy, TemplateEnvelopeCodec.CRYPTO_VERSION_PLAINTEXT)
         assertNotNull(decoded)
-        assertEquals(192, decoded!!.size)
+        assertEquals(dim, decoded!!.size)
     }
 }

@@ -7,10 +7,7 @@ import android.graphics.Rect
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.google.android.gms.tasks.Tasks
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.face.FaceDetection
-import com.google.mlkit.vision.face.FaceDetectorOptions
+
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -94,7 +91,8 @@ class LfwThreeFrameBenchmarkTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
-        assertTrue("TFLite model 'mobilefacenet.tflite' must be available", EmbeddingEngine.isAvailable(context))
+        assertTrue("TFLite model 'arcface_mobilefacenet.tflite' must be available", EmbeddingEngine.isAvailable(context))
+        assertTrue("TFLite model 'yolov8n_face.tflite' must be available", YoloFaceDetector.isAvailable(context))
     }
 
     // =========================================================================
@@ -118,13 +116,6 @@ class LfwThreeFrameBenchmarkTest {
         println("[LFW_BENCH] Using bench assets: $benchDir (${imagesManifest.size} images)")
 
         // ---------------- PHASE 1: PER-IMAGE PIPELINE ----------------
-        val detectorOptions = FaceDetectorOptions.Builder()
-            .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
-            .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
-            .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
-            .build()
-        val detector = FaceDetection.getClient(detectorOptions)
-
         val records = mutableListOf<ImageRecord>()
         var detectFailures = 0
         var multiFace = 0
@@ -151,33 +142,26 @@ class LfwThreeFrameBenchmarkTest {
                 return@forEachIndexed
             }
             try {
-                val faces = Tasks.await(detector.process(InputImage.fromBitmap(bitmap, 0)))
+                val faces = YoloFaceDetector.detect(context, bitmap)
                 rec.rawFaces = faces.size
-                // TEST-ONLY JPEG border-artefact filter (rationale in FullBiometricPipelineIntegrationTest KDoc);
-                // raw count always recorded above.
-                val filtered = faces.filter { f ->
-                    val b = f.boundingBox
-                    b.left > 2 && b.right < bitmap.width - 2 && b.width() >= bitmap.width * 0.20
-                }
-                val active = if (filtered.isNotEmpty()) filtered else faces
-                rec.usableFaces = active.size
-                if (active.size > 1) multiFace++
-                if (active.isEmpty()) {
+                rec.usableFaces = faces.size
+                if (faces.size > 1) multiFace++
+                if (faces.isEmpty()) {
                     rec.detectFailed = true
                     detectFailures++
                     records.add(rec)
                     return@forEachIndexed
                 }
-                val f = active[0]
+                val f = faces[0]
                 val box = f.boundingBox
-                rec.yaw = f.headEulerAngleY
-                rec.pitch = f.headEulerAngleX
-                rec.roll = f.headEulerAngleZ
-                rec.leftEye = f.leftEyeOpenProbability ?: 1.0f
-                rec.rightEye = f.rightEyeOpenProbability ?: 1.0f
-                rec.faceRatio = (box.width().toFloat() * box.height()) / (bitmap.width * bitmap.height)
-                rec.centerX = box.centerX().toFloat() / bitmap.width
-                rec.centerY = box.centerY().toFloat() / bitmap.height
+                rec.yaw = f.estimatedYaw
+                rec.pitch = f.estimatedPitch
+                rec.roll = f.estimatedRoll
+                rec.leftEye = 1.0f
+                rec.rightEye = 1.0f
+                rec.faceRatio = f.faceRatio
+                rec.centerX = f.centerX
+                rec.centerY = f.centerY
                 rec.blur = computeLaplacianVariance(bitmap, box)
                 rec.brightness = computeBrightness(bitmap, box)
 
@@ -207,17 +191,17 @@ class LfwThreeFrameBenchmarkTest {
                 if (!rec.livenessPassed) livenessRejects++
 
                 if (rec.qualityAccepted && rec.livenessPassed) {
-                    val crop = try {
-                        EmbeddingEngine.cropFaceForEmbedding(bitmap, box, marginFraction = 0.20f)
+                    val aligned = try {
+                        FaceAligner.align(bitmap, f.landmarks)
                     } catch (_: Exception) {
                         null
                     }
-                    if (crop == null || crop.width < 20 || crop.height < 20) {
+                    if (aligned == null) {
                         cropFailures++
                     } else {
                         rec.cropOk = true
                         try {
-                            val emb = EmbeddingEngine.extractEmbedding(context, crop)
+                            val emb = EmbeddingEngine.extractEmbedding(context, aligned)
                             rec.embedding = emb
                             rec.embeddingDim = emb.size
                             rec.l2Norm = kotlin.math.sqrt(emb.fold(0f) { acc, v -> acc + v * v })
@@ -234,7 +218,6 @@ class LfwThreeFrameBenchmarkTest {
                 println("[LFW_BENCH] progress ${idx + 1}/${imagesManifest.size} (${System.currentTimeMillis() - t0} ms)")
             }
         }
-        detector.close()
         val processed = records.count { !it.detectFailed }
         println("[LFW_BENCH] Phase1 done in ${System.currentTimeMillis() - t0} ms")
 

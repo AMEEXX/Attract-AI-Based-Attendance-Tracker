@@ -56,7 +56,7 @@ class SyntheticImageStressTest {
             // Pass through real MobileFaceNet TFLite pipeline
             val embedding = EmbeddingEngine.extractEmbedding(context, bitmap)
             assertNotNull(embedding)
-            assertEquals(192, embedding.size)
+            assertEquals(TemplateCompatibility.CURRENT_EMBEDDING_DIM, embedding.size)
 
             // Verify L2 normalization: magnitude must be ~1.0
             var normSquare = 0.0f

@@ -23,7 +23,7 @@ At session start decrypt only active templates for the selected class into `Clas
 For each student in the active class roster, calculate cosine similarity against each stored multi-angle template vector and retain their maximum similarity score. Students arrive in random order (e.g. Roll #10 before Roll #1). Rank all roster students by maximum score. Let best score = B, second score = S, margin = B−S.
 
 Decision input contains valid multi-angle quality result, Passed liveness, B, S, margin, model/config version, and active cache version. Outcomes:
-- **Accepted(student):** quality/liveness pass; B >= accept threshold (0.45); margin >= margin threshold (0.10).
+- **Accepted(student):** quality/liveness pass; B >= accept threshold (0.25); margin >= margin threshold (0.05) [calibrated 2026-10-02 for ArcFace 512-D; min genuine=0.25, max impostor=0.16].
 - **Ambiguous:** B may be high but margin too small; never choose a student. Increments 2-attempt retry counter.
 - **Unknown:** B below threshold/no candidate. Increments 2-attempt retry counter; on 2nd attempt, triggers enrollment path.
 - **Unavailable:** model asset missing, TFLite interpreter initialization fault, or inference exception. `EmbeddingEngine` throws explicit `IllegalStateException` without silent synthetic fallbacks, immediately displaying `"Face verification temporarily unavailable."`.

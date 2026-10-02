@@ -1,4 +1,4 @@
-﻿package com.attract.attendance.domain.face
+package com.attract.attendance.domain.face
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -31,13 +31,15 @@ class TemplateCompatibilityTest {
         embedding = vec(dim),
     )
 
+    private val currentDim = TemplateCompatibility.CURRENT_EMBEDDING_DIM
+
     // ------------------------------------------------------------------
-    // 1. 192-D query + 192-D template -> normal matching.
+    // 1. Current query + current template -> normal matching.
     // ------------------------------------------------------------------
     @Test
     fun `current query against current template produces normal match`() {
-        val query = vec(192)
-        val templates = listOf(template(1L, 192))
+        val query = vec(currentDim)
+        val templates = listOf(template(1L, currentDim))
         val partitioned = TemplateCompatibility.partition(templates)
 
         assertEquals(1, partitioned.usable.size)
@@ -49,17 +51,18 @@ class TemplateCompatibilityTest {
     }
 
     // ------------------------------------------------------------------
-    // 2. 192-D query + 32-D template -> safe rejection / re-enrollment required.
-    //    The 32-D vector must NEVER reach cosine similarity.
+    // 2. Current query + stale (32-D, 192-D) templates -> safe rejection / re-enrollment required.
     // ------------------------------------------------------------------
     @Test
     fun `stale 32D template is filtered out before similarity and yields unknown`() {
-        val query = vec(192)
+        val query = vec(currentDim)
         val stale32 = template(2L, 32)
+        val stale192 = template(3L, 192)
         assertEquals(TemplateCompatibility.VectorClass.STALE_DIMENSION, TemplateCompatibility.classify(stale32.embedding))
+        assertEquals(TemplateCompatibility.VectorClass.STALE_DIMENSION, TemplateCompatibility.classify(stale192.embedding))
 
-        val partitioned = TemplateCompatibility.partition(listOf(stale32))
-        assertTrue(partitioned.stale.size == 1 && partitioned.usable.isEmpty())
+        val partitioned = TemplateCompatibility.partition(listOf(stale32, stale192))
+        assertTrue(partitioned.stale.size == 2 && partitioned.usable.isEmpty())
 
         // Decision engine receives ONLY the usable set -> no crash, fail-closed
         // (NoTemplatesAvailable when nothing usable remains).
@@ -67,7 +70,7 @@ class TemplateCompatibilityTest {
         assertTrue(outcome is RecognitionOutcome.Unknown || outcome is RecognitionOutcome.NoTemplatesAvailable)
 
         // Even if a caller forgets to partition, the decision engine's own guard skips it.
-        val defensive = RecognitionDecisionEngine().evaluate(query, listOf(stale32))
+        val defensive = RecognitionDecisionEngine().evaluate(query, listOf(stale32, stale192))
         assertEquals(RecognitionOutcome.Unknown, defensive)
     }
 
@@ -76,14 +79,14 @@ class TemplateCompatibilityTest {
     // ------------------------------------------------------------------
     @Test
     fun `malformed vectors are classified malformed and rejected safely`() {
-        val nanVector = vec(192).also { it[5] = Float.NaN }
-        val infVector = vec(192).also { it[9] = Float.POSITIVE_INFINITY }
+        val nanVector = vec(currentDim).also { it[5] = Float.NaN }
+        val infVector = vec(currentDim).also { it[9] = Float.POSITIVE_INFINITY }
 
         assertEquals(TemplateCompatibility.VectorClass.MALFORMED, TemplateCompatibility.classify(nanVector))
         assertFalse(TemplateCompatibility.isUsableVector(nanVector))
         assertFalse(TemplateCompatibility.isUsableVector(infVector))
 
-        val outcome = RecognitionDecisionEngine().evaluate(nanVector, listOf(template(3L, 192)))
+        val outcome = RecognitionDecisionEngine().evaluate(nanVector, listOf(template(3L, currentDim)))
         assertEquals(RecognitionOutcome.Unknown, outcome)
 
         val enrollmentCheck = TemplateCompatibility.validateEnrollment(listOf(nanVector))
@@ -91,15 +94,15 @@ class TemplateCompatibilityTest {
     }
 
     // ------------------------------------------------------------------
-    // 4. Mixed 192-D and 32-D gallery -> incompatible ignored, current still matches.
+    // 4. Mixed current and stale gallery -> incompatible ignored, current still matches.
     // ------------------------------------------------------------------
     @Test
     fun `mixed dimension gallery ignores stale templates and matches with current ones`() {
-        val queryA = vec(192)
+        val queryA = vec(currentDim)
         val gallery = listOf(
-            template(1L, 192),   // enrolled under current model
-            template(2L, 32),    // stale prototype model
-            template(3L, 128),   // some other historical model
+            template(1L, currentDim),   // enrolled under current model
+            template(2L, 192),          // legacy mobilefacenet model
+            template(3L, 32),           // legacy prototype model
         )
         val partitioned = TemplateCompatibility.partition(gallery)
         assertEquals(listOf(1L), partitioned.usable.map { it.studentId })
@@ -121,11 +124,11 @@ class TemplateCompatibilityTest {
     // ------------------------------------------------------------------
     @Test
     fun `enrollment validation accepts only current-format observations`() {
-        val ok = TemplateCompatibility.validateEnrollment(listOf(vec(192), vec(192, seed = 2f)))
+        val ok = TemplateCompatibility.validateEnrollment(listOf(vec(currentDim), vec(currentDim, seed = 2f)))
         assertTrue(ok is TemplateCompatibility.EnrollmentValidation.Ok)
-        assertEquals(192, (ok as TemplateCompatibility.EnrollmentValidation.Ok).dim)
+        assertEquals(currentDim, (ok as TemplateCompatibility.EnrollmentValidation.Ok).dim)
 
-        val stale = TemplateCompatibility.validateEnrollment(listOf(vec(192), vec(32)))
+        val stale = TemplateCompatibility.validateEnrollment(listOf(vec(currentDim), vec(192)))
         assertTrue(stale is TemplateCompatibility.EnrollmentValidation.Rejected)
 
         val empty = TemplateCompatibility.validateEnrollment(emptyList())
@@ -143,25 +146,25 @@ class TemplateCompatibilityTest {
     @Test
     fun `re-enrolled observations classify as current under new model profile`() {
         val profile = TemplateCompatibility.currentProfile()
-        assertEquals("mobilefacenet_192d_v2", profile.modelId)
-        assertEquals(192, profile.embeddingDim)
+        assertEquals(TemplateCompatibility.CURRENT_MODEL_ID, profile.modelId)
+        assertEquals(currentDim, profile.embeddingDim)
 
-        val freshEnrollment = vec(192)
+        val freshEnrollment = vec(currentDim)
         assertEquals(TemplateCompatibility.VectorClass.CURRENT, TemplateCompatibility.classify(freshEnrollment))
         assertTrue(TemplateCompatibility.isUsableVector(freshEnrollment))
     }
 
     // ------------------------------------------------------------------
-    // 7. NO silent conversion: a 32-D vector must not be truncated/padded into 192-D
+    // 7. NO silent conversion: a 32-D vector must not be truncated/padded into current dimension
     // anywhere in the compatibility layer.
     // ------------------------------------------------------------------
     @Test
     fun `no truncation or padding conversion exists for stale vectors`() {
         val stale32 = vec(32)
-        // After classification the vector object is unchanged â€” same size, same values.
+        // After classification the vector object is unchanged — same size, same values.
         assertEquals(TemplateCompatibility.VectorClass.STALE_DIMENSION, TemplateCompatibility.classify(stale32))
         assertEquals(32, stale32.size)
-        // Partition returns the SAME instance; nothing produced a 192-D derivative.
+        // Partition returns the SAME instance; nothing produced a current-dimension derivative.
         val p = TemplateCompatibility.partition(listOf(StudentTemplatePair(2L, 20L, stale32)))
         assert(p.stale.single().embedding === stale32)
     }
@@ -189,10 +192,10 @@ class TemplateCompatibilityTest {
                 FaceQualityConfig.calibrationDefaults(),
             ),
             liveness = LivenessResult.Passed,
-            embedding = vec(192),
+            embedding = vec(currentDim),
         )
 
-        val staleGallery = listOf(template(9L, 32))
+        val staleGallery = listOf(template(9L, 192), template(10L, 32))
         val engine = AdaptiveVerificationEngine(
             templates = staleGallery,
             maxFrames = 3,
@@ -202,7 +205,7 @@ class TemplateCompatibilityTest {
         when (val final = step as? AdaptiveVerificationEngine.Step.Final) {
             null -> {
                 // NeedMoreFrames would also be acceptable, but with budget 3 and one
-                // observation the engine asks for more frames â€” still safe.
+                // observation the engine asks for more frames — still safe.
                 assertTrue(step is AdaptiveVerificationEngine.Step.NeedMoreFrames)
             }
             else -> {

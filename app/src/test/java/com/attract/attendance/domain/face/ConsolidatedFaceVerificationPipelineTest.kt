@@ -57,15 +57,16 @@ class ConsolidatedFaceVerificationPipelineTest {
         """.trimIndent())
     }
 
-    // --- Helper to generate a deterministically normalized 192-D embedding ---
+    // --- Helper to generate a deterministically normalized embedding ---
     private fun generateSyntheticEmbedding(seedOffset: Int, noiseScale: Float = 0f): FloatArray {
         val rand = Random(seed + seedOffset)
-        val vec = FloatArray(192)
-        for (i in 0 until 192) {
+        val dim = EmbeddingEngine.EMBEDDING_SIZE
+        val vec = FloatArray(dim)
+        for (i in 0 until dim) {
             vec[i] = rand.nextFloat() * 2f - 1f
         }
         if (noiseScale > 0f) {
-            for (i in 0 until 192) {
+            for (i in 0 until dim) {
                 vec[i] += (rand.nextFloat() * 2f - 1f) * noiseScale
             }
         }
@@ -629,7 +630,8 @@ class ConsolidatedFaceVerificationPipelineTest {
         malformedCases++
 
         // 3. Nan & Infinity embedding inputs
-        val nanVector = FloatArray(192) { Float.NaN }
+        val dim = EmbeddingEngine.EMBEDDING_SIZE
+        val nanVector = FloatArray(dim) { Float.NaN }
         val nanPair = StudentTemplatePair(2L, 22L, nanVector)
         val validQuery = generateSyntheticEmbedding(502)
         val outcomeNan = decisionEngine.evaluate(validQuery, listOf(nanPair))
@@ -638,11 +640,11 @@ class ConsolidatedFaceVerificationPipelineTest {
 
         // 4. Systematically run malformed checks
         for (i in 0..200) {
-            val query = FloatArray(192)
+            val query = FloatArray(dim)
             if (i % 2 == 0) {
                 query[0] = Float.POSITIVE_INFINITY
             } else {
-                query[i % 192] = Float.NaN
+                query[i % dim] = Float.NaN
             }
             val outcome = decisionEngine.evaluate(query, listOf(validPair))
             assertEquals(RecognitionOutcome.Unknown, outcome)

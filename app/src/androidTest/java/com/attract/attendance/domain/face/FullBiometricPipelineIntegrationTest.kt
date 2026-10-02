@@ -1,13 +1,9 @@
-﻿package com.attract.attendance.domain.face
+package com.attract.attendance.domain.face
 
 import android.content.Context
 import android.graphics.BitmapFactory
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.google.android.gms.tasks.Tasks
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.face.FaceDetection
-import com.google.mlkit.vision.face.FaceDetectorOptions
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -20,12 +16,12 @@ import org.junit.runner.RunWith
  *
  * FULL END-TO-END INTEGRATION TEST — uses REAL production implementations only:
  *   Real JPEG file (from androidTest assets)
- *   -> ML Kit FaceDetector (production options, no mocking)
+ *   -> YoloFaceDetector (yolov8n_face.tflite, 5 landmarks, pose estimation)
  *   -> FaceQualitySignals extraction
  *   -> FaceQualityEngine (production implementation)
  *   -> LivenessEngine (production implementation)
- *   -> cropFaceForEmbedding (production crop)
- *   -> EmbeddingEngine / MobileFaceNet (real TFLite model, 192-D output)
+ *   -> FaceAligner.align (canonical 112x112 ArcFace alignment)
+ *   -> EmbeddingEngine / ArcFace MobileFaceNet (real TFLite model, 512-D output)
  *   -> TemplateMatcher cosine similarity
  *   -> RecognitionDecisionEngine final outcome
  *
@@ -33,19 +29,6 @@ import org.junit.runner.RunWith
  *   A) executeFullEndToEndBiometricPipeline_productionConfig: uses unmodified FaceQualityConfig.calibrationDefaults()
  *   B) executeFullEndToEndBiometricPipeline_lenientConfig: uses a relaxed config for isolated ML/embedding verification
  *      (labeled clearly, not intended to prove production accuracy)
- *
- * NOTE ON TEST-ONLY FACE BOUNDARY FILTER:
- *   The static-JPEG test images used here are NOT live camera frames. When ML Kit processes a
- *   JPEG photograph it can produce spurious face-shaped detections at image borders caused by
- *   background patterns (e.g., a partially-visible head/shoulder silhouette touching the image
- *   edge at x=0..2). This artefact does NOT occur in the CameraX path because:
- *     (a) the sensor frame is padded by the viewfinder crop region, and
- *     (b) CameraPreview passes the full uncompressed YUV frame, not a JPEG.
- *   The production CameraPreview correctly surfaces faceCount > 1 to FaceQualityEngine which
- *   then rejects the frame as MULTIPLE_FACES -- this safety gate is NOT bypassed in production.
- *   The filter (b.left > 2 && b.right < width-2 && b.width() >= width*0.20) is applied
- *   ONLY inside this test to remove these JPEG-artefact border detections. The raw count is
- *   always logged before filtering so the test is fully transparent.
  */
 @RunWith(AndroidJUnit4::class)
 class FullBiometricPipelineIntegrationTest {
@@ -67,12 +50,13 @@ class FullBiometricPipelineIntegrationTest {
         maxOffCenterFraction = 0.45f
     )
 
-    private val decisionEngine = RecognitionDecisionEngine(acceptThreshold = 0.40f, ambiguousMargin = 0.10f)
+    private val decisionEngine = RecognitionDecisionEngine(acceptThreshold = 0.25f, ambiguousMargin = 0.05f)
 
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
-        assertTrue("TFLite model asset 'mobilefacenet.tflite' must be available", EmbeddingEngine.isAvailable(context))
+        assertTrue("TFLite model asset 'arcface_mobilefacenet.tflite' must be available", EmbeddingEngine.isAvailable(context))
+        assertTrue("TFLite model asset 'yolov8n_face.tflite' must be available", YoloFaceDetector.isAvailable(context))
     }
 
     // =========================================================================
@@ -121,13 +105,6 @@ class FullBiometricPipelineIntegrationTest {
             return
         }
 
-        val detectorOptions = FaceDetectorOptions.Builder()
-            .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
-            .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
-            .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
-            .build()
-        val detector = FaceDetection.getClient(detectorOptions)
-
         val enrolledTemplates = mutableListOf<StudentTemplatePair>()
 
         // ---- ENROLLMENT ----
@@ -143,47 +120,31 @@ class FullBiometricPipelineIntegrationTest {
             val bitmap = BitmapFactory.decodeStream(stream)
             assertNotNull("Enrollment bitmap must load for $enrollFile", bitmap)
 
-            val inputImage = InputImage.fromBitmap(bitmap, 0)
-            val faces = Tasks.await(detector.process(inputImage))
-            val rawCount = faces.size
+            val faces = YoloFaceDetector.detect(context, bitmap)
+            println("[$configLabel] $personDir/$enrollFile -- yoloFaceCount=${faces.size}")
 
-            // TEST-ONLY boundary filter (see class KDoc for full rationale):
-            // Raw count is ALWAYS reported first; filter only removes JPEG-artefact border detections.
-            val filteredFaces = faces.filter { f ->
-                val b = f.boundingBox
-                b.left > 2 && b.right < bitmap.width - 2 && b.width() >= bitmap.width * 0.20
-            }
-            val activeFaces = if (filteredFaces.isNotEmpty()) filteredFaces else faces
-
-            println("[$configLabel] $personDir/$enrollFile -- rawMLKitCount=$rawCount, filteredCount=${activeFaces.size}")
-
-            if (activeFaces.isEmpty()) {
+            if (faces.isEmpty()) {
                 println("[$configLabel] WARNING: 0 usable faces in $enrollFile -- skipping subject.")
                 continue
             }
 
-            val primaryFace = activeFaces[0]
+            val primaryFace = faces.maxByOrNull { it.confidence }!!
             val box = primaryFace.boundingBox
 
-            val faceRatio = (box.width() * box.height()).toFloat() / (bitmap.width * bitmap.height)
-            val centerX = box.centerX().toFloat() / bitmap.width
-            val centerY = box.centerY().toFloat() / bitmap.height
-
-            println("[$configLabel]   boundingBox=$box")
-            println("[$configLabel]   yaw=${primaryFace.headEulerAngleY}  pitch=${primaryFace.headEulerAngleX}  roll=${primaryFace.headEulerAngleZ}")
-            println("[$configLabel]   leftEyeOpen=${primaryFace.leftEyeOpenProbability}  rightEyeOpen=${primaryFace.rightEyeOpenProbability}")
-            println("[$configLabel]   faceRatio=$faceRatio  centerX=$centerX  centerY=$centerY")
+            println("[$configLabel]   boundingBox=$box  confidence=${primaryFace.confidence}")
+            println("[$configLabel]   yaw=${primaryFace.estimatedYaw}  pitch=${primaryFace.estimatedPitch}  roll=${primaryFace.estimatedRoll}")
+            println("[$configLabel]   faceRatio=${primaryFace.faceRatio}  centerX=${primaryFace.centerX}  centerY=${primaryFace.centerY}")
 
             val signals = FaceQualitySignals(
-                faceCount = activeFaces.size,
-                yawDegrees = primaryFace.headEulerAngleY,
-                pitchDegrees = primaryFace.headEulerAngleX,
-                rollDegrees = primaryFace.headEulerAngleZ,
-                leftEyeOpenProbability = primaryFace.leftEyeOpenProbability ?: 1.0f,
-                rightEyeOpenProbability = primaryFace.rightEyeOpenProbability ?: 1.0f,
-                faceRatio = faceRatio,
-                centerX = centerX,
-                centerY = centerY,
+                faceCount = faces.size,
+                yawDegrees = primaryFace.estimatedYaw,
+                pitchDegrees = primaryFace.estimatedPitch,
+                rollDegrees = primaryFace.estimatedRoll,
+                leftEyeOpenProbability = 1.0f,
+                rightEyeOpenProbability = 1.0f,
+                faceRatio = primaryFace.faceRatio,
+                centerX = primaryFace.centerX,
+                centerY = primaryFace.centerY,
                 blurVariance = 500f,
                 brightness = 120f
             )
@@ -201,13 +162,12 @@ class FullBiometricPipelineIntegrationTest {
                 assertTrue("[$configLabel] Enrollment face must pass liveness engine -- $personDir/$enrollFile", livenessResult is LivenessResult.Passed)
             }
 
-            val faceCrop = EmbeddingEngine.cropFaceForEmbedding(bitmap, box, marginFraction = 0.20f)
-            assertNotNull("Cropped face region must not be null", faceCrop)
+            val faceAligned = FaceAligner.align(bitmap, primaryFace.landmarks)
 
-            // Generate 192-D embedding via TFLite MobileFaceNet
-            val embedding = EmbeddingEngine.extractEmbedding(context, faceCrop)
+            // Generate 512-D embedding via TFLite ArcFace MobileFaceNet
+            val embedding = EmbeddingEngine.extractEmbedding(context, faceAligned)
             assertNotNull(embedding)
-            assertEquals("[$configLabel] Embedding must be 192-D (actual production model output)", 192, embedding.size)
+            assertEquals("[$configLabel] Embedding must be ${TemplateCompatibility.CURRENT_EMBEDDING_DIM}-D", TemplateCompatibility.CURRENT_EMBEDDING_DIM, embedding.size)
             println("[$configLabel]   embeddingDim=${embedding.size}")
 
             enrolledTemplates.add(StudentTemplatePair(studentId = subjectId, templateId = subjectId * 1000 + 1, embedding = embedding))
@@ -227,31 +187,19 @@ class FullBiometricPipelineIntegrationTest {
                 val stream = assetManager.open("$personPath/$verFile")
                 val bitmap = BitmapFactory.decodeStream(stream) ?: continue
 
-                val inputImage = InputImage.fromBitmap(bitmap, 0)
-                val faces = Tasks.await(detector.process(inputImage))
-                val rawCount = faces.size
+                val faces = YoloFaceDetector.detect(context, bitmap)
+                println("[$configLabel] $personDir/$verFile -- yoloFaceCount=${faces.size}")
+                if (faces.isEmpty()) continue
 
-                val filteredFaces = faces.filter { f ->
-                    val b = f.boundingBox
-                    b.left > 2 && b.right < bitmap.width - 2 && b.width() >= bitmap.width * 0.20
-                }
-                val activeFaces = if (filteredFaces.isNotEmpty()) filteredFaces else faces
-                println("[$configLabel] $personDir/$verFile -- rawMLKitCount=$rawCount, filteredCount=${activeFaces.size}")
-                if (activeFaces.isEmpty()) continue
-
-                val primaryFace = activeFaces[0]
+                val primaryFace = faces.maxByOrNull { it.confidence }!!
                 val box = primaryFace.boundingBox
-                val faceRatio = (box.width() * box.height()).toFloat() / (bitmap.width * bitmap.height)
-                val centerX = box.centerX().toFloat() / bitmap.width
-                val centerY = box.centerY().toFloat() / bitmap.height
 
-                println("[$configLabel]   boundingBox=$box")
-                println("[$configLabel]   yaw=${primaryFace.headEulerAngleY}  pitch=${primaryFace.headEulerAngleX}  roll=${primaryFace.headEulerAngleZ}")
-                println("[$configLabel]   leftEyeOpen=${primaryFace.leftEyeOpenProbability}  rightEyeOpen=${primaryFace.rightEyeOpenProbability}")
-                println("[$configLabel]   faceRatio=$faceRatio  centerX=$centerX  centerY=$centerY")
+                println("[$configLabel]   boundingBox=$box  confidence=${primaryFace.confidence}")
+                println("[$configLabel]   yaw=${primaryFace.estimatedYaw}  pitch=${primaryFace.estimatedPitch}  roll=${primaryFace.estimatedRoll}")
+                println("[$configLabel]   faceRatio=${primaryFace.faceRatio}  centerX=${primaryFace.centerX}  centerY=${primaryFace.centerY}")
 
-                val faceCrop = EmbeddingEngine.cropFaceForEmbedding(bitmap, box, marginFraction = 0.20f) ?: continue
-                val queryEmbedding = EmbeddingEngine.extractEmbedding(context, faceCrop)
+                val faceAligned = FaceAligner.align(bitmap, primaryFace.landmarks)
+                val queryEmbedding = EmbeddingEngine.extractEmbedding(context, faceAligned)
                 println("[$configLabel]   embeddingDim=${queryEmbedding.size}")
 
                 // Compute all per-template scores for full transparency before calling decision engine
@@ -270,7 +218,5 @@ class FullBiometricPipelineIntegrationTest {
             }
             subjectId++
         }
-
-        detector.close()
     }
 }

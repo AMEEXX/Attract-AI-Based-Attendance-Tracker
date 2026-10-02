@@ -85,7 +85,6 @@ dependencies {
     implementation("androidx.camera:camera-camera2:1.4.2")
     implementation("androidx.camera:camera-lifecycle:1.4.2")
     implementation("androidx.camera:camera-view:1.4.2")
-    implementation("com.google.mlkit:face-detection:16.1.7")
     // TFLite 2.16.1 — REQUIRED for physical devices with 16KB kernel page sizes
     // (Android 15+ hardware). 2.14.0's libtensorflowlite_jni.so fails dlopen on those
     // devices, surfacing as "Face verification temporarily unavailable" while working

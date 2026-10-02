@@ -12,11 +12,11 @@ import kotlin.math.sqrt
 
 object EmbeddingEngine {
 
-    private const val MODEL_FILE = "mobilefacenet.tflite"
+    private const val MODEL_FILE = "arcface_mobilefacenet.tflite"
     private const val INPUT_SIZE = 112
 
     /** Dimensionality of the model output; public for verification by callers/tests. */
-    const val EMBEDDING_SIZE = 192
+    const val EMBEDDING_SIZE = 512
 
     private var interpreter: Interpreter? = null
     private var isModelLoaded = false

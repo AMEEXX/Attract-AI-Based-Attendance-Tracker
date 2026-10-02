@@ -17,7 +17,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         AttendanceSessionEntity::class,
         AttendanceRecordEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -33,8 +33,19 @@ abstract class AttractDatabase : RoomDatabase() {
         /** v1→v2: biometric template dimension tracking (LLD-10 migration amendment). */
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP INDEX IF EXISTS index_one_active_face_session")
                 db.execSQL(
                     "ALTER TABLE face_templates ADD COLUMN embedding_dim INTEGER NOT NULL DEFAULT 0",
+                )
+            }
+        }
+
+        /** v2→v3: ArcFace 512-D migration — deactivate incompatible legacy templates. */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP INDEX IF EXISTS index_one_active_face_session")
+                db.execSQL(
+                    "UPDATE face_templates SET active = 0 WHERE embedding_dim != 512",
                 )
             }
         }
@@ -44,10 +55,11 @@ abstract class AttractDatabase : RoomDatabase() {
             AttractDatabase::class.java,
             "attract.db",
         )
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+            .fallbackToDestructiveMigrationOnDowngrade()
             .addCallback(object : Callback() {
-                override fun onCreate(db: SupportSQLiteDatabase) {
-                    super.onCreate(db)
+                override fun onOpen(db: SupportSQLiteDatabase) {
+                    super.onOpen(db)
                     db.execSQL(
                         "CREATE UNIQUE INDEX IF NOT EXISTS index_one_active_face_session " +
                             "ON attendance_sessions(status) WHERE status = 'ACTIVE' AND mode = 'FACE'",

@@ -1,4 +1,4 @@
-﻿package com.attract.attendance.feature.attendance
+package com.attract.attendance.feature.attendance
 
 import android.Manifest
 import android.app.Activity
@@ -126,10 +126,10 @@ fun AttendanceScreen(
     }
 
     // --- Screen Pinning (LLD-13 / SDD Â§7) ---
-    // Lock Task starts AUTOMATICALLY when the attendance screen appears â€” no teacher action needed.
-    // The SDD flow is: Session Created â†’ startLockTask() â†’ Pinned Attendance World
-    // Per LLD-13: "LLD-06 creates a recoverable ACTIVE session â†’ root swaps to attendance graph
-    // â†’ startLockTask() is invoked â†’ lock-task state is observed/timeout checked â†’ camera enabled"
+    // Lock Task starts AUTOMATICALLY when the attendance screen appears  —  no teacher action needed.
+    // The SDD flow is: Session Created  ->  startLockTask()  ->  Pinned Attendance World
+    // Per LLD-13: "LLD-06 creates a recoverable ACTIVE session  ->  root swaps to attendance graph
+    //  ->  startLockTask() is invoked  ->  lock-task state is observed/timeout checked  ->  camera enabled"
     var isScreenPinned by remember { mutableStateOf(false) }
     var screenPinningFailed by remember { mutableStateOf(false) }
     val lockTaskController = remember(activity) {
@@ -151,11 +151,11 @@ fun AttendanceScreen(
             permissionLauncher.launch(Manifest.permission.CAMERA)
         }
 
-        // 2. Pre-warm TFLite model â€” surfaces errors before any student interacts
+        // 2. Pre-warm TFLite model  —  surfaces errors before any student interacts
         withContext(Dispatchers.IO) {
             val modelOk = com.attract.attendance.domain.face.EmbeddingEngine.isAvailable(context)
             if (!modelOk) {
-                Log.e(TAG, "TFLite model failed to load â€” face verification unavailable")
+                Log.e(TAG, "TFLite model failed to load  —  face verification unavailable")
             }
             isModelReady = modelOk
         }
@@ -202,7 +202,7 @@ fun AttendanceScreen(
                 // This is expected on consumer Android 11 devices without DPC setup.
                 isScreenPinned = false
                 screenPinningFailed = true
-                Log.w(TAG, "Screen pinning SecurityException â€” device not whitelisted: ${e.message}")
+                Log.w(TAG, "Screen pinning SecurityException  —  device not whitelisted: ${e.message}")
             }
         }
     }
@@ -254,7 +254,7 @@ fun AttendanceScreen(
 
     var recognitionAttemptCount by remember { mutableIntStateOf(0) }
 
-    // ---- Adaptive 1â†’2â†’3 verification (LLD-16): one excellent frontal frame can accept
+    // ---- Adaptive 1 -> 2 -> 3 verification (LLD-16): one excellent frontal frame can accept
     // immediately; extra frames are requested ONLY when evidence is insufficient.
     var adaptiveEngine by remember { mutableStateOf<com.attract.attendance.domain.face.AdaptiveVerificationEngine?>(null) }
     var lastFrameQualityScore by remember { mutableStateOf(0f) }
@@ -576,12 +576,12 @@ fun AttendanceScreen(
         val frameBitmap = latestFrameBitmap
 
         if (signals == null || signals.faceCount == 0) {
-            statusMessage = "âš ï¸ No face detected. Position your face in the frame."
+            statusMessage = "⚠️ No face detected. Position your face in the frame."
             return
         }
 
         if (signals.faceCount > 1) {
-            statusMessage = "âš ï¸ Multiple faces detected. Only one person at a time."
+            statusMessage = "⚠️ Multiple faces detected. Only one person at a time."
             return
         }
 
@@ -607,7 +607,7 @@ fun AttendanceScreen(
                     signals, FaceQualityConfig.calibrationDefaults(),
                 )
             if (!supportPoseOk) {
-                statusMessage = "âš ï¸ Keep your head roughly facing the camera â€” extreme angles can't be used."
+                statusMessage = "⚠️ Keep your head roughly facing the camera  —  extreme angles can't be used."
                 isValidatingFrame = false
                 return
             }
@@ -622,17 +622,17 @@ fun AttendanceScreen(
         }
         if (qualityEval is QualityResult.Rejected) {
             statusMessage = when (qualityEval.reason) {
-                com.attract.attendance.domain.face.QualityReason.DARK -> "âš ï¸ Lighting too dark. Move to better lighting."
-                com.attract.attendance.domain.face.QualityReason.OVEREXPOSED -> "âš ï¸ Too bright/glare. Adjust lighting."
-                com.attract.attendance.domain.face.QualityReason.BLUR -> "âš ï¸ Image blurry. Hold steady and try again."
-                com.attract.attendance.domain.face.QualityReason.TOO_SMALL -> "âš ï¸ Move closer to the camera."
-                com.attract.attendance.domain.face.QualityReason.OFF_CENTER -> "âš ï¸ Center your face inside the frame."
-                com.attract.attendance.domain.face.QualityReason.POSE_NOT_STRAIGHT -> "âš ï¸ Please look straight at the camera for this step."
+                com.attract.attendance.domain.face.QualityReason.DARK -> "⚠️ Lighting too dark. Move to better lighting."
+                com.attract.attendance.domain.face.QualityReason.OVEREXPOSED -> "⚠️ Too bright/glare. Adjust lighting."
+                com.attract.attendance.domain.face.QualityReason.BLUR -> "⚠️ Image blurry. Hold steady and try again."
+                com.attract.attendance.domain.face.QualityReason.TOO_SMALL -> "⚠️ Move closer to the camera."
+                com.attract.attendance.domain.face.QualityReason.OFF_CENTER -> "⚠️ Center your face inside the frame."
+                com.attract.attendance.domain.face.QualityReason.POSE_NOT_STRAIGHT -> "⚠️ Please look straight at the camera for this step."
                 com.attract.attendance.domain.face.QualityReason.POSE_NOT_LEFT -> "ðŸ‘ˆ Turn your head LEFT until your profile shows, then tap CLICK."
                 com.attract.attendance.domain.face.QualityReason.POSE_NOT_RIGHT -> "ðŸ‘‰ Turn your head RIGHT until your profile shows, then tap CLICK."
-                com.attract.attendance.domain.face.QualityReason.POSE -> "âš ï¸ Keep your head level â€” do not tilt up or down."
-                com.attract.attendance.domain.face.QualityReason.EYES_UNCLEAR -> "âš ï¸ Please keep your eyes open."
-                else -> "âš ï¸ Quality check failed. Please reposition."
+                com.attract.attendance.domain.face.QualityReason.POSE -> "⚠️ Keep your head level  —  do not tilt up or down."
+                com.attract.attendance.domain.face.QualityReason.EYES_UNCLEAR -> "⚠️ Please keep your eyes open."
+                else -> "⚠️ Quality check failed. Please reposition."
             }
             isValidatingFrame = false
             return
@@ -641,7 +641,7 @@ fun AttendanceScreen(
         // Duplicate-frame guard (LLD-09): standalone enrollment requires distinct poses;
         // live attendance handles replays inside the adaptive engine instead.
         if (isStandaloneMode && !FaceQualityEngine.isDistinctFromCaptured(signals.yawDegrees, capturedYawDegrees)) {
-            statusMessage = "âš ï¸ Turn your head more â€” this angle matches a previous capture."
+            statusMessage = "⚠️ Turn your head more  —  this angle matches a previous capture."
             isValidatingFrame = false
             return
         }
@@ -651,7 +651,7 @@ fun AttendanceScreen(
 
         val livenessEval = LivenessEngine.check(signals, lastQualitySignals, patSignals)
         if (livenessEval is LivenessResult.Rejected) {
-            statusMessage = "âš ï¸ ${livenessEval.message}"
+            statusMessage = "⚠️ ${livenessEval.message}"
             isValidatingFrame = false
             return
         }
@@ -717,7 +717,7 @@ fun AttendanceScreen(
                 val scoreNow = lastFrameQualityScore
                 val cropBitmap = frameBitmap
                 if (signalsNow == null || cropBitmap == null) {
-                    statusMessage = "âš ï¸ Frame capture failed. Please retake."
+                    statusMessage = "⚠️ Frame capture failed. Please retake."
                     state = SessionScreenState.CAPTURING
                     isValidatingFrame = false
                     return@launch
@@ -771,7 +771,7 @@ fun AttendanceScreen(
                     }
                 }
             }.onFailure { error ->
-                Log.e(TAG, "Adaptive verification error: ${error::class.simpleName} â€” ${error.message}", error)
+                Log.e(TAG, "Adaptive verification error: ${error::class.simpleName}  —  ${error.message}", error)
                 isValidatingFrame = false // never leave the capture button dead-locked
                 state = SessionScreenState.ERROR
                 statusMessage = unavailableMessage(error)
@@ -795,7 +795,7 @@ fun AttendanceScreen(
                         state = SessionScreenState.CAPTURING
                         collectedFrames = 2
                         captureStep = 2
-                        statusMessage = "Retake needed â€” ${livenessReCheck.message}"
+                        statusMessage = "Retake needed  —  ${livenessReCheck.message}"
                         return@launch
                     }
                 }
@@ -820,8 +820,8 @@ fun AttendanceScreen(
                 val targetFloats = com.attract.attendance.domain.face.EmbeddingEngine.combineEmbeddings(queryEmbeddings)
                 val activeTemplates = repository.getActiveTemplatesForClass(classId)
                 val engine = com.attract.attendance.domain.face.RecognitionDecisionEngine(
-                    acceptThreshold = 0.45f,
-                    ambiguousMargin = 0.10f
+                    acceptThreshold = 0.25f,
+                    ambiguousMargin = 0.05f
                 )
 
                 val outcome = engine.evaluate(targetFloats, activeTemplates)
@@ -879,9 +879,9 @@ fun AttendanceScreen(
                     }
                 }
             }.onFailure { error ->
-                // Per LLD-11: TFLite interpreter fault â†’ Unavailable state, never PRESENT.
+                // Per LLD-11: TFLite interpreter fault  ->  Unavailable state, never PRESENT.
                 // Log the real cause for debugging; show safe message to student.
-                Log.e(TAG, "Face verification error: ${error::class.simpleName} â€” ${error.message}", error)
+                Log.e(TAG, "Face verification error: ${error::class.simpleName}  —  ${error.message}", error)
                 state = SessionScreenState.ERROR
                 statusMessage = unavailableMessage(error)
                 delay(2000)
@@ -896,7 +896,7 @@ fun AttendanceScreen(
             .background(Color.Black)
             .padding(16.dp)
     ) {
-        // Top Bar â€” Screen Pinning Indicator & Exit Button
+        // Top Bar  —  Screen Pinning Indicator & Exit Button
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -919,7 +919,7 @@ fun AttendanceScreen(
                     fontWeight = FontWeight.SemiBold
                 )
             } else {
-                // Accurate screen pinning state â€” only show "pinned" if actually pinned.
+                // Accurate screen pinning state  —  only show "pinned" if actually pinned.
                 // Per LLD-13: unsupported pinning config must surface, not be silently ignored.
                 if (screenPinningFailed) {
                     Row(
@@ -949,7 +949,7 @@ fun AttendanceScreen(
                 } else {
                     // Pinning in progress or not yet confirmed
                     Text(
-                        text = "â³ Starting session...",
+                        text = "⏳ Starting session...",
                         color = Color.White.copy(alpha = 0.5f),
                         style = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.padding(start = 8.dp)
@@ -1073,7 +1073,7 @@ fun AttendanceScreen(
                         onClick = { resetToReady() },
                         modifier = Modifier.height(44.dp)
                     ) {
-                        Text("â†º Retake Poses", color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.bodySmall)
+                        Text("↺ Retake Poses", color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.bodySmall)
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -1131,8 +1131,8 @@ fun AttendanceScreen(
                                             val combinedQuery = com.attract.attendance.domain.face.EmbeddingEngine.combineEmbeddings(realEmbeddings)
                                             val activeTemplates = repository.getActiveTemplatesForClass(classId)
                                             val checkOutcome = com.attract.attendance.domain.face.RecognitionDecisionEngine(
-                                                acceptThreshold = 0.45f,
-                                                ambiguousMargin = 0.10f
+                                                acceptThreshold = 0.25f,
+                                                ambiguousMargin = 0.05f
                                             ).evaluate(combinedQuery, activeTemplates)
 
                                             if (checkOutcome is com.attract.attendance.domain.face.RecognitionOutcome.Match && checkOutcome.studentId != targetStudent.id) {
@@ -1275,7 +1275,7 @@ fun AttendanceScreen(
                 title = { Text("Teacher PIN Required", fontWeight = FontWeight.Bold) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text("Enter your 4â€“12 digit teacher PIN to exit screen pinning and end the session.")
+                        Text("Enter your 4 — 12 digit teacher PIN to exit screen pinning and end the session.")
                         OutlinedTextField(
                             value = teacherPinInput,
                             onValueChange = {
@@ -1308,7 +1308,7 @@ fun AttendanceScreen(
                                 if (success) {
                                     showPinDialog = false
                                     teacherPinInput = ""
-                                    // Per LLD-13 end order: finalize attendance â†’ clear cache â†’ stopLockTask()
+                                    // Per LLD-13 end order: finalize attendance  ->  clear cache  ->  stopLockTask()
                                     // Stop lock task BEFORE calling onEndSession so the app unpins properly.
                                     try {
                                         lockTaskController?.stop()
@@ -1316,7 +1316,7 @@ fun AttendanceScreen(
                                         Log.d(TAG, "Screen pinning stopped on teacher auth success")
                                     } catch (e: Exception) {
                                         Log.w(TAG, "stopLockTask failed: ${e.message}")
-                                        // Continue â€” don't block session end if unpin fails
+                                        // Continue  —  don't block session end if unpin fails
                                     }
                                     if (presentIds.isEmpty()) {
                                         showZeroConfirmDialog = true

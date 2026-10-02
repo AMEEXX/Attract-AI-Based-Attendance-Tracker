@@ -19,3 +19,8 @@ Thumbs.db
 # Test Dataset - kept out of production builds
 test-data/
 app/src/androidTest/assets/test-data/
+
+# Python cache
+__pycache__/
+*.pyc
+

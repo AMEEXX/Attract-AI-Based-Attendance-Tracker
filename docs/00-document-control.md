@@ -1,6 +1,6 @@
-﻿# 00 â€” Document Control and Waterfall Delivery Plan
+﻿# 00  —  Document Control and Waterfall Delivery Plan
 
-**Project:** Attract â€” Face-Based Attendance Tracker  
+**Project:** Attract  —  Face-Based Attendance Tracker  
 **Status:** Active  
 **Phase:** Low-Level Design  
 **Effective date:** 2026-08-06
@@ -34,7 +34,7 @@ No feature is added merely because it is technically interesting. Features expli
 
 ## LLD lifecycle
 
-`Planned â†’ Drafting â†’ Technical review â†’ Approved / Frozen â†’ Implemented â†’ Verified`
+`Planned  →  Drafting  →  Technical review  →  Approved / Frozen  →  Implemented  →  Verified`
 
 Only one LLD is drafted at a time in the listed approval order. A later LLD may be opened for reference, but no decision in it becomes binding before dependencies are frozen.
 

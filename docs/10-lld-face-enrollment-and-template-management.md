@@ -1,7 +1,7 @@
-﻿# LLD-10 â€” Face Enrollment & Template Management
+# LLD-10  —  Face Enrollment & Template Management
 
-**Status:** Draft â€” ready for review and freeze  
-**Requirements source:** SDD Â§Â§12â€“20, 32â€“35, 54, 64, 69  
+**Status:** Draft  —  ready for review and freeze  
+**Requirements source:** SDD §§12–20, 32–35, 54, 64, 69  
 **Depends on:** LLD-02, LLD-05, LLD-06, LLD-09, LLD-12, Decisions D-001/D-002
 
 ## Goal
@@ -10,7 +10,7 @@ Create a class-scoped, encrypted multi-template profile and first PRESENT record
 
 ## First-time & First-Day Inline Enrollment Flow
 
-1. Student captures 3 quality pose photos in fixed order â€” **Straight â†’ Left profile â†’ Right profile** â€” during the live AI attendance session. Each frame is validated against its per-step pose window plus the full anti-spoof gate set (LLD-09 step-aware pose gating; LLD-12 presentation-attack detection) BEFORE the flow advances. A rejected frame must be retaken for the same step; three identical frontal frames are invalid and never accepted as enrollment input.
+1. Student captures 3 quality pose photos in fixed order  —  **Straight  →  Left profile  →  Right profile**  —  during the live AI attendance session. Each frame is validated against its per-step pose window plus the full anti-spoof gate set (LLD-09 step-aware pose gating; LLD-12 presentation-attack detection) BEFORE the flow advances. A rejected frame must be retaken for the same step; three identical frontal frames are invalid and never accepted as enrollment input.
 2. System evaluates vector similarity against active class templates. If no match is found ($\ge 0.75$), the system identifies the student as **NOT_ENROLLED**.
 3. UI transitions button from SUBMIT to **ENROLL** and automatically presents a Modal Bottom Sheet listing all un-enrolled students in the class section.
 4. Student selects their Roll Number / Name from the list and taps **ENROLL**.
@@ -24,9 +24,9 @@ Teacher opens a profile, authenticates, captures/liveness-checks new templates, 
 ## Components and contracts
 
 ```text
-EnrollmentCoordinator â†’ ApprovalGateway â†’ ObservationCollector
-                     â†’ LivenessEngine â†’ EmbeddingEngine â†’ DuplicateChecker
-                     â†’ TemplateCipher â†’ EnrollmentRepository transaction
+EnrollmentCoordinator  →  ApprovalGateway  →  ObservationCollector
+                      →  LivenessEngine  →  EmbeddingEngine  →  DuplicateChecker
+                      →  TemplateCipher  →  EnrollmentRepository transaction
 ```
 
 `DuplicateChecker` returns Clear, Suspicious(studentId), or Unavailable. Unavailable blocks enrollment; do not downgrade to allow. The duplicate threshold and model/config version are calibration values distinct from recognition acceptance threshold.
@@ -37,7 +37,7 @@ EnrollmentCoordinator â†’ ApprovalGateway â†’ ObservationCollector
 |---|---|
 | student selects other/unknown roll | no approval/capture |
 | teacher auth cancel/approval expiry | no template or record |
-| 3â€“5 identical frames | insufficient diversity, no commit |
+| 3–5 identical frames | insufficient diversity, no commit |
 | liveness/embedding/duplicate failure | all temporary data cleared; no partial profile |
 | duplicate enrolled face in same class | blocked with teacher path |
 | same real person in another class | allowed under D-002 |
@@ -61,7 +61,7 @@ mismatch; the 32-D template reached TemplateMatcher.cosineSimilarity and crashed
 **Fixes (all fail-closed):**
 1. TemplateCompatibility (domain/face) is the single authority for biometric format:
    CURRENT_EMBEDDING_DIM = 192, CURRENT_MODEL_ID = "mobilefacenet_192d_v2".
-2. Room v1→v2 migration adds ace_templates.embedding_dim; enrollment stamps it and
+2. Room v1→v2 migration adds face_templates.embedding_dim; enrollment stamps it and
    REJECTS wrong-dimension observations before any DB write.
 3. AttractRepository.getActiveTemplatesForClass returns ONLY current-format templates;
    incompatible rows can never reach TemplateMatcher.
@@ -72,3 +72,12 @@ mismatch; the 32-D template reached TemplateMatcher.cosineSimilarity and crashed
    dimension-mismatched templates BEFORE cosine similarity. Never crash, never accept.
 6. NO truncation/padding/conversion of stale vectors — different models produce
    non-equivalent biometric spaces; re-enrollment is the only recovery path.
+
+## Model Upgrade amendment (2026-10-02): ArcFace 512-D & Room v3 Migration
+
+**Upgrade to ArcFace MobileFaceNet:**
+1. Upgraded biometric pipeline to ArcFace MobileFaceNet (`arcface_mobilefacenet.tflite`) emitting **512-D** L2-normalized embeddings from 112×112 canonical aligned crops.
+2. Updated `TemplateCompatibility`: `CURRENT_EMBEDDING_DIM = 512`, `CURRENT_MODEL_ID = "arcface_512d_v3"`.
+3. Room database version bumped from 2 to 3 with `MIGRATION_2_3`: automatically deactivates legacy templates with `embedding_dim != 512`.
+4. Re-enrollment workflow: students with legacy 32-D or 192-D templates are transitioned back to `NOT_ENROLLED` and seamlessly re-enrolled with high-accuracy 512-D ArcFace templates.
+
