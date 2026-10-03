@@ -20,7 +20,12 @@ Thumbs.db
 test-data/
 app/src/androidTest/assets/test-data/
 
-# Python cache
+# Python cache & virtualenvs
 __pycache__/
 *.pyc
+.venv/
 
+# Archives & Temporary packs
+*.zip
+zip_contents_preview/
+attract_large_face_dataset_pack/
