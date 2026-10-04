@@ -379,6 +379,31 @@ class AttractViewModel(
 
     fun clearMessage() = _uiState.update { it.copy(message = null) }
 
+    fun resetBiometricData(pin: String, confirmationText: String, onComplete: (Boolean, String) -> Unit) {
+        if (confirmationText.trim() != "RESET") {
+            onComplete(false, "Confirmation text must be 'RESET'")
+            return
+        }
+        viewModelScope.launch {
+            val authenticated = repository.authenticate(pin.toCharArray())
+            if (!authenticated) {
+                onComplete(false, "Invalid teacher PIN")
+                return@launch
+            }
+            when (val result = repository.resetBiometricData()) {
+                is CommandResult.Success -> {
+                    showMessage("All biometric data has been reset.")
+                    onComplete(true, "All biometric data has been reset.")
+                }
+                is CommandResult.Failure -> {
+                    val msg = result.error.toUserMessage()
+                    showMessage(msg)
+                    onComplete(false, msg)
+                }
+            }
+        }
+    }
+
     private fun <T> runCommand(work: suspend () -> CommandResult<T>, onSuccess: (T) -> Unit) {
         if (_uiState.value.isWorking) return
         viewModelScope.launch {

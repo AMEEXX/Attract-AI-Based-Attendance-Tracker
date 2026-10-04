@@ -88,8 +88,8 @@ sealed interface EnrollmentResult {
  */
 object EnrollmentBatchValidator {
 
-    const val SAME_PERSON_CONTINUITY_THRESHOLD = 0.35f
-    const val MIN_CAPTURE_YAW_SEPARATION_DEGREES = 15f
+    const val SAME_PERSON_CONTINUITY_THRESHOLD = 0.30f
+    const val MIN_CAPTURE_YAW_SEPARATION_DEGREES = 8f
 
     sealed interface ValidationResult {
         data class Valid(val batch: ValidatedEnrollmentBatch) : ValidationResult
@@ -100,7 +100,7 @@ object EnrollmentBatchValidator {
         studentId: Long,
         classId: Long,
         samples: List<EnrollmentSample>,
-        authorizationGrant: TeacherAuthorizationGrant?,
+        authorizationGrant: TeacherAuthorizationGrant? = null,
         profile: BiometricModelProfile = BiometricModelProfile.CURRENT,
     ): ValidationResult {
         if (samples.size != 3) {
@@ -124,15 +124,18 @@ object EnrollmentBatchValidator {
         val right = samples.find { it.slotIndex == 2 }
             ?: return ValidationResult.Invalid("Missing RIGHT sample (slot 2)")
 
-        // 2. Pose window checks
-        if (abs(straight.yawDegrees) > 15f) {
-            return ValidationResult.Invalid("STRAIGHT sample yaw must be within [-15°, 15°], got ${straight.yawDegrees}°")
+        // 2. Relative pose window checks (WP-B / RC-1)
+        val deltaLeft = left.yawDegrees - straight.yawDegrees
+        val deltaRight = right.yawDegrees - straight.yawDegrees
+
+        if (abs(straight.yawDegrees) > 12f) {
+            return ValidationResult.Invalid("STRAIGHT sample yaw must be within [-12°, 12°], got ${straight.yawDegrees}°")
         }
-        if (left.yawDegrees > -15f) {
-            return ValidationResult.Invalid("LEFT sample yaw must be <= -15°, got ${left.yawDegrees}°")
+        if (deltaLeft !in -40f..-8f) {
+            return ValidationResult.Invalid("LEFT sample relative yaw must be turned left [-40°, -8°], got delta ${deltaLeft}°")
         }
-        if (right.yawDegrees < 15f) {
-            return ValidationResult.Invalid("RIGHT sample yaw must be >= 15°, got ${right.yawDegrees}°")
+        if (deltaRight !in 8f..40f) {
+            return ValidationResult.Invalid("RIGHT sample relative yaw must be turned right [8°, 40°], got delta ${deltaRight}°")
         }
 
         // 3. Temporal and diversity checks (no identical frames reused)
@@ -141,17 +144,16 @@ object EnrollmentBatchValidator {
             return ValidationResult.Invalid("Enrollment frames must be captured at distinct timestamps (no frame reuse)")
         }
 
-        if (abs(straight.yawDegrees - left.yawDegrees) < MIN_CAPTURE_YAW_SEPARATION_DEGREES ||
-            abs(straight.yawDegrees - right.yawDegrees) < MIN_CAPTURE_YAW_SEPARATION_DEGREES ||
-            abs(left.yawDegrees - right.yawDegrees) < MIN_CAPTURE_YAW_SEPARATION_DEGREES
-        ) {
-            return ValidationResult.Invalid("Captured samples lack sufficient angle diversity (min 15° separation)")
-        }
-
-        // 4. Same-person continuity check across the batch
         val simLeft = IdentityScorer.cosineSimilarity(straight.embedding, left.embedding)
         val simRight = IdentityScorer.cosineSimilarity(straight.embedding, right.embedding)
 
+        val yawDiverse = abs(deltaLeft) >= 8f && abs(deltaRight) >= 8f
+        val embeddingDiverse = simLeft < 0.97f || simRight < 0.97f
+        if (!yawDiverse && !embeddingDiverse) {
+            return ValidationResult.Invalid("Captured samples lack sufficient angle or embedding diversity")
+        }
+
+        // 4. Same-person continuity check across the batch
         if (simLeft < SAME_PERSON_CONTINUITY_THRESHOLD || simRight < SAME_PERSON_CONTINUITY_THRESHOLD) {
             return ValidationResult.Invalid(
                 "Same-person continuity check failed (straight-left sim=$simLeft, straight-right sim=$simRight). Person swap suspected."
@@ -171,13 +173,13 @@ object EnrollmentBatchValidator {
 }
 
 /**
- * Shared Duplicate Check Service (resolves R03).
+ * Shared Duplicate Check Service (WP-C).
  * Evaluates candidate samples against active gallery templates.
+ * Takes the maximum similarity over all (candidate x template) pairs to return the best match.
  */
 object DuplicateCheckService {
 
-    // Duplicate detection threshold: more sensitive than attendance recognition (accept=0.25f)
-    const val DUPLICATE_DETECTION_THRESHOLD = 0.22f
+    const val DUPLICATE_DETECTION_THRESHOLD = 0.50f
 
     fun checkDuplicate(
         candidateSamples: List<FloatArray>,
@@ -189,23 +191,30 @@ object DuplicateCheckService {
             return DuplicateResult.Clear
         }
 
-        // Group templates by student
-        val groupedTemplates = galleryTemplates
-            .filter { it.studentId != excludeStudentId }
-            .groupBy { it.studentId }
+        val filteredTemplates = galleryTemplates.filter { it.studentId != excludeStudentId }
+        if (filteredTemplates.isEmpty()) {
+            return DuplicateResult.Clear
+        }
 
-        for ((existingStudentId, studentTemplates) in groupedTemplates) {
-            for (candidate in candidateSamples) {
-                for (template in studentTemplates) {
-                    val score = IdentityScorer.cosineSimilarity(candidate, template.embedding)
-                    if (score >= threshold) {
-                        return DuplicateResult.Suspicious(
-                            existingStudentId = existingStudentId,
-                            score = score
-                        )
-                    }
+        var maxScore = -1f
+        var maxStudentId: Long? = null
+
+        // Max over all (candidate x template) pairs
+        for (candidate in candidateSamples) {
+            for (template in filteredTemplates) {
+                val score = IdentityScorer.cosineSimilarity(candidate, template.embedding)
+                if (score > maxScore) {
+                    maxScore = score
+                    maxStudentId = template.studentId
                 }
             }
+        }
+
+        if (maxScore >= threshold && maxStudentId != null) {
+            return DuplicateResult.Suspicious(
+                existingStudentId = maxStudentId,
+                score = maxScore
+            )
         }
 
         return DuplicateResult.Clear

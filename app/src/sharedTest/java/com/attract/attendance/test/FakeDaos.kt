@@ -36,6 +36,8 @@ class FakeSessionDao(var activeSession: AttendanceSessionEntity? = null) : Sessi
     override suspend fun deleteEnded(sessionId: Long): Int = 0
     override fun observeSessionDaysForMonth(classId: Long, yearMonthPrefix: String): Flow<List<Int>> = flowOf(emptyList())
     override fun observeSessionsForDate(classId: Long, dateString: String): Flow<List<SessionRow>> = flowOf(emptyList())
+    override suspend fun deleteActiveFaceSessionsForClass(classId: Long): Int = 0
+    override suspend fun deleteAllActiveFaceSessions(): Int = 0
 }
 
 class FakeStudentDao(initialStudents: List<StudentEntity> = emptyList()) : StudentDao {
@@ -56,6 +58,8 @@ class FakeStudentDao(initialStudents: List<StudentEntity> = emptyList()) : Stude
             studentsList[index] = student
         }
     }
+    override suspend fun resetEnrollmentForClass(classId: Long): Int = 0
+    override suspend fun resetAllEnrollments(): Int = 0
 }
 
 class FakeAttendanceRecordDao : AttendanceRecordDao {
@@ -92,6 +96,9 @@ class FakeAttendanceRecordDao : AttendanceRecordDao {
         records.removeAll { it.sessionId == sessionId }
         return count
     }
+
+    override suspend fun deleteActiveFaceSessionRecordsForClass(classId: Long): Int = 0
+    override suspend fun deleteAllActiveFaceSessionRecords(): Int = 0
 
     override suspend fun presentCount(sessionId: Long): Int = records.count { it.sessionId == sessionId && it.status == AttendanceStatus.PRESENT }
     override suspend fun all(): List<AttendanceRecordEntity> = records

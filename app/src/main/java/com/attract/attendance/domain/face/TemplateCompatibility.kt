@@ -24,7 +24,7 @@ object TemplateCompatibility {
     /**
      * Distinguishes model profiles. Encodes model name and dimension.
      */
-    const val CURRENT_MODEL_ID = "arcface_512d_v3"
+    val CURRENT_MODEL_ID: String = BiometricModelProfile.CURRENT.profileId
 
     data class ModelProfile(val modelId: String, val embeddingDim: Int)
 

@@ -207,6 +207,7 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
                         onThemeModeChange = viewModel::setThemeMode,
                         onExportBackup = { exportBackupPicker.launch("attract-backup.json") },
                         onImportBackup = { importBackupPicker.launch(arrayOf("application/json", "*/*")) },
+                        onResetBiometricData = viewModel::resetBiometricData,
                         onBack = viewModel::navigateBack
                     )
                     is AppScreen.StudentDetail -> {

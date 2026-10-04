@@ -122,9 +122,9 @@ object EmbeddingEngine {
             val r = ((pixel shr 16) and 0xFF)
             val g = ((pixel shr 8) and 0xFF)
             val b = (pixel and 0xFF)
-            inputBuffer.putFloat((r - 127.5f) / 128.0f)
-            inputBuffer.putFloat((g - 127.5f) / 128.0f)
             inputBuffer.putFloat((b - 127.5f) / 128.0f)
+            inputBuffer.putFloat((g - 127.5f) / 128.0f)
+            inputBuffer.putFloat((r - 127.5f) / 128.0f)
         }
 
         val outputEmbedding = FloatArray(EMBEDDING_SIZE)

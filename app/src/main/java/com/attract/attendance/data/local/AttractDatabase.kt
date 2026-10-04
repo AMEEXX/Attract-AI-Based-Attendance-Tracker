@@ -17,7 +17,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         AttendanceSessionEntity::class,
         AttendanceRecordEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -80,12 +80,25 @@ abstract class AttractDatabase : RoomDatabase() {
             }
         }
 
+        /** v4→v5: ArcFace 512-D BGR + relative yaw rebuild (WP-A, D-007). Incompatible templates purged; students reset to NOT_ENROLLED. Attendance history preserved. */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP INDEX IF EXISTS index_one_active_face_session")
+                db.execSQL("DELETE FROM face_templates")
+                db.execSQL("UPDATE students SET enrollment_status = 'NOT_ENROLLED', enrolled_at = NULL")
+                db.execSQL(
+                    "DELETE FROM attendance_records WHERE session_id IN (SELECT id FROM attendance_sessions WHERE status = 'ACTIVE' AND mode = 'FACE')"
+                )
+                db.execSQL("DELETE FROM attendance_sessions WHERE status = 'ACTIVE' AND mode = 'FACE'")
+            }
+        }
+
         fun create(context: Context): AttractDatabase = Room.databaseBuilder(
             context.applicationContext,
             AttractDatabase::class.java,
             "attract.db",
         )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
             .fallbackToDestructiveMigrationOnDowngrade()
             .addCallback(object : Callback() {
                 override fun onOpen(db: SupportSQLiteDatabase) {

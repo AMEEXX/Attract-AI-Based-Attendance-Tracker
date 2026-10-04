@@ -16,9 +16,9 @@ data class FaceQualityConfig(
     val minEyeOpenProbability: Float,
     val requireEyes: Boolean,
     val frontalThresholdDegrees: Float,
-    val straightMaxYawDegrees: Float = 15f,
-    val profileMinYawDegrees: Float = 20f,
-    val profileMaxYawDegrees: Float = 45f,
+    val straightMaxYawDegrees: Float = 12f,
+    val profileMinYawDegrees: Float = 10f,
+    val profileMaxYawDegrees: Float = 40f,
     val scoreWeights: QualityScoreWeights,
 ) {
     init {
@@ -36,9 +36,7 @@ data class FaceQualityConfig(
         require(minEyeOpenProbability in 0f..1f) { "minEyeOpenProbability must be in 0..1." }
         require(frontalThresholdDegrees > 0f) { "frontalThresholdDegrees must be positive." }
         require(straightMaxYawDegrees > 0f) { "straightMaxYawDegrees must be positive." }
-        require(profileMinYawDegrees > straightMaxYawDegrees) {
-            "profileMinYawDegrees must exceed straightMaxYawDegrees so steps never overlap."
-        }
+        require(profileMinYawDegrees > 0f) { "profileMinYawDegrees must be positive." }
         require(profileMaxYawDegrees > profileMinYawDegrees) { "profileMaxYawDegrees must exceed profileMinYawDegrees." }
         require(abs(scoreWeights.total - 1f) <= 0.01f) { "Score weights must sum to 1." }
         require(
@@ -54,9 +52,9 @@ data class FaceQualityConfig(
         fun calibrationDefaults() = FaceQualityConfig(
             version = 1,
             minFaceRatio = 0.10f,
-            maxPoseDegrees = 20f,
-            maxOffCenterFraction = 0.35f,
-            minBlurVariance = 120f,
+            maxPoseDegrees = 15f,
+            maxOffCenterFraction = 0.25f,
+            minBlurVariance = 60f,
             targetBlurVariance = 500f,
             minBrightness = 40f,
             maxBrightness = 220f,
@@ -65,6 +63,9 @@ data class FaceQualityConfig(
             minEyeOpenProbability = 0.6f,
             requireEyes = false,
             frontalThresholdDegrees = 10f,
+            straightMaxYawDegrees = 12f,
+            profileMinYawDegrees = 10f,
+            profileMaxYawDegrees = 40f,
             scoreWeights = QualityScoreWeights(
                 pose = 0.3f,
                 sharpness = 0.3f,

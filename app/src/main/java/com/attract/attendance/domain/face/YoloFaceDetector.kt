@@ -9,6 +9,8 @@ import java.io.FileInputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.channels.FileChannel
+import kotlin.math.abs
+import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sqrt
@@ -29,8 +31,11 @@ object YoloFaceDetector {
     private const val MODEL_FILE = "yolov8n_face.tflite"
     private const val INPUT_SIZE = 640
     private const val CONFIDENCE_THRESHOLD = 0.5f
-    private const val MIN_LANDMARK_CONFIDENCE = 0.5f
+    const val MIN_LANDMARK_CONFIDENCE = 0.3f
     private const val IOU_THRESHOLD = 0.45f
+
+    const val K_YAW = -60.8f          // calibrated, tools/biometric_eval/exp3
+    const val K_PITCH = 45.0f
 
     private var interpreter: Interpreter? = null
     private var isModelLoaded = false
@@ -58,6 +63,8 @@ object YoloFaceDetector {
     ) {
         val meanLandmarkConfidence: Float
             get() = if (landmarkConfidences.isNotEmpty()) landmarkConfidences.average().toFloat() else 0f
+        val minLandmarkConfidence: Float
+            get() = if (landmarkConfidences.isNotEmpty()) landmarkConfidences.minOrNull() ?: 0f else 0f
     }
 
     @Synchronized
@@ -231,9 +238,10 @@ object YoloFaceDetector {
                 PointF(it.x * frameWidth, it.y * frameHeight)
             }
 
-            val yaw = estimateYawFromLandmarks(landmarks)
-            val pitch = estimatePitchFromLandmarks(landmarks)
-            val roll = estimateRollFromLandmarks(landmarks)
+            val roll = estimateRoll(landmarks)
+            val deRotated = rotateLandmarks(landmarks, -roll)
+            val yaw = estimateYaw(deRotated)
+            val pitch = estimatePitch(deRotated)
 
             val faceArea = (box.width() * box.height()).toFloat()
             val centerX = box.exactCenterX() / frameWidth.toFloat()
@@ -296,57 +304,68 @@ object YoloFaceDetector {
     }
 
     /**
-     * Estimate yaw (left/right head turn) from 5-point landmarks:
-     * [0]=leftEye, [1]=rightEye, [2]=nose, [3]=leftMouth, [4]=rightMouth.
-     * Negative = turned left, Positive = turned right.
+     * Rotate 2D landmarks by [angleDegrees] around the eye midpoint.
+     * Prevents in-plane roll tilt from leaking into yaw/pitch estimates (WP-B).
      */
-    private fun estimateYawFromLandmarks(landmarks: List<PointF>): Float {
-        val leftEye = landmarks[0]
-        val rightEye = landmarks[1]
-        val nose = landmarks[2]
-
-        val distLeft = distance(nose, leftEye)
-        val distRight = distance(nose, rightEye)
-        val total = distLeft + distRight
-        if (total < 1e-6f) return 0f
-
-        val ratio = distLeft / total
-        return (0.5f - ratio) * 60f
+    fun rotateLandmarks(landmarks: List<PointF>, angleDegrees: Float): List<PointF> {
+        if (landmarks.size < 2 || abs(angleDegrees) < 0.05f) return landmarks
+        val rad = Math.toRadians(angleDegrees.toDouble())
+        val cos = Math.cos(rad).toFloat()
+        val sin = Math.sin(rad).toFloat()
+        val eyeMidX = (landmarks[0].x + landmarks[1].x) / 2f
+        val eyeMidY = (landmarks[0].y + landmarks[1].y) / 2f
+        return landmarks.map { pt ->
+            val dx = pt.x - eyeMidX
+            val dy = pt.y - eyeMidY
+            PointF(
+                eyeMidX + (dx * cos - dy * sin),
+                eyeMidY + (dx * sin + dy * cos)
+            )
+        }
     }
 
     /**
-     * Estimate pitch (up/down head tilt) from 5-point landmarks.
+     * Calibrated nose-offset yaw calculation (WP-B / RC-1).
+     * Negative = turned left, Positive = turned right.
+     */
+    fun calculateYaw(leftEyeX: Float, leftEyeY: Float, rightEyeX: Float, rightEyeY: Float, noseX: Float, noseY: Float): Float {
+        val mx = (leftEyeX + rightEyeX) / 2f
+        val ie = kotlin.math.hypot((rightEyeX - leftEyeX).toDouble(), (rightEyeY - leftEyeY).toDouble()).toFloat().coerceAtLeast(1f)
+        return K_YAW * (noseX - mx) / ie
+    }
+
+    /**
+     * Vertical nose-offset pitch calculation (WP-B).
      * Negative = looking up, Positive = looking down.
      */
-    private fun estimatePitchFromLandmarks(landmarks: List<PointF>): Float {
-        val leftEye = landmarks[0]
-        val rightEye = landmarks[1]
-        val nose = landmarks[2]
-        val mouthCenterY = (landmarks[3].y + landmarks[4].y) / 2f
-        val eyeCenterY = (leftEye.y + rightEye.y) / 2f
-
-        val eyeToNose = nose.y - eyeCenterY
-        val totalV = mouthCenterY - eyeCenterY
-        if (totalV < 1e-6f) return 0f
-
-        val ratio = eyeToNose / totalV
-        return (ratio - 0.45f) * 50f
+    fun calculatePitch(leftEyeX: Float, leftEyeY: Float, rightEyeX: Float, rightEyeY: Float, noseX: Float, noseY: Float): Float {
+        val my = (leftEyeY + rightEyeY) / 2f
+        val ie = kotlin.math.hypot((rightEyeX - leftEyeX).toDouble(), (rightEyeY - leftEyeY).toDouble()).toFloat().coerceAtLeast(1f)
+        val noseV = (noseY - my) / ie
+        return K_PITCH * (noseV - 0.55f)
     }
 
     /**
      * Estimate roll (in-plane rotation) from eye coordinates.
      */
-    private fun estimateRollFromLandmarks(landmarks: List<PointF>): Float {
-        val leftEye = landmarks[0]
-        val rightEye = landmarks[1]
-        val dx = rightEye.x - leftEye.x
-        val dy = rightEye.y - leftEye.y
+    fun calculateRoll(leftEyeX: Float, leftEyeY: Float, rightEyeX: Float, rightEyeY: Float): Float {
+        val dx = rightEyeX - leftEyeX
+        val dy = rightEyeY - leftEyeY
         return Math.toDegrees(Math.atan2(dy.toDouble(), dx.toDouble())).toFloat()
     }
 
-    private fun distance(a: PointF, b: PointF): Float {
-        val dx = a.x - b.x
-        val dy = a.y - b.y
-        return sqrt(dx * dx + dy * dy)
+    fun estimateYaw(landmarks: List<PointF>): Float {
+        if (landmarks.size < 3) return 0f
+        return calculateYaw(landmarks[0].x, landmarks[0].y, landmarks[1].x, landmarks[1].y, landmarks[2].x, landmarks[2].y)
+    }
+
+    fun estimatePitch(landmarks: List<PointF>): Float {
+        if (landmarks.size < 3) return 0f
+        return calculatePitch(landmarks[0].x, landmarks[0].y, landmarks[1].x, landmarks[1].y, landmarks[2].x, landmarks[2].y)
+    }
+
+    fun estimateRoll(landmarks: List<PointF>): Float {
+        if (landmarks.size < 2) return 0f
+        return calculateRoll(landmarks[0].x, landmarks[0].y, landmarks[1].x, landmarks[1].y)
     }
 }

@@ -157,6 +157,12 @@ interface StudentDao {
 
     @androidx.room.Update
     suspend fun update(student: StudentEntity)
+
+    @Query("UPDATE students SET enrollment_status = 'NOT_ENROLLED', enrolled_at = NULL WHERE class_id = :classId")
+    suspend fun resetEnrollmentForClass(classId: Long): Int
+
+    @Query("UPDATE students SET enrollment_status = 'NOT_ENROLLED', enrolled_at = NULL")
+    suspend fun resetAllEnrollments(): Int
 }
 
 @Dao
@@ -197,6 +203,12 @@ interface SessionDao {
 
     @Query("UPDATE attendance_sessions SET status = :status, ended_at = :endedAt, updated_at = :updatedAt WHERE id = :sessionId AND status = 'ACTIVE'")
     suspend fun finish(sessionId: Long, status: SessionStatus, endedAt: Long, updatedAt: Long): Int
+
+    @Query("DELETE FROM attendance_sessions WHERE class_id = :classId AND status = 'ACTIVE' AND mode = 'FACE'")
+    suspend fun deleteActiveFaceSessionsForClass(classId: Long): Int
+
+    @Query("DELETE FROM attendance_sessions WHERE status = 'ACTIVE' AND mode = 'FACE'")
+    suspend fun deleteAllActiveFaceSessions(): Int
 
     @Query(
         """
@@ -263,6 +275,24 @@ interface AttendanceRecordDao {
     @Query("DELETE FROM attendance_records WHERE session_id = :sessionId")
     suspend fun deleteForSession(sessionId: Long): Int
 
+    @Query(
+        """
+        DELETE FROM attendance_records WHERE session_id IN (
+            SELECT id FROM attendance_sessions WHERE class_id = :classId AND status = 'ACTIVE' AND mode = 'FACE'
+        )
+        """
+    )
+    suspend fun deleteActiveFaceSessionRecordsForClass(classId: Long): Int
+
+    @Query(
+        """
+        DELETE FROM attendance_records WHERE session_id IN (
+            SELECT id FROM attendance_sessions WHERE status = 'ACTIVE' AND mode = 'FACE'
+        )
+        """
+    )
+    suspend fun deleteAllActiveFaceSessionRecords(): Int
+
     @Query("SELECT COUNT(*) FROM attendance_records WHERE session_id = :sessionId AND status = 'PRESENT'")
     suspend fun presentCount(sessionId: Long): Int
 
@@ -328,6 +358,12 @@ interface FaceTemplateDao {
 
     @Query("DELETE FROM face_templates WHERE student_id = :studentId")
     suspend fun deleteForStudent(studentId: Long): Int
+
+    @Query("DELETE FROM face_templates WHERE student_id IN (SELECT id FROM students WHERE class_id = :classId)")
+    suspend fun deleteForClass(classId: Long): Int
+
+    @Query("DELETE FROM face_templates")
+    suspend fun deleteAll(): Int
 
     @Query("SELECT * FROM face_templates ORDER BY id")
     suspend fun all(): List<FaceTemplateEntity>

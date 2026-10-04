@@ -18,11 +18,12 @@ data class FaceQualitySignals(
     val centerY: Float,
     val blurVariance: Float,
     val brightness: Float,
+    val landmarkMinConf: Float = 1.0f,
 ) {
     val isSingleFace: Boolean get() = faceCount == 1
 
     /** All values must be finite; a malformed crop is a safe reject, never a native crash. */
     val isFinite: Boolean
-        get() = listOf(yawDegrees, pitchDegrees, rollDegrees, faceRatio, centerX, centerY, blurVariance, brightness)
+        get() = listOf(yawDegrees, pitchDegrees, rollDegrees, faceRatio, centerX, centerY, blurVariance, brightness, landmarkMinConf)
             .all { it.isFinite() }
 }

@@ -118,4 +118,6 @@ private class FakeSessionDao(private val activeSession: AttendanceSessionEntity?
     override suspend fun deleteEnded(sessionId: Long): Int = 0
     override fun observeSessionDaysForMonth(classId: Long, yearMonthPrefix: String): Flow<List<Int>> = flowOf(emptyList())
     override fun observeSessionsForDate(classId: Long, dateString: String): Flow<List<com.attract.attendance.data.local.SessionRow>> = flowOf(emptyList())
+    override suspend fun deleteActiveFaceSessionsForClass(classId: Long): Int = 0
+    override suspend fun deleteAllActiveFaceSessions(): Int = 0
 }

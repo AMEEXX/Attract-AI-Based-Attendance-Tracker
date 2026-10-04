@@ -17,6 +17,7 @@ object FaceQualityEngine {
         signals: FaceQualitySignals,
         config: FaceQualityConfig,
         expectedPose: ExpectedPose = ExpectedPose.STRAIGHT,
+        anchorYaw: Float? = null,
     ): QualityResult {
         if (!signals.isFinite) return QualityResult.Rejected(QualityReason.NO_FACE)
         if (signals.faceCount == 0) return QualityResult.Rejected(QualityReason.NO_FACE)
@@ -26,7 +27,7 @@ object FaceQualityEngine {
         if (abs(signals.pitchDegrees) > config.maxPoseDegrees) {
             return QualityResult.Rejected(QualityReason.POSE)
         }
-        if (!yawInWindow(signals.yawDegrees, config, expectedPose)) {
+        if (!yawInWindow(signals.yawDegrees, config, expectedPose, anchorYaw)) {
             val reason = when (expectedPose) {
                 ExpectedPose.STRAIGHT -> QualityReason.POSE_NOT_STRAIGHT
                 ExpectedPose.LEFT -> QualityReason.POSE_NOT_LEFT
@@ -42,7 +43,7 @@ object FaceQualityEngine {
         }
 
         return QualityResult.Accepted(
-            score = score(signals, config, expectedPose),
+            score = score(signals, config, expectedPose, anchorYaw),
             poseBucket = poseBucket(signals, config.frontalThresholdDegrees),
             configVersion = config.version,
         )
@@ -52,13 +53,20 @@ object FaceQualityEngine {
      * Duplicate-frame guard (LLD-09): an accepted frame must differ in yaw from every
      * previously accepted capture by at least [MIN_CAPTURE_YAW_SEPARATION_DEGREES].
      */
+    @Deprecated("Superseded by relative yaw and embedding diversity gates in WP-B / WP-D")
     fun isDistinctFromCaptured(yawDegrees: Float, capturedYaws: List<Float>): Boolean =
         capturedYaws.all { abs(yawDegrees - it) >= MIN_CAPTURE_YAW_SEPARATION_DEGREES }
 
-    private fun yawInWindow(yaw: Float, config: FaceQualityConfig, expected: ExpectedPose): Boolean = when (expected) {
+    private fun yawInWindow(yaw: Float, config: FaceQualityConfig, expected: ExpectedPose, anchorYaw: Float?): Boolean = when (expected) {
         ExpectedPose.STRAIGHT -> abs(yaw) <= config.straightMaxYawDegrees
-        ExpectedPose.LEFT -> yaw in -config.profileMaxYawDegrees..-config.profileMinYawDegrees
-        ExpectedPose.RIGHT -> yaw in config.profileMinYawDegrees..config.profileMaxYawDegrees
+        ExpectedPose.LEFT -> {
+            val delta = yaw - (anchorYaw ?: 0f)
+            delta in -config.profileMaxYawDegrees..-config.profileMinYawDegrees
+        }
+        ExpectedPose.RIGHT -> {
+            val delta = yaw - (anchorYaw ?: 0f)
+            delta in config.profileMinYawDegrees..config.profileMaxYawDegrees
+        }
     }
 
     private fun isInFrame(signals: FaceQualitySignals, config: FaceQualityConfig): Boolean {
@@ -76,11 +84,12 @@ object FaceQualityEngine {
         signals: FaceQualitySignals,
         config: FaceQualityConfig,
         expected: ExpectedPose = ExpectedPose.STRAIGHT,
+        anchorYaw: Float? = null,
     ): Float {
         val targetYaw = when (expected) {
             ExpectedPose.STRAIGHT -> 0f
-            ExpectedPose.LEFT -> -(config.profileMinYawDegrees + config.profileMaxYawDegrees) / 2f
-            ExpectedPose.RIGHT -> (config.profileMinYawDegrees + config.profileMaxYawDegrees) / 2f
+            ExpectedPose.LEFT -> (anchorYaw ?: 0f) - (config.profileMinYawDegrees + config.profileMaxYawDegrees) / 2f
+            ExpectedPose.RIGHT -> (anchorYaw ?: 0f) + (config.profileMinYawDegrees + config.profileMaxYawDegrees) / 2f
         }
         val yawDeviation = abs(signals.yawDegrees - targetYaw)
         val poseScore = (1f - max(yawDeviation, abs(signals.pitchDegrees)) / config.maxPoseDegrees)

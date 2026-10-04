@@ -37,11 +37,11 @@ data class StudentTemplatePair(
 class RecognitionDecisionEngine(
     /**
      * Calibrated accept threshold for ArcFace 512-D embeddings.
-     * Empirical genuine scores min=0.25, mean=0.58; impostor scores max=0.16, mean=-0.05.
+     * Calibrated on 200 LFW identities: accept=0.50f, margin=0.08f.
      */
-    val acceptThreshold: Float = 0.25f,
+    val acceptThreshold: Float = BiometricModelProfile.CURRENT.acceptThreshold,
     /** Calibrated ambiguity margin; separates top candidate from second candidate. */
-    val ambiguousMargin: Float = 0.05f,
+    val ambiguousMargin: Float = BiometricModelProfile.CURRENT.ambiguousMargin,
 ) {
     fun evaluate(
         targetEmbedding: FloatArray,

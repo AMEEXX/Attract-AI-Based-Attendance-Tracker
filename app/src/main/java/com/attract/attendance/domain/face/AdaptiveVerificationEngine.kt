@@ -169,11 +169,15 @@ class AdaptiveVerificationEngine(
 
         // ---- Frame-1 fast path (test matrix #1): a confident FIRST usable frame accepts
         // immediately; no left/right captures are requested.
+        // WP-C / §3.3: High-confidence matches (>= confirmBelow 0.60f) accept on frame 1.
+        // Borderline matches in [acceptThreshold, confirmBelow) request a second confirming frame.
         if (usable && usableSoFar == 1) {
             val decision = analysis.decision
             if (decision is RecognitionOutcome.Match) {
-                finished = true
-                return Step.Final(Outcome.Match(decision.studentId, decision.confidence, framesUsed = submitted))
+                if (decision.confidence >= BiometricModelProfile.CURRENT.confirmBelow) {
+                    finished = true
+                    return Step.Final(Outcome.Match(decision.studentId, decision.confidence, framesUsed = submitted))
+                }
             }
         }
 

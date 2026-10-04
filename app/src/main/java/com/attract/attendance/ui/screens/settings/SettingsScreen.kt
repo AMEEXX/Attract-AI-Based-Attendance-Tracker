@@ -27,6 +27,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.attract.attendance.ui.components.AttractCard
 import com.attract.attendance.ui.theme.AppThemeMode
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.attract.attendance.ui.theme.Dimens
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,9 +46,15 @@ fun SettingsScreen(
     onThemeModeChange: (AppThemeMode) -> Unit,
     onExportBackup: () -> Unit,
     onImportBackup: () -> Unit,
+    onResetBiometricData: ((pin: String, confirmText: String, onResult: (Boolean, String) -> Unit) -> Unit)? = null,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var showResetDialog by remember { mutableStateOf(false) }
+    var resetPin by remember { mutableStateOf("") }
+    var resetConfirmText by remember { mutableStateOf("") }
+    var resetErrorMessage by remember { mutableStateOf<String?>(null) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -119,6 +135,23 @@ fun SettingsScreen(
                         ) {
                             Text("Import Database Backup", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
                         }
+                        if (onResetBiometricData != null) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { showResetDialog = true }
+                                    .padding(vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "Reset All Face Data (Biometrics)",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -140,6 +173,81 @@ fun SettingsScreen(
                     }
                 }
             }
+        }
+
+        if (showResetDialog) {
+            AlertDialog(
+                onDismissRequest = {
+                    showResetDialog = false
+                    resetPin = ""
+                    resetConfirmText = ""
+                    resetErrorMessage = null
+                },
+                title = { Text("Reset All Biometric Data") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            "This will delete all enrolled face templates, mark all students as NOT_ENROLLED, and cancel active face sessions. Attendance history will be kept.",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        OutlinedTextField(
+                            value = resetPin,
+                            onValueChange = { resetPin = it },
+                            label = { Text("Teacher PIN") },
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = resetConfirmText,
+                            onValueChange = { resetConfirmText = it },
+                            label = { Text("Type RESET to confirm") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        if (resetErrorMessage != null) {
+                            Text(
+                                resetErrorMessage.orEmpty(),
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (resetConfirmText.trim() != "RESET") {
+                                resetErrorMessage = "Type RESET in all caps to confirm"
+                                return@Button
+                            }
+                            onResetBiometricData?.invoke(resetPin, resetConfirmText) { success, msg ->
+                                if (success) {
+                                    showResetDialog = false
+                                    resetPin = ""
+                                    resetConfirmText = ""
+                                    resetErrorMessage = null
+                                } else {
+                                    resetErrorMessage = msg
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Reset Data")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        showResetDialog = false
+                        resetPin = ""
+                        resetConfirmText = ""
+                        resetErrorMessage = null
+                    }) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
     }
 }

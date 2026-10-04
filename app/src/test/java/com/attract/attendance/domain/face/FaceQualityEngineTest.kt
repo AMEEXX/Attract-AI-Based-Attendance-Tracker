@@ -68,7 +68,8 @@ class FaceQualityEngineTest {
     fun straightStep_frontalYawAccepted_extremeYawRejectedWithStepReason() {
         assertEquals(QualityReason.POSE_NOT_STRAIGHT, rejectedReason(FaceQualityEngine.evaluate(signals(yawDegrees = 30f), config, ExpectedPose.STRAIGHT)))
         assertEquals(QualityReason.POSE_NOT_STRAIGHT, rejectedReason(FaceQualityEngine.evaluate(signals(yawDegrees = -18f), config, ExpectedPose.STRAIGHT)))
-        assertTrue(FaceQualityEngine.evaluate(signals(yawDegrees = 14f), config, ExpectedPose.STRAIGHT) is QualityResult.Accepted)
+        assertEquals(QualityReason.POSE_NOT_STRAIGHT, rejectedReason(FaceQualityEngine.evaluate(signals(yawDegrees = 14f), config, ExpectedPose.STRAIGHT)))
+        assertTrue(FaceQualityEngine.evaluate(signals(yawDegrees = 10f), config, ExpectedPose.STRAIGHT) is QualityResult.Accepted)
     }
 
     @Test
@@ -78,8 +79,10 @@ class FaceQualityEngineTest {
         assertEquals(QualityReason.POSE_NOT_LEFT, rejectedReason(FaceQualityEngine.evaluate(signals(yawDegrees = 30f), config, ExpectedPose.LEFT)))
         // Genuine left profile accepted.
         assertTrue(FaceQualityEngine.evaluate(signals(yawDegrees = -30f), config, ExpectedPose.LEFT) is QualityResult.Accepted)
-        // Window bounds honored.
-        assertEquals(QualityReason.POSE_NOT_LEFT, rejectedReason(FaceQualityEngine.evaluate(signals(yawDegrees = -10f), config, ExpectedPose.LEFT)))
+        // Window bounds honored: -10° is on the threshold (accepted), -5° is too shallow (rejected), -45° is too steep (rejected).
+        assertTrue(FaceQualityEngine.evaluate(signals(yawDegrees = -10f), config, ExpectedPose.LEFT) is QualityResult.Accepted)
+        assertEquals(QualityReason.POSE_NOT_LEFT, rejectedReason(FaceQualityEngine.evaluate(signals(yawDegrees = -5f), config, ExpectedPose.LEFT)))
+        assertEquals(QualityReason.POSE_NOT_LEFT, rejectedReason(FaceQualityEngine.evaluate(signals(yawDegrees = -45f), config, ExpectedPose.LEFT)))
     }
 
     @Test
