@@ -51,6 +51,16 @@ These decisions remove ambiguity from the frozen HLD. They do not add product sc
 4. **Calibrated Thresholds:** Decision engine calibrated from empirical benchmarks on real human subjects: `acceptThreshold = 0.25f`, `ambiguousMargin = 0.05f`, achieving perfect separation on real test dataset (min genuine = 0.2489, max impostor = 0.1567, separation margin = +0.0923).
 5. **Database & Compatibility:** Schema bumped to version 3 with `MIGRATION_2_3` deactivating legacy templates (`embedding_dim != 512`). `TemplateCompatibility` updated to model `arcface_512d_v3`.
 
+## D-007 — First-time enrollment is self-service (supersedes D-001)
+
+**Date:** 2026-10-04
+**Status:** Approved by product owner; implementation per doc 18 WP-D.
+**Problem:** The D-001 teacher-PIN gate sits in the student check-in path and blocks enrollment during a busy session. Combined with the broken pose gate (doc 18 RC-1), no student could ever complete enrollment.
+**Decision:** When a capture is NOT FOUND, the student picks their own name from the **NOT_ENROLLED** list, confirms "this is me", and completes the guided 3-pose capture. The face is then bound to that name for the semester. No teacher PIN is needed for first enrollment.
+**Retained safeguards:** recognition runs first against all enrolled students; enrolled names are never listed; duplicate-face check (calibrated 0.50) blocks the same face under a second name; the teacher can reset a single student's face profile from the student page; the teacher PIN still guards session exit and data reset.
+**Accepted risk:** a student could deliberately claim a classmate's not-yet-enrolled name. The owner accepts this; it surfaces when the real owner finds their name taken.
+**Also superseded:** D-006 item 4 thresholds (0.25 / 0.05). Measured values are in doc 18 §3.3.
+
 ## Decision change rule
 
 To change a decision, add a dated entry that states the evidence, LLDs affected, migration/testing impact, and approval. Do not silently change persistence, security, or biometric behavior during implementation.

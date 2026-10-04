@@ -1,0 +1,57 @@
+[
+ {
+  "accept": 0.5,
+  "margin": 0.08,
+  "confirm_below": null,
+  "d1_enrolled": 245,
+  "correct": 524,
+  "wrong_id": 5,
+  "not_recognised": 6,
+  "late_enrolled": 40,
+  "stranger_fp": 5
+ },
+ {
+  "accept": 0.5,
+  "margin": 0.08,
+  "confirm_below": 0.6,
+  "d1_enrolled": 245,
+  "correct": 523,
+  "wrong_id": 0,
+  "not_recognised": 7,
+  "late_enrolled": 40,
+  "stranger_fp": 5
+ },
+ {
+  "accept": 0.47,
+  "margin": 0.08,
+  "confirm_below": 0.6,
+  "d1_enrolled": 243,
+  "correct": 525,
+  "wrong_id": 0,
+  "not_recognised": 3,
+  "late_enrolled": 42,
+  "stranger_fp": 14
+ },
+ {
+  "accept": 0.53,
+  "margin": 0.08,
+  "confirm_below": null,
+  "d1_enrolled": 245,
+  "correct": 520,
+  "wrong_id": 0,
+  "not_recognised": 10,
+  "late_enrolled": 40,
+  "stranger_fp": 1
+ },
+ {
+  "accept": 0.53,
+  "margin": 0.08,
+  "confirm_below": 0.6,
+  "d1_enrolled": 245,
+  "correct": 517,
+  "wrong_id": 0,
+  "not_recognised": 13,
+  "late_enrolled": 40,
+  "stranger_fp": 1
+ }
+]

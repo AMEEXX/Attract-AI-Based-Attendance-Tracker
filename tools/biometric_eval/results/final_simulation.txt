@@ -1,0 +1,16 @@
+=== CURRENT  (class=60, day-1 absentees=8, enrolled at end=0)
+Day1: 0/52 enrolled; enrollment clicks=523; failures={'LEFT:BLUR': 16, 'LEFT:POSE_NOT_LEFT': 144, 'STRAIGHT:BLUR': 9, 'STRAIGHT:NO_USABLE_FRAME': 3}
+Day2: correct PRESENT=0 | WRONG identity=0 | enrolled-but-not-recognised=0 | unenrolled->enroll=60 (late-enrolled ok=0) | strangers marked present=0/60
+Day3: correct PRESENT=0 | WRONG identity=0 | enrolled-but-not-recognised=0 | unenrolled->enroll=60 (late-enrolled ok=0) | strangers marked present=0/60
+
+--- CURRENT: aggregate over 5 random classes (300 student-classes, 600 stranger probes)
+    {"d1_attempts": 260, "d2_attempts": 300, "d2_stranger_rejected": 300, "d2_unenrolled_routed_to_enroll": 300, "d3_attempts": 300, "d3_stranger_rejected": 300, "d3_unenrolled_routed_to_enroll": 300, "enroll_clicks": 2639}
+
+=== PROPOSED  (class=60, day-1 absentees=8, enrolled at end=57)
+Day1: 49/52 enrolled; enrollment clicks=228; failures={'STRAIGHT:BLUR': 3, 'STRAIGHT:NO_USABLE_FRAME': 3, 'DUPLICATE_FALSE_BLOCK': 2}
+Day2: correct PRESENT=49 | WRONG identity=0 | enrolled-but-not-recognised=0 | unenrolled->enroll=11 (late-enrolled ok=8) | strangers marked present=2/60
+Day3: correct PRESENT=55 | WRONG identity=0 | enrolled-but-not-recognised=2 | unenrolled->enroll=3 (late-enrolled ok=0) | strangers marked present=0/60
+
+--- PROPOSED: aggregate over 5 random classes (300 student-classes, 600 stranger probes)
+    {"d1_attempts": 260, "d1_enrolled": 245, "d1_false_match_before_enroll": 5, "d2_attempts": 300, "d2_correct_present": 244, "d2_enrolled_AMBIGUOUS": 1, "d2_late_enrolled": 40, "d2_stranger_MARKED_PRESENT": 3, "d2_stranger_rejected": 297, "d2_unenrolled_routed_to_enroll": 55, "d3_attempts": 300, "d3_correct_present": 279, "d3_enrolled_but_routed_to_enroll": 6, "d3_stranger_MARKED_PRESENT": 2, "d3_stranger_rejected": 298, "d3_unenrolled_routed_to_enroll": 15, "enroll_clicks": 1140}
+

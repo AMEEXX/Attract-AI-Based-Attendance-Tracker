@@ -1,5 +1,0 @@
-# Recommended first large benchmark
-python scripts/prepare_lfw_face_benchmark.py --min-images 3 --triplets 10000 --impostor-pairs 20000
-
-# Start smaller if disk/time is limited
-python scripts/prepare_lfw_face_benchmark.py --min-images 3 --max-identities 500 --triplets 5000 --impostor-pairs 10000
