@@ -1,0 +1,38 @@
+{
+ "F": {
+  "probes": 91,
+  "top1_acc": 0.978,
+  "genuine_median": 0.778,
+  "genuine_p10": 0.585,
+  "best_impostor_p90": 0.431,
+  "best_impostor_max": 0.537,
+  "genuine_ge_0_50": 0.967
+ },
+ "F+15": {
+  "probes": 91,
+  "top1_acc": 1.0,
+  "genuine_median": 0.846,
+  "genuine_p10": 0.769,
+  "best_impostor_p90": 0.481,
+  "best_impostor_max": 0.562,
+  "genuine_ge_0_50": 1.0
+ },
+ "F+30": {
+  "probes": 91,
+  "top1_acc": 1.0,
+  "genuine_median": 0.816,
+  "genuine_p10": 0.69,
+  "best_impostor_p90": 0.467,
+  "best_impostor_max": 0.537,
+  "genuine_ge_0_50": 1.0
+ },
+ "F+15+30": {
+  "probes": 91,
+  "top1_acc": 1.0,
+  "genuine_median": 0.848,
+  "genuine_p10": 0.769,
+  "best_impostor_p90": 0.491,
+  "best_impostor_max": 0.562,
+  "genuine_ge_0_50": 1.0
+ }
+}

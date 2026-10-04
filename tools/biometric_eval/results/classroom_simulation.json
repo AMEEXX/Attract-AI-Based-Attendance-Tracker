@@ -1,0 +1,7458 @@
+{
+ "CURRENT": [
+  {
+   "config": "CURRENT",
+   "class_size": 60,
+   "absent_day1": 8,
+   "totals": {
+    "d1_attempts": 52,
+    "enroll_clicks": 523,
+    "d2_attempts": 60,
+    "d2_unenrolled_routed_to_enroll": 60,
+    "d2_stranger_rejected": 60,
+    "d3_attempts": 60,
+    "d3_unenrolled_routed_to_enroll": 60,
+    "d3_stranger_rejected": 60
+   },
+   "enroll_failures": {
+    "LEFT:BLUR": 16,
+    "LEFT:POSE_NOT_LEFT": 144,
+    "STRAIGHT:BLUR": 9,
+    "STRAIGHT:NO_USABLE_FRAME": 3
+   },
+   "events": [
+    [
+     1,
+     "P04_01",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     1,
+     "P04_02",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 7 clicks"
+    ],
+    [
+     1,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     1,
+     "P04_06",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 6 clicks"
+    ],
+    [
+     1,
+     "P04_07",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 11 clicks"
+    ],
+    [
+     1,
+     "P04_08",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     1,
+     "P04_09",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     1,
+     "P04_10",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 6 clicks"
+    ],
+    [
+     1,
+     "P04_11",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 5 clicks"
+    ],
+    [
+     1,
+     "P04_12",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     1,
+     "P04_13",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     1,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     1,
+     "P04_15",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 9 clicks"
+    ],
+    [
+     1,
+     "LFW_Muhammad_Saeed_al-Sahhaf",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jiang_Zemin",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Martha_Stewart",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jon_Gruden",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jonathan_Edwards",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Julianne_Moore",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_John_Paul_II",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Luiz_Inacio_Lula_da_Silva",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Heidi_Fleiss",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Mark_Hurlbert",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Muhammad_Ali",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Nadia_Petrova",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Marco_Antonio_Barrera",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Hosni_Mubarak",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jan_Ullrich",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Mireya_Moscoso",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Javier_Solana",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Luis_Figo",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Nestor_Kirchner",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Justine_Pasek",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Iain_Duncan_Smith",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_James_McGreevey",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Hugh_Grant",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Mian_Khursheed_Mehmood_Kasuri",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Nancy_Pelosi",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Liza_Minnelli",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jong_Wook_Lee",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jake_Gyllenhaal",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Hillary_Clinton",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Kim_Clijsters",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Martha_Burk",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Kevin_Costner",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Kim_Jong-Il",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Gunter_Pleuger",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jacques_Rogge",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Kalpana_Chawla",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jean-David_Levitte",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_James_Kopp",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jerry_Regier",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "P04_01",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     2,
+     "P04_02",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 7 clicks"
+    ],
+    [
+     2,
+     "P04_03",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 7 clicks"
+    ],
+    [
+     2,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     2,
+     "P04_05",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     2,
+     "P04_06",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 6 clicks"
+    ],
+    [
+     2,
+     "P04_07",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 11 clicks"
+    ],
+    [
+     2,
+     "P04_08",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     2,
+     "P04_09",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     2,
+     "P04_10",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 6 clicks"
+    ],
+    [
+     2,
+     "P04_11",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 5 clicks"
+    ],
+    [
+     2,
+     "P04_12",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     2,
+     "P04_13",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     2,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     2,
+     "P04_15",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 9 clicks"
+    ],
+    [
+     2,
+     "LFW_Muhammad_Saeed_al-Sahhaf",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jennifer_Capriati",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jiang_Zemin",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Martha_Stewart",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jon_Gruden",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jonathan_Edwards",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Julianne_Moore",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Michael_Jackson",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_John_Paul_II",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Luiz_Inacio_Lula_da_Silva",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Heidi_Fleiss",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Mark_Hurlbert",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Muhammad_Ali",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Nadia_Petrova",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Marco_Antonio_Barrera",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Hosni_Mubarak",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jose_Manuel_Durao_Barroso",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jan_Ullrich",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Mireya_Moscoso",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Javier_Solana",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Luis_Figo",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Nestor_Kirchner",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Justine_Pasek",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Iain_Duncan_Smith",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_James_McGreevey",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Ian_Thorpe",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Hugh_Grant",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Mian_Khursheed_Mehmood_Kasuri",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Nancy_Pelosi",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Liza_Minnelli",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jong_Wook_Lee",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jake_Gyllenhaal",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Hillary_Clinton",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Kim_Clijsters",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Martha_Burk",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Ludivine_Sagnier",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Kevin_Costner",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Kim_Jong-Il",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Gunter_Pleuger",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jacques_Rogge",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Joseph_Estrada",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Kalpana_Chawla",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jean-David_Levitte",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_James_Kopp",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jerry_Regier",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "P04_01",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     3,
+     "P04_02",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 7 clicks"
+    ],
+    [
+     3,
+     "P04_03",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 7 clicks"
+    ],
+    [
+     3,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     3,
+     "P04_05",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     3,
+     "P04_06",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 6 clicks"
+    ],
+    [
+     3,
+     "P04_07",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 11 clicks"
+    ],
+    [
+     3,
+     "P04_08",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     3,
+     "P04_09",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     3,
+     "P04_10",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 6 clicks"
+    ],
+    [
+     3,
+     "P04_11",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 5 clicks"
+    ],
+    [
+     3,
+     "P04_12",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     3,
+     "P04_13",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     3,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     3,
+     "P04_15",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 9 clicks"
+    ],
+    [
+     3,
+     "LFW_Muhammad_Saeed_al-Sahhaf",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jennifer_Capriati",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jiang_Zemin",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Martha_Stewart",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jon_Gruden",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jonathan_Edwards",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Julianne_Moore",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Michael_Jackson",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_John_Paul_II",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Luiz_Inacio_Lula_da_Silva",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Heidi_Fleiss",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Mark_Hurlbert",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Muhammad_Ali",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Nadia_Petrova",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Marco_Antonio_Barrera",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Hosni_Mubarak",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jose_Manuel_Durao_Barroso",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jan_Ullrich",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Mireya_Moscoso",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Javier_Solana",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Luis_Figo",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Nestor_Kirchner",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Justine_Pasek",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Iain_Duncan_Smith",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_James_McGreevey",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Ian_Thorpe",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Hugh_Grant",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Mian_Khursheed_Mehmood_Kasuri",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Nancy_Pelosi",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Liza_Minnelli",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jong_Wook_Lee",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jake_Gyllenhaal",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Hillary_Clinton",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Kim_Clijsters",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Martha_Burk",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Ludivine_Sagnier",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Kevin_Costner",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Kim_Jong-Il",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Gunter_Pleuger",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jacques_Rogge",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Joseph_Estrada",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Kalpana_Chawla",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jean-David_Levitte",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_James_Kopp",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jerry_Regier",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ]
+   ],
+   "gallery_size": 0
+  },
+  {
+   "config": "CURRENT",
+   "class_size": 60,
+   "absent_day1": 8,
+   "totals": {
+    "d1_attempts": 52,
+    "enroll_clicks": 524,
+    "d2_attempts": 60,
+    "d2_unenrolled_routed_to_enroll": 60,
+    "d2_stranger_rejected": 60,
+    "d3_attempts": 60,
+    "d3_unenrolled_routed_to_enroll": 60,
+    "d3_stranger_rejected": 60
+   },
+   "enroll_failures": {
+    "LEFT:POSE_NOT_LEFT": 144,
+    "LEFT:BLUR": 16,
+    "STRAIGHT:BLUR": 9,
+    "STRAIGHT:NO_USABLE_FRAME": 3
+   },
+   "events": [
+    [
+     1,
+     "P04_02",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 7 clicks"
+    ],
+    [
+     1,
+     "P04_03",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 7 clicks"
+    ],
+    [
+     1,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     1,
+     "P04_05",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     1,
+     "P04_06",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 6 clicks"
+    ],
+    [
+     1,
+     "P04_07",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 11 clicks"
+    ],
+    [
+     1,
+     "P04_08",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     1,
+     "P04_09",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     1,
+     "P04_10",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 6 clicks"
+    ],
+    [
+     1,
+     "P04_11",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 5 clicks"
+    ],
+    [
+     1,
+     "P04_12",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     1,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     1,
+     "P04_15",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 9 clicks"
+    ],
+    [
+     1,
+     "LFW_Martina_McBride",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_JK_Rowling",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Marco_Antonio_Barrera",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jeong_Se-hyun",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_John_Allen_Muhammad",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Martin_Scorsese",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Michael_Jordan",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jake_Gyllenhaal",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Harry_Schmidt",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Li_Zhaoxing",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Martin_McGuinness",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Michael_Douglas",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Hans_Blix",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Marcelo_Rios",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Joseph_Estrada",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jacques_Chirac",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Michael_Chang",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_James_Kopp",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jesse_Jackson",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_John_Snow",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_John_Howard",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Ludivine_Sagnier",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Mike_Martz",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Kim_Clijsters",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Harrison_Ford",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_LeBron_James",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Monica_Seles",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jennifer_Garner",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_John_Ashcroft",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Maria_Shriver",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Hun_Sen",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Helen_Clark",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Julianne_Moore",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Mariah_Carey",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Kate_Winslet",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Joe_Nichols",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Ian_Thorpe",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_John_Warner",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_King_Abdullah_II",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "P04_01",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     2,
+     "P04_02",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 7 clicks"
+    ],
+    [
+     2,
+     "P04_03",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 7 clicks"
+    ],
+    [
+     2,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     2,
+     "P04_05",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     2,
+     "P04_06",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 6 clicks"
+    ],
+    [
+     2,
+     "P04_07",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 11 clicks"
+    ],
+    [
+     2,
+     "P04_08",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     2,
+     "P04_09",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     2,
+     "P04_10",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 6 clicks"
+    ],
+    [
+     2,
+     "P04_11",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 5 clicks"
+    ],
+    [
+     2,
+     "P04_12",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     2,
+     "P04_13",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     2,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     2,
+     "P04_15",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 9 clicks"
+    ],
+    [
+     2,
+     "LFW_Laura_Bush",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Martina_McBride",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jackie_Chan",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_JK_Rowling",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Marco_Antonio_Barrera",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jeong_Se-hyun",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_John_Allen_Muhammad",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Martin_Scorsese",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Michael_Jordan",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jack_Straw",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jake_Gyllenhaal",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Harry_Schmidt",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Li_Zhaoxing",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Martin_McGuinness",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Michael_Douglas",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Hans_Blix",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Marcelo_Rios",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Joseph_Estrada",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Leonardo_DiCaprio",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jacques_Chirac",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Michael_Chiklis",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Michael_Chang",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_James_Kopp",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jesse_Jackson",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_John_Snow",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_John_Howard",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Ludivine_Sagnier",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Mike_Martz",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Kim_Clijsters",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Harrison_Ford",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_LeBron_James",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Monica_Seles",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Heizo_Takenaka",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jennifer_Garner",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_John_Ashcroft",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Maria_Shriver",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Hun_Sen",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Helen_Clark",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Julianne_Moore",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Mariah_Carey",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Kate_Winslet",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Joe_Nichols",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Ian_Thorpe",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_John_Warner",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_King_Abdullah_II",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "P04_01",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     3,
+     "P04_02",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 7 clicks"
+    ],
+    [
+     3,
+     "P04_03",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 7 clicks"
+    ],
+    [
+     3,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     3,
+     "P04_05",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     3,
+     "P04_06",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 6 clicks"
+    ],
+    [
+     3,
+     "P04_07",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 11 clicks"
+    ],
+    [
+     3,
+     "P04_08",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     3,
+     "P04_09",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     3,
+     "P04_10",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 6 clicks"
+    ],
+    [
+     3,
+     "P04_11",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 5 clicks"
+    ],
+    [
+     3,
+     "P04_12",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     3,
+     "P04_13",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     3,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     3,
+     "P04_15",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 9 clicks"
+    ],
+    [
+     3,
+     "LFW_Laura_Bush",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Martina_McBride",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jackie_Chan",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_JK_Rowling",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Marco_Antonio_Barrera",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jeong_Se-hyun",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_John_Allen_Muhammad",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Martin_Scorsese",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Michael_Jordan",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jack_Straw",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jake_Gyllenhaal",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Harry_Schmidt",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Li_Zhaoxing",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Martin_McGuinness",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Michael_Douglas",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Hans_Blix",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Marcelo_Rios",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Joseph_Estrada",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Leonardo_DiCaprio",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jacques_Chirac",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Michael_Chiklis",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Michael_Chang",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_James_Kopp",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jesse_Jackson",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_John_Snow",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_John_Howard",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Ludivine_Sagnier",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Mike_Martz",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Kim_Clijsters",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Harrison_Ford",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_LeBron_James",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Monica_Seles",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Heizo_Takenaka",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jennifer_Garner",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_John_Ashcroft",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Maria_Shriver",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Hun_Sen",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Helen_Clark",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Julianne_Moore",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Mariah_Carey",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Kate_Winslet",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Joe_Nichols",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Ian_Thorpe",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_John_Warner",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_King_Abdullah_II",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ]
+   ],
+   "gallery_size": 0
+  },
+  {
+   "config": "CURRENT",
+   "class_size": 60,
+   "absent_day1": 8,
+   "totals": {
+    "d1_attempts": 52,
+    "enroll_clicks": 525,
+    "d2_attempts": 60,
+    "d2_unenrolled_routed_to_enroll": 60,
+    "d2_stranger_rejected": 60,
+    "d3_attempts": 60,
+    "d3_unenrolled_routed_to_enroll": 60,
+    "d3_stranger_rejected": 60
+   },
+   "enroll_failures": {
+    "LEFT:BLUR": 17,
+    "LEFT:POSE_NOT_LEFT": 143,
+    "STRAIGHT:BLUR": 9,
+    "STRAIGHT:NO_USABLE_FRAME": 3
+   },
+   "events": [
+    [
+     1,
+     "P04_01",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     1,
+     "P04_02",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 7 clicks"
+    ],
+    [
+     1,
+     "P04_03",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 7 clicks"
+    ],
+    [
+     1,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     1,
+     "P04_06",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 6 clicks"
+    ],
+    [
+     1,
+     "P04_07",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 11 clicks"
+    ],
+    [
+     1,
+     "P04_08",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     1,
+     "P04_09",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     1,
+     "P04_10",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 6 clicks"
+    ],
+    [
+     1,
+     "P04_12",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     1,
+     "P04_13",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     1,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     1,
+     "P04_15",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 9 clicks"
+    ],
+    [
+     1,
+     "LFW_Monica_Seles",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Maria_Shriver",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Martha_Lucia_Ramirez",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Mike_Tyson",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jose_Serra",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Howard_Dean",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Heath_Ledger",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Hamid_Karzai",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Naji_Sabri",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jay_Garner",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_John_Edwards",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Ludivine_Sagnier",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Heidi_Klum",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Laura_Linney",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jennifer_Aniston",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Maria_Soledad_Alvear_Valenzuela",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Mireya_Moscoso",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Kim_Dae-jung",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Mohammed_Al-Douri",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jennifer_Capriati",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Li_Peng",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Kim_Jong-Il",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Lucy_Liu",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jesse_Jackson",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Juan_Pablo_Montoya",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Michael_Chang",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jeb_Bush",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Lisa_Marie_Presley",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jean-Pierre_Raffarin",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Nan_Wang",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jennifer_Lopez",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jean-David_Levitte",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Ian_Thorpe",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Justine_Pasek",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Michael_Caine",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jennifer_Keller",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Michael_Phelps",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Joe_Nichols",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Mahmoud_Abbas",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "P04_01",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     2,
+     "P04_02",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 7 clicks"
+    ],
+    [
+     2,
+     "P04_03",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 7 clicks"
+    ],
+    [
+     2,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     2,
+     "P04_05",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     2,
+     "P04_06",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 6 clicks"
+    ],
+    [
+     2,
+     "P04_07",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 11 clicks"
+    ],
+    [
+     2,
+     "P04_08",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     2,
+     "P04_09",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     2,
+     "P04_10",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 6 clicks"
+    ],
+    [
+     2,
+     "P04_11",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 5 clicks"
+    ],
+    [
+     2,
+     "P04_12",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     2,
+     "P04_13",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     2,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     2,
+     "P04_15",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 9 clicks"
+    ],
+    [
+     2,
+     "LFW_Monica_Seles",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Maria_Shriver",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Martha_Lucia_Ramirez",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Mike_Tyson",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jose_Serra",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Howard_Dean",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Heath_Ledger",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Hans_Blix",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Hamid_Karzai",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Naji_Sabri",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jay_Garner",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_John_Edwards",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_John_Manley",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Ludivine_Sagnier",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Heidi_Klum",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Laura_Linney",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jennifer_Aniston",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Maria_Soledad_Alvear_Valenzuela",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Mireya_Moscoso",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Kim_Dae-jung",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Mohammed_Al-Douri",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jennifer_Capriati",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Li_Peng",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Kim_Jong-Il",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Lucy_Liu",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jesse_Jackson",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jackie_Chan",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Juan_Pablo_Montoya",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Michael_Chang",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jeb_Bush",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Lisa_Marie_Presley",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Nelson_Mandela",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jean-Pierre_Raffarin",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Joan_Laporta",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Nan_Wang",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jennifer_Lopez",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jean-David_Levitte",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Ian_Thorpe",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Justine_Pasek",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Michael_Caine",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jennifer_Keller",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Michael_Phelps",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Joe_Nichols",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Mahmoud_Abbas",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Mike_Weir",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "P04_01",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     3,
+     "P04_02",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 7 clicks"
+    ],
+    [
+     3,
+     "P04_03",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 7 clicks"
+    ],
+    [
+     3,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     3,
+     "P04_05",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     3,
+     "P04_06",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 6 clicks"
+    ],
+    [
+     3,
+     "P04_07",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 11 clicks"
+    ],
+    [
+     3,
+     "P04_08",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     3,
+     "P04_09",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     3,
+     "P04_10",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 6 clicks"
+    ],
+    [
+     3,
+     "P04_11",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 5 clicks"
+    ],
+    [
+     3,
+     "P04_12",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     3,
+     "P04_13",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     3,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     3,
+     "P04_15",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 9 clicks"
+    ],
+    [
+     3,
+     "LFW_Monica_Seles",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Maria_Shriver",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Martha_Lucia_Ramirez",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Mike_Tyson",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jose_Serra",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Howard_Dean",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Heath_Ledger",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Hans_Blix",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Hamid_Karzai",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Naji_Sabri",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jay_Garner",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_John_Edwards",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_John_Manley",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Ludivine_Sagnier",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Heidi_Klum",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Laura_Linney",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jennifer_Aniston",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Maria_Soledad_Alvear_Valenzuela",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Mireya_Moscoso",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Kim_Dae-jung",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Mohammed_Al-Douri",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jennifer_Capriati",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Li_Peng",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Kim_Jong-Il",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Lucy_Liu",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jesse_Jackson",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jackie_Chan",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Juan_Pablo_Montoya",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Michael_Chang",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jeb_Bush",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Lisa_Marie_Presley",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Nelson_Mandela",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jean-Pierre_Raffarin",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Joan_Laporta",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Nan_Wang",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jennifer_Lopez",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jean-David_Levitte",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Ian_Thorpe",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Justine_Pasek",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Michael_Caine",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jennifer_Keller",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Michael_Phelps",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Joe_Nichols",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Mahmoud_Abbas",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Mike_Weir",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ]
+   ],
+   "gallery_size": 0
+  },
+  {
+   "config": "CURRENT",
+   "class_size": 60,
+   "absent_day1": 8,
+   "totals": {
+    "d1_attempts": 52,
+    "enroll_clicks": 536,
+    "d2_attempts": 60,
+    "d2_unenrolled_routed_to_enroll": 60,
+    "d2_stranger_rejected": 60,
+    "d3_attempts": 60,
+    "d3_unenrolled_routed_to_enroll": 60,
+    "d3_stranger_rejected": 60
+   },
+   "enroll_failures": {
+    "LEFT:BLUR": 18,
+    "LEFT:POSE_NOT_LEFT": 142,
+    "STRAIGHT:BLUR": 9,
+    "STRAIGHT:NO_USABLE_FRAME": 3
+   },
+   "events": [
+    [
+     1,
+     "P04_01",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     1,
+     "P04_02",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 7 clicks"
+    ],
+    [
+     1,
+     "P04_03",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 7 clicks"
+    ],
+    [
+     1,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     1,
+     "P04_05",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     1,
+     "P04_06",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 6 clicks"
+    ],
+    [
+     1,
+     "P04_07",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 11 clicks"
+    ],
+    [
+     1,
+     "P04_08",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     1,
+     "P04_09",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     1,
+     "P04_10",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 6 clicks"
+    ],
+    [
+     1,
+     "P04_11",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 5 clicks"
+    ],
+    [
+     1,
+     "P04_12",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     1,
+     "P04_13",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     1,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     1,
+     "P04_15",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 9 clicks"
+    ],
+    [
+     1,
+     "LFW_Jeong_Se-hyun",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Iain_Duncan_Smith",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Kalpana_Chawla",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Lucio_Gutierrez",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Megawati_Sukarnoputri",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_John_Negroponte",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Hans_Blix",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Harry_Schmidt",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Lleyton_Hewitt",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Lance_Bass",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Natalie_Maines",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Heath_Ledger",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_John_Bolton",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Hu_Jintao",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jelena_Dokic",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jean-David_Levitte",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_John_Kerry",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Leonid_Kuchma",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Michael_Phelps",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Habib_Rizieq",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jerry_Regier",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Kathleen_Kennedy_Townsend",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Mike_Martz",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jack_Straw",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Herb_Sendek",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Heidi_Klum",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Gunter_Pleuger",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Mary_Carey",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_James_McGreevey",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Kristanna_Loken",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Martha_Burk",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Naomi_Watts",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Nathalie_Baye",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jesse_Jackson",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Hamid_Karzai",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Helen_Clark",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Michael_Bloomberg",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "P04_01",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     2,
+     "P04_02",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 7 clicks"
+    ],
+    [
+     2,
+     "P04_03",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 7 clicks"
+    ],
+    [
+     2,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     2,
+     "P04_05",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     2,
+     "P04_06",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 6 clicks"
+    ],
+    [
+     2,
+     "P04_07",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 11 clicks"
+    ],
+    [
+     2,
+     "P04_08",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     2,
+     "P04_09",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     2,
+     "P04_10",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 6 clicks"
+    ],
+    [
+     2,
+     "P04_11",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 5 clicks"
+    ],
+    [
+     2,
+     "P04_12",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     2,
+     "P04_13",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     2,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     2,
+     "P04_15",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 9 clicks"
+    ],
+    [
+     2,
+     "LFW_Jeong_Se-hyun",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Iain_Duncan_Smith",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Kalpana_Chawla",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Lucio_Gutierrez",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Megawati_Sukarnoputri",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_John_Negroponte",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Howard_Dean",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Hans_Blix",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Harry_Schmidt",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Lleyton_Hewitt",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Lance_Bass",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jennifer_Aniston",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Natalie_Maines",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Heath_Ledger",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_John_Bolton",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Hu_Jintao",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jelena_Dokic",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jean-David_Levitte",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_John_Kerry",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Leonid_Kuchma",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Monica_Bellucci",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Michael_Phelps",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Habib_Rizieq",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jay_Garner",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jerry_Regier",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Kathleen_Kennedy_Townsend",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Mikhail_Wehbe",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Mike_Martz",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jack_Straw",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Herb_Sendek",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Heidi_Klum",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Maria_Soledad_Alvear_Valenzuela",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Gunter_Pleuger",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Mary_Carey",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_James_McGreevey",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Kristanna_Loken",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Martha_Burk",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Naomi_Watts",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Nathalie_Baye",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jesse_Jackson",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Hamid_Karzai",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Helen_Clark",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Nicanor_Duarte_Frutos",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Juan_Pablo_Montoya",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Michael_Bloomberg",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "P04_01",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     3,
+     "P04_02",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 7 clicks"
+    ],
+    [
+     3,
+     "P04_03",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 7 clicks"
+    ],
+    [
+     3,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     3,
+     "P04_05",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     3,
+     "P04_06",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 6 clicks"
+    ],
+    [
+     3,
+     "P04_07",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 11 clicks"
+    ],
+    [
+     3,
+     "P04_08",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     3,
+     "P04_09",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     3,
+     "P04_10",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 6 clicks"
+    ],
+    [
+     3,
+     "P04_11",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 5 clicks"
+    ],
+    [
+     3,
+     "P04_12",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     3,
+     "P04_13",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     3,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     3,
+     "P04_15",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 9 clicks"
+    ],
+    [
+     3,
+     "LFW_Jeong_Se-hyun",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Iain_Duncan_Smith",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Kalpana_Chawla",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Lucio_Gutierrez",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Megawati_Sukarnoputri",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_John_Negroponte",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Howard_Dean",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Hans_Blix",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Harry_Schmidt",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Lleyton_Hewitt",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Lance_Bass",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jennifer_Aniston",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Natalie_Maines",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Heath_Ledger",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_John_Bolton",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Hu_Jintao",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jelena_Dokic",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jean-David_Levitte",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_John_Kerry",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Leonid_Kuchma",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Monica_Bellucci",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Michael_Phelps",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Habib_Rizieq",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jay_Garner",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jerry_Regier",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Kathleen_Kennedy_Townsend",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Mikhail_Wehbe",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Mike_Martz",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jack_Straw",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Herb_Sendek",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Heidi_Klum",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Maria_Soledad_Alvear_Valenzuela",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Gunter_Pleuger",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Mary_Carey",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_James_McGreevey",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Kristanna_Loken",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Martha_Burk",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Naomi_Watts",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Nathalie_Baye",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jesse_Jackson",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Hamid_Karzai",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Helen_Clark",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Nicanor_Duarte_Frutos",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Juan_Pablo_Montoya",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Michael_Bloomberg",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ]
+   ],
+   "gallery_size": 0
+  },
+  {
+   "config": "CURRENT",
+   "class_size": 60,
+   "absent_day1": 8,
+   "totals": {
+    "d1_attempts": 52,
+    "enroll_clicks": 531,
+    "d2_attempts": 60,
+    "d2_unenrolled_routed_to_enroll": 60,
+    "d2_stranger_rejected": 60,
+    "d3_attempts": 60,
+    "d3_unenrolled_routed_to_enroll": 60,
+    "d3_stranger_rejected": 60
+   },
+   "enroll_failures": {
+    "LEFT:BLUR": 18,
+    "STRAIGHT:BLUR": 9,
+    "LEFT:POSE_NOT_LEFT": 142,
+    "STRAIGHT:NO_USABLE_FRAME": 3
+   },
+   "events": [
+    [
+     1,
+     "P04_01",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     1,
+     "P04_03",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 7 clicks"
+    ],
+    [
+     1,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     1,
+     "P04_05",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     1,
+     "P04_06",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 6 clicks"
+    ],
+    [
+     1,
+     "P04_07",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 11 clicks"
+    ],
+    [
+     1,
+     "P04_08",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     1,
+     "P04_09",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     1,
+     "P04_10",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 6 clicks"
+    ],
+    [
+     1,
+     "P04_11",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 5 clicks"
+    ],
+    [
+     1,
+     "P04_12",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     1,
+     "P04_13",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     1,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     1,
+     "P04_15",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 9 clicks"
+    ],
+    [
+     1,
+     "LFW_Grant_Hackett",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Hugh_Grant",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Mike_Martz",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Michael_Powell",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Keanu_Reeves",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Luis_Gonzalez_Macchi",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Michael_Chang",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Monica_Bellucci",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jiang_Zemin",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Kofi_Annan",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Naoto_Kan",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jacques_Chirac",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Li_Zhaoxing",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_JK_Rowling",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Mitchell_Daniels",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Mohammed_Al-Douri",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jake_Gyllenhaal",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jose_Maria_Aznar",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Meryl_Streep",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Lance_Bass",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jeb_Bush",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_John_Paul_II",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Kevin_Costner",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jeremy_Greenstock",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Habib_Rizieq",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_James_Kopp",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Li_Peng",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jon_Gruden",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jennifer_Keller",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Kristanna_Loken",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_John_Bolton",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Heather_Mills",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Natalie_Coughlin",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Marco_Antonio_Barrera",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Mohammad_Khatami",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Harrison_Ford",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Mireya_Moscoso",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     1,
+     "LFW_Jennifer_Aniston",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "P04_01",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     2,
+     "P04_02",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 7 clicks"
+    ],
+    [
+     2,
+     "P04_03",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 7 clicks"
+    ],
+    [
+     2,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     2,
+     "P04_05",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     2,
+     "P04_06",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 6 clicks"
+    ],
+    [
+     2,
+     "P04_07",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 11 clicks"
+    ],
+    [
+     2,
+     "P04_08",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     2,
+     "P04_09",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     2,
+     "P04_10",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 6 clicks"
+    ],
+    [
+     2,
+     "P04_11",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 5 clicks"
+    ],
+    [
+     2,
+     "P04_12",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     2,
+     "P04_13",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     2,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     2,
+     "P04_15",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 9 clicks"
+    ],
+    [
+     2,
+     "LFW_Grant_Hackett",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Hugh_Grant",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Madonna",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Mike_Martz",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Michael_Powell",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Keanu_Reeves",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Mike_Weir",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Luis_Gonzalez_Macchi",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Michael_Chang",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Monica_Bellucci",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jiang_Zemin",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Justine_Pasek",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Nathalie_Baye",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Kofi_Annan",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Naoto_Kan",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Igor_Ivanov",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jacques_Chirac",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Li_Zhaoxing",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_JK_Rowling",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Mitchell_Daniels",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Mohammed_Al-Douri",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jake_Gyllenhaal",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jose_Maria_Aznar",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Meryl_Streep",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Lance_Bass",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jeb_Bush",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_John_Paul_II",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Kevin_Costner",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jeremy_Greenstock",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Habib_Rizieq",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_James_Kopp",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Li_Peng",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jon_Gruden",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_John_Stockton",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jennifer_Keller",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Kristanna_Loken",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_John_Bolton",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Heather_Mills",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Natalie_Coughlin",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Marco_Antonio_Barrera",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Mohammad_Khatami",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_LeBron_James",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Harrison_Ford",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Mireya_Moscoso",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     2,
+     "LFW_Jennifer_Aniston",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "P04_01",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     3,
+     "P04_02",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 7 clicks"
+    ],
+    [
+     3,
+     "P04_03",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 7 clicks"
+    ],
+    [
+     3,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     3,
+     "P04_05",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     3,
+     "P04_06",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 6 clicks"
+    ],
+    [
+     3,
+     "P04_07",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 11 clicks"
+    ],
+    [
+     3,
+     "P04_08",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 10 clicks"
+    ],
+    [
+     3,
+     "P04_09",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     3,
+     "P04_10",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 6 clicks"
+    ],
+    [
+     3,
+     "P04_11",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 5 clicks"
+    ],
+    [
+     3,
+     "P04_12",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 3 clicks"
+    ],
+    [
+     3,
+     "P04_13",
+     "ENROLL_FAILED",
+     "LEFT BLUR after 8 clicks"
+    ],
+    [
+     3,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     3,
+     "P04_15",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 9 clicks"
+    ],
+    [
+     3,
+     "LFW_Grant_Hackett",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Hugh_Grant",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Madonna",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Mike_Martz",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Michael_Powell",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Keanu_Reeves",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Mike_Weir",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Luis_Gonzalez_Macchi",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Michael_Chang",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Monica_Bellucci",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jiang_Zemin",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Justine_Pasek",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Nathalie_Baye",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Kofi_Annan",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Naoto_Kan",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Igor_Ivanov",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jacques_Chirac",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Li_Zhaoxing",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_JK_Rowling",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Mitchell_Daniels",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Mohammed_Al-Douri",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jake_Gyllenhaal",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jose_Maria_Aznar",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Meryl_Streep",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Lance_Bass",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jeb_Bush",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_John_Paul_II",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Kevin_Costner",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jeremy_Greenstock",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Habib_Rizieq",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_James_Kopp",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Li_Peng",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jon_Gruden",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_John_Stockton",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jennifer_Keller",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Kristanna_Loken",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_John_Bolton",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Heather_Mills",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Natalie_Coughlin",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Marco_Antonio_Barrera",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Mohammad_Khatami",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_LeBron_James",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Harrison_Ford",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Mireya_Moscoso",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ],
+    [
+     3,
+     "LFW_Jennifer_Aniston",
+     "ENROLL_FAILED",
+     "LEFT POSE_NOT_LEFT after 2 clicks"
+    ]
+   ],
+   "gallery_size": 0
+  }
+ ],
+ "PROPOSED": [
+  {
+   "config": "PROPOSED",
+   "class_size": 60,
+   "absent_day1": 8,
+   "totals": {
+    "d1_attempts": 52,
+    "enroll_clicks": 228,
+    "d1_enrolled": 49,
+    "d1_false_match_before_enroll": 1,
+    "d2_attempts": 60,
+    "d2_correct_present": 49,
+    "d2_unenrolled_routed_to_enroll": 11,
+    "d2_late_enrolled": 8,
+    "d2_stranger_rejected": 58,
+    "d2_stranger_MARKED_PRESENT": 2,
+    "d3_attempts": 60,
+    "d3_correct_present": 55,
+    "d3_unenrolled_routed_to_enroll": 3,
+    "d3_enrolled_but_routed_to_enroll": 2,
+    "d3_stranger_rejected": 60
+   },
+   "enroll_failures": {
+    "STRAIGHT:BLUR": 3,
+    "STRAIGHT:NO_USABLE_FRAME": 3,
+    "DUPLICATE_FALSE_BLOCK": 2
+   },
+   "events": [
+    [
+     1,
+     "P04_01",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_02",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     1,
+     "P04_06",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_07",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_08",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_09",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_10",
+     "WRONG_MATCH",
+     "P04_09 0.54"
+    ],
+    [
+     1,
+     "P04_11",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_12",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_13",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     1,
+     "P04_15",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Muhammad_Saeed_al-Sahhaf",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jiang_Zemin",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Martha_Stewart",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jon_Gruden",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jonathan_Edwards",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Julianne_Moore",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_John_Paul_II",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Luiz_Inacio_Lula_da_Silva",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Heidi_Fleiss",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Mark_Hurlbert",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Muhammad_Ali",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Nadia_Petrova",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Marco_Antonio_Barrera",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Hosni_Mubarak",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jan_Ullrich",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Mireya_Moscoso",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Javier_Solana",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Luis_Figo",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Nestor_Kirchner",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Justine_Pasek",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Iain_Duncan_Smith",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_James_McGreevey",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Hugh_Grant",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Mian_Khursheed_Mehmood_Kasuri",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Nancy_Pelosi",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Liza_Minnelli",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jong_Wook_Lee",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jake_Gyllenhaal",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Hillary_Clinton",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Kim_Clijsters",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Martha_Burk",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Kevin_Costner",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Kim_Jong-Il",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Gunter_Pleuger",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jacques_Rogge",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Kalpana_Chawla",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jean-David_Levitte",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_James_Kopp",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jerry_Regier",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "P04_03",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     2,
+     "P04_05",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "P04_10",
+     "DUPLICATE_BLOCKED",
+     "vs P04_09 0.54"
+    ],
+    [
+     2,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     2,
+     "LFW_Jennifer_Capriati",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Michael_Jackson",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Jose_Manuel_Durao_Barroso",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Ian_Thorpe",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Ludivine_Sagnier",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Joseph_Estrada",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     3,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     3,
+     "P04_10",
+     "DUPLICATE_BLOCKED",
+     "vs P04_09 0.54"
+    ],
+    [
+     3,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     3,
+     "LFW_Jennifer_Capriati",
+     "ENROLLED_NOT_RECOGNISED",
+     "NOT_FOUND top=LFW_Jennifer_Capriati 0.4857638478279114"
+    ],
+    [
+     3,
+     "LFW_Jan_Ullrich",
+     "ENROLLED_NOT_RECOGNISED",
+     "NOT_FOUND top=LFW_Jan_Ullrich 0.4972645044326782"
+    ]
+   ],
+   "gallery_size": 57
+  },
+  {
+   "config": "PROPOSED",
+   "class_size": 60,
+   "absent_day1": 8,
+   "totals": {
+    "d1_attempts": 52,
+    "enroll_clicks": 228,
+    "d1_enrolled": 49,
+    "d1_false_match_before_enroll": 1,
+    "d2_attempts": 60,
+    "d2_unenrolled_routed_to_enroll": 11,
+    "d2_late_enrolled": 8,
+    "d2_correct_present": 49,
+    "d2_stranger_rejected": 60,
+    "d3_attempts": 60,
+    "d3_correct_present": 56,
+    "d3_unenrolled_routed_to_enroll": 3,
+    "d3_enrolled_but_routed_to_enroll": 1,
+    "d3_stranger_rejected": 60
+   },
+   "enroll_failures": {
+    "STRAIGHT:BLUR": 3,
+    "STRAIGHT:NO_USABLE_FRAME": 3,
+    "DUPLICATE_FALSE_BLOCK": 2
+   },
+   "events": [
+    [
+     1,
+     "P04_02",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_03",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     1,
+     "P04_05",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_06",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_07",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_08",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_09",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_10",
+     "WRONG_MATCH",
+     "P04_09 0.54"
+    ],
+    [
+     1,
+     "P04_11",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_12",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     1,
+     "P04_15",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Martina_McBride",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_JK_Rowling",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Marco_Antonio_Barrera",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jeong_Se-hyun",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_John_Allen_Muhammad",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Martin_Scorsese",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Michael_Jordan",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jake_Gyllenhaal",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Harry_Schmidt",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Li_Zhaoxing",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Martin_McGuinness",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Michael_Douglas",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Hans_Blix",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Marcelo_Rios",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Joseph_Estrada",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jacques_Chirac",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Michael_Chang",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_James_Kopp",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jesse_Jackson",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_John_Snow",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_John_Howard",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Ludivine_Sagnier",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Mike_Martz",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Kim_Clijsters",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Harrison_Ford",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_LeBron_James",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Monica_Seles",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jennifer_Garner",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_John_Ashcroft",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Maria_Shriver",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Hun_Sen",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Helen_Clark",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Julianne_Moore",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Mariah_Carey",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Kate_Winslet",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Joe_Nichols",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Ian_Thorpe",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_John_Warner",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_King_Abdullah_II",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "P04_01",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     2,
+     "P04_10",
+     "DUPLICATE_BLOCKED",
+     "vs P04_09 0.54"
+    ],
+    [
+     2,
+     "P04_13",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     2,
+     "LFW_Laura_Bush",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Jackie_Chan",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Jack_Straw",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Leonardo_DiCaprio",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Michael_Chiklis",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Heizo_Takenaka",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     3,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     3,
+     "P04_10",
+     "DUPLICATE_BLOCKED",
+     "vs P04_09 0.54"
+    ],
+    [
+     3,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     3,
+     "LFW_Jeong_Se-hyun",
+     "ENROLLED_NOT_RECOGNISED",
+     "NOT_FOUND top=LFW_Jeong_Se-hyun 0.46028679609298706"
+    ]
+   ],
+   "gallery_size": 57
+  },
+  {
+   "config": "PROPOSED",
+   "class_size": 60,
+   "absent_day1": 8,
+   "totals": {
+    "d1_attempts": 52,
+    "enroll_clicks": 228,
+    "d1_enrolled": 49,
+    "d1_false_match_before_enroll": 1,
+    "d2_attempts": 60,
+    "d2_correct_present": 48,
+    "d2_unenrolled_routed_to_enroll": 11,
+    "d2_late_enrolled": 8,
+    "d2_enrolled_AMBIGUOUS": 1,
+    "d2_stranger_rejected": 59,
+    "d2_stranger_MARKED_PRESENT": 1,
+    "d3_attempts": 60,
+    "d3_correct_present": 56,
+    "d3_unenrolled_routed_to_enroll": 3,
+    "d3_enrolled_but_routed_to_enroll": 1,
+    "d3_stranger_rejected": 59,
+    "d3_stranger_MARKED_PRESENT": 1
+   },
+   "enroll_failures": {
+    "STRAIGHT:BLUR": 3,
+    "STRAIGHT:NO_USABLE_FRAME": 3,
+    "DUPLICATE_FALSE_BLOCK": 2
+   },
+   "events": [
+    [
+     1,
+     "P04_01",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_02",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_03",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     1,
+     "P04_06",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_07",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_08",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_09",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_10",
+     "WRONG_MATCH",
+     "P04_09 0.54"
+    ],
+    [
+     1,
+     "P04_12",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_13",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     1,
+     "P04_15",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Monica_Seles",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Maria_Shriver",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Martha_Lucia_Ramirez",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Mike_Tyson",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jose_Serra",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Howard_Dean",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Heath_Ledger",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Hamid_Karzai",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Naji_Sabri",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jay_Garner",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_John_Edwards",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Ludivine_Sagnier",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Heidi_Klum",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Laura_Linney",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jennifer_Aniston",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Maria_Soledad_Alvear_Valenzuela",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Mireya_Moscoso",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Kim_Dae-jung",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Mohammed_Al-Douri",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jennifer_Capriati",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Li_Peng",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Kim_Jong-Il",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Lucy_Liu",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jesse_Jackson",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Juan_Pablo_Montoya",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Michael_Chang",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jeb_Bush",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Lisa_Marie_Presley",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jean-Pierre_Raffarin",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Nan_Wang",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jennifer_Lopez",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jean-David_Levitte",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Ian_Thorpe",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Justine_Pasek",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Michael_Caine",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jennifer_Keller",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Michael_Phelps",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Joe_Nichols",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Mahmoud_Abbas",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     2,
+     "P04_05",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "P04_10",
+     "DUPLICATE_BLOCKED",
+     "vs P04_09 0.54"
+    ],
+    [
+     2,
+     "P04_11",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     2,
+     "LFW_Hans_Blix",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_John_Manley",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Jennifer_Capriati",
+     "ENROLLED_NOT_RECOGNISED",
+     "AMBIGUOUS top=LFW_Jennifer_Capriati 0.5308629870414734"
+    ],
+    [
+     2,
+     "LFW_Jackie_Chan",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Nelson_Mandela",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Joan_Laporta",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Mike_Weir",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     3,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     3,
+     "P04_10",
+     "DUPLICATE_BLOCKED",
+     "vs P04_09 0.54"
+    ],
+    [
+     3,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     3,
+     "LFW_Jennifer_Capriati",
+     "ENROLLED_NOT_RECOGNISED",
+     "NOT_FOUND top=LFW_Jennifer_Capriati 0.4857638478279114"
+    ]
+   ],
+   "gallery_size": 57
+  },
+  {
+   "config": "PROPOSED",
+   "class_size": 60,
+   "absent_day1": 8,
+   "totals": {
+    "d1_attempts": 52,
+    "enroll_clicks": 228,
+    "d1_enrolled": 49,
+    "d1_false_match_before_enroll": 1,
+    "d2_attempts": 60,
+    "d2_correct_present": 49,
+    "d2_unenrolled_routed_to_enroll": 11,
+    "d2_late_enrolled": 8,
+    "d2_stranger_rejected": 60,
+    "d3_attempts": 60,
+    "d3_correct_present": 56,
+    "d3_unenrolled_routed_to_enroll": 3,
+    "d3_enrolled_but_routed_to_enroll": 1,
+    "d3_stranger_rejected": 59,
+    "d3_stranger_MARKED_PRESENT": 1
+   },
+   "enroll_failures": {
+    "STRAIGHT:BLUR": 3,
+    "STRAIGHT:NO_USABLE_FRAME": 3,
+    "DUPLICATE_FALSE_BLOCK": 2
+   },
+   "events": [
+    [
+     1,
+     "P04_01",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_02",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_03",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     1,
+     "P04_05",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_06",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_07",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_08",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_09",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_10",
+     "WRONG_MATCH",
+     "P04_09 0.54"
+    ],
+    [
+     1,
+     "P04_11",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_12",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_13",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     1,
+     "P04_15",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jeong_Se-hyun",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Iain_Duncan_Smith",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Kalpana_Chawla",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Lucio_Gutierrez",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Megawati_Sukarnoputri",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_John_Negroponte",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Hans_Blix",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Harry_Schmidt",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Lleyton_Hewitt",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Lance_Bass",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Natalie_Maines",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Heath_Ledger",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_John_Bolton",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Hu_Jintao",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jelena_Dokic",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jean-David_Levitte",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_John_Kerry",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Leonid_Kuchma",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Michael_Phelps",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Habib_Rizieq",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jerry_Regier",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Kathleen_Kennedy_Townsend",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Mike_Martz",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jack_Straw",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Herb_Sendek",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Heidi_Klum",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Gunter_Pleuger",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Mary_Carey",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_James_McGreevey",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Kristanna_Loken",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Martha_Burk",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Naomi_Watts",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Nathalie_Baye",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jesse_Jackson",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Hamid_Karzai",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Helen_Clark",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Michael_Bloomberg",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     2,
+     "P04_10",
+     "DUPLICATE_BLOCKED",
+     "vs P04_09 0.54"
+    ],
+    [
+     2,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     2,
+     "LFW_Howard_Dean",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Jennifer_Aniston",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Monica_Bellucci",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Jay_Garner",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Mikhail_Wehbe",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Maria_Soledad_Alvear_Valenzuela",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Nicanor_Duarte_Frutos",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Juan_Pablo_Montoya",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     3,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     3,
+     "P04_10",
+     "DUPLICATE_BLOCKED",
+     "vs P04_09 0.54"
+    ],
+    [
+     3,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     3,
+     "LFW_Jeong_Se-hyun",
+     "ENROLLED_NOT_RECOGNISED",
+     "NOT_FOUND top=LFW_Jeong_Se-hyun 0.46028679609298706"
+    ]
+   ],
+   "gallery_size": 57
+  },
+  {
+   "config": "PROPOSED",
+   "class_size": 60,
+   "absent_day1": 8,
+   "totals": {
+    "d1_attempts": 52,
+    "enroll_clicks": 228,
+    "d1_enrolled": 49,
+    "d1_false_match_before_enroll": 1,
+    "d2_attempts": 60,
+    "d2_correct_present": 49,
+    "d2_unenrolled_routed_to_enroll": 11,
+    "d2_late_enrolled": 8,
+    "d2_stranger_rejected": 60,
+    "d3_attempts": 60,
+    "d3_correct_present": 56,
+    "d3_unenrolled_routed_to_enroll": 3,
+    "d3_enrolled_but_routed_to_enroll": 1,
+    "d3_stranger_rejected": 60
+   },
+   "enroll_failures": {
+    "STRAIGHT:BLUR": 3,
+    "STRAIGHT:NO_USABLE_FRAME": 3,
+    "DUPLICATE_FALSE_BLOCK": 2
+   },
+   "events": [
+    [
+     1,
+     "P04_01",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_03",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     1,
+     "P04_05",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_06",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_07",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_08",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_09",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_10",
+     "WRONG_MATCH",
+     "P04_09 0.54"
+    ],
+    [
+     1,
+     "P04_11",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_12",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_13",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     1,
+     "P04_15",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Grant_Hackett",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Hugh_Grant",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Mike_Martz",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Michael_Powell",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Keanu_Reeves",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Luis_Gonzalez_Macchi",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Michael_Chang",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Monica_Bellucci",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jiang_Zemin",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Kofi_Annan",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Naoto_Kan",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jacques_Chirac",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Li_Zhaoxing",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_JK_Rowling",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Mitchell_Daniels",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Mohammed_Al-Douri",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jake_Gyllenhaal",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jose_Maria_Aznar",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Meryl_Streep",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Lance_Bass",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jeb_Bush",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_John_Paul_II",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Kevin_Costner",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jeremy_Greenstock",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Habib_Rizieq",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_James_Kopp",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Li_Peng",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jon_Gruden",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jennifer_Keller",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Kristanna_Loken",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_John_Bolton",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Heather_Mills",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Natalie_Coughlin",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Marco_Antonio_Barrera",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Mohammad_Khatami",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Harrison_Ford",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Mireya_Moscoso",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     1,
+     "LFW_Jennifer_Aniston",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "P04_02",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     2,
+     "P04_10",
+     "DUPLICATE_BLOCKED",
+     "vs P04_09 0.54"
+    ],
+    [
+     2,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     2,
+     "LFW_Madonna",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Mike_Weir",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Justine_Pasek",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Nathalie_Baye",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_Igor_Ivanov",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_John_Stockton",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     2,
+     "LFW_LeBron_James",
+     "ENROLLED_PRESENT",
+     ""
+    ],
+    [
+     3,
+     "P04_04",
+     "ENROLL_FAILED",
+     "STRAIGHT BLUR after 1 clicks"
+    ],
+    [
+     3,
+     "P04_10",
+     "DUPLICATE_BLOCKED",
+     "vs P04_09 0.54"
+    ],
+    [
+     3,
+     "P04_14",
+     "ENROLL_FAILED",
+     "STRAIGHT NO_USABLE_FRAME after 0 clicks"
+    ],
+    [
+     3,
+     "LFW_Keanu_Reeves",
+     "ENROLLED_NOT_RECOGNISED",
+     "NOT_FOUND top=LFW_Keanu_Reeves 0.3878474235534668"
+    ]
+   ],
+   "gallery_size": 57
+  }
+ ]
+}

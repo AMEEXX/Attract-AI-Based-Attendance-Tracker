@@ -1,0 +1,122 @@
+[
+ {
+  "accept": 0.43,
+  "margin": 0.05,
+  "d1_enrolled": 243,
+  "d1_false_match": 7,
+  "correct": 523,
+  "wrong_id": 10,
+  "not_recognised": 1,
+  "stranger_fp": 39
+ },
+ {
+  "accept": 0.43,
+  "margin": 0.08,
+  "d1_enrolled": 243,
+  "d1_false_match": 7,
+  "correct": 525,
+  "wrong_id": 7,
+  "not_recognised": 1,
+  "stranger_fp": 31
+ },
+ {
+  "accept": 0.43,
+  "margin": 0.12,
+  "d1_enrolled": 243,
+  "d1_false_match": 7,
+  "correct": 527,
+  "wrong_id": 5,
+  "not_recognised": 1,
+  "stranger_fp": 22
+ },
+ {
+  "accept": 0.47,
+  "margin": 0.05,
+  "d1_enrolled": 243,
+  "d1_false_match": 7,
+  "correct": 524,
+  "wrong_id": 6,
+  "not_recognised": 3,
+  "stranger_fp": 16
+ },
+ {
+  "accept": 0.47,
+  "margin": 0.08,
+  "d1_enrolled": 243,
+  "d1_false_match": 7,
+  "correct": 525,
+  "wrong_id": 5,
+  "not_recognised": 3,
+  "stranger_fp": 14
+ },
+ {
+  "accept": 0.47,
+  "margin": 0.12,
+  "d1_enrolled": 243,
+  "d1_false_match": 7,
+  "correct": 525,
+  "wrong_id": 5,
+  "not_recognised": 3,
+  "stranger_fp": 10
+ },
+ {
+  "accept": 0.5,
+  "margin": 0.05,
+  "d1_enrolled": 245,
+  "d1_false_match": 5,
+  "correct": 524,
+  "wrong_id": 5,
+  "not_recognised": 6,
+  "stranger_fp": 5
+ },
+ {
+  "accept": 0.5,
+  "margin": 0.08,
+  "d1_enrolled": 245,
+  "d1_false_match": 5,
+  "correct": 524,
+  "wrong_id": 5,
+  "not_recognised": 6,
+  "stranger_fp": 5
+ },
+ {
+  "accept": 0.5,
+  "margin": 0.12,
+  "d1_enrolled": 245,
+  "d1_false_match": 5,
+  "correct": 524,
+  "wrong_id": 5,
+  "not_recognised": 6,
+  "stranger_fp": 5
+ },
+ {
+  "accept": 0.53,
+  "margin": 0.05,
+  "d1_enrolled": 245,
+  "d1_false_match": 5,
+  "correct": 520,
+  "wrong_id": 0,
+  "not_recognised": 10,
+  "stranger_fp": 1
+ },
+ {
+  "accept": 0.53,
+  "margin": 0.08,
+  "d1_enrolled": 245,
+  "d1_false_match": 5,
+  "correct": 520,
+  "wrong_id": 0,
+  "not_recognised": 10,
+  "stranger_fp": 1
+ },
+ {
+  "accept": 0.53,
+  "margin": 0.12,
+  "d1_enrolled": 245,
+  "d1_false_match": 5,
+  "correct": 520,
+  "wrong_id": 0,
+  "not_recognised": 10,
+  "stranger_fp": 1
+ }
+]
