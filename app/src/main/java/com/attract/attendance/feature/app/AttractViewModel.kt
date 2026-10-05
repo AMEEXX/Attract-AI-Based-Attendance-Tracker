@@ -87,21 +87,26 @@ class AttractViewModel(
     private var historyJob: Job? = null
 
     init {
+        val startupExceptionHandler = kotlinx.coroutines.CoroutineExceptionHandler { _, throwable ->
+            android.util.Log.e("AttractViewModel", "Startup error in ViewModel coroutine", throwable)
+            _uiState.update { it.copy(message = "Startup note: ${throwable.localizedMessage ?: "Database synchronizing"}") }
+        }
+
         themeRepository?.let { repo ->
-            viewModelScope.launch {
+            viewModelScope.launch(startupExceptionHandler) {
                 repo.themeMode.collect { mode ->
                     _uiState.update { it.copy(themeMode = mode) }
                 }
             }
-            viewModelScope.launch {
+            viewModelScope.launch(startupExceptionHandler) {
                 repo.hasChosenTheme.collect { chosen ->
                     _uiState.update { it.copy(hasChosenTheme = chosen) }
                 }
             }
         }
 
-        viewModelScope.launch {
-            val activeSession = repository.activeFaceSession()
+        viewModelScope.launch(startupExceptionHandler) {
+            val activeSession = runCatching { repository.activeFaceSession() }.getOrNull()
             repository.observeTeacher().collect { teacher ->
                 _uiState.update { state ->
                     val chosen = themeRepository?.hasChosenTheme?.value ?: state.hasChosenTheme
@@ -123,7 +128,7 @@ class AttractViewModel(
                 }
             }
         }
-        viewModelScope.launch {
+        viewModelScope.launch(startupExceptionHandler) {
             repository.observeClasses().collect { classes ->
                 _uiState.update { it.copy(classes = classes) }
             }

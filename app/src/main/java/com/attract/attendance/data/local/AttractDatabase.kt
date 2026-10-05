@@ -96,9 +96,31 @@ abstract class AttractDatabase : RoomDatabase() {
         /** v5→v6: Total planned classes / target classes per class section. */
         val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL(
-                    "ALTER TABLE class_sections ADD COLUMN total_planned_sessions INTEGER NOT NULL DEFAULT 30"
-                )
+                try {
+                    val cursor = db.query("PRAGMA table_info(class_sections)")
+                    var columnExists = false
+                    val nameIndex = cursor.getColumnIndex("name")
+                    while (cursor.moveToNext()) {
+                        if (nameIndex != -1 && cursor.getString(nameIndex) == "total_planned_sessions") {
+                            columnExists = true
+                            break
+                        }
+                    }
+                    cursor.close()
+
+                    if (!columnExists) {
+                        db.execSQL(
+                            "ALTER TABLE class_sections ADD COLUMN total_planned_sessions INTEGER NOT NULL DEFAULT 30"
+                        )
+                    }
+                } catch (e: Throwable) {
+                    android.util.Log.w("AttractDatabase", "MIGRATION_5_6 failed to inspect/add column", e)
+                    try {
+                        db.execSQL(
+                            "ALTER TABLE class_sections ADD COLUMN total_planned_sessions INTEGER NOT NULL DEFAULT 30"
+                        )
+                    } catch (_: Throwable) {}
+                }
             }
         }
 
@@ -108,7 +130,8 @@ abstract class AttractDatabase : RoomDatabase() {
             "attract.db",
         )
             .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
-            .fallbackToDestructiveMigrationOnDowngrade()
+            .fallbackToDestructiveMigration(true)
+            .fallbackToDestructiveMigrationOnDowngrade(true)
             .addCallback(object : Callback() {
                 override fun onOpen(db: SupportSQLiteDatabase) {
                     super.onOpen(db)
