@@ -104,3 +104,12 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
+
+tasks.register<Copy>("copyApkToWorkspace") {
+    from(layout.buildDirectory.dir("outputs/apk/debug"))
+    into(rootProject.file("app/build/outputs/apk/debug"))
+}
+
+tasks.matching { it.name == "assembleDebug" }.configureEach {
+    finalizedBy("copyApkToWorkspace")
+}
