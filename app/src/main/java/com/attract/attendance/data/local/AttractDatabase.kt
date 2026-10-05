@@ -96,6 +96,9 @@ abstract class AttractDatabase : RoomDatabase() {
         /** v5→v6: Total planned classes / target classes per class section. */
         val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(db: SupportSQLiteDatabase) {
+                // Must drop index_one_active_face_session so Room schema validation passes;
+                // onOpen() will recreate it after validation.
+                db.execSQL("DROP INDEX IF EXISTS index_one_active_face_session")
                 try {
                     val cursor = db.query("PRAGMA table_info(class_sections)")
                     var columnExists = false
