@@ -41,8 +41,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.attract.attendance.core.model.RollNumberComparator
+import com.attract.attendance.ui.components.rememberFeedbackClick
 import com.attract.attendance.core.model.SessionSummary
 import com.attract.attendance.core.model.StudentSummary
 import com.attract.attendance.feature.app.ClassWorkspace
@@ -142,6 +152,10 @@ fun ClassWorkspaceScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            val tab0Click = rememberFeedbackClick { activeTab = 0 }
+            val tab1Click = rememberFeedbackClick { activeTab = 1 }
+            val tab2Click = rememberFeedbackClick { activeTab = 2 }
+
             TabRow(
                 selectedTabIndex = activeTab,
                 containerColor = MaterialTheme.colorScheme.surface,
@@ -157,55 +171,86 @@ fun ClassWorkspaceScreen(
             ) {
                 Tab(
                     selected = activeTab == 0,
-                    onClick = { activeTab = 0 },
+                    onClick = tab0Click,
                     text = { Text("CALENDAR", fontWeight = FontWeight.Bold) }
                 )
                 Tab(
                     selected = activeTab == 1,
-                    onClick = { activeTab = 1 },
+                    onClick = tab1Click,
                     text = { Text("STUDENTS", fontWeight = FontWeight.Bold) }
                 )
                 Tab(
                     selected = activeTab == 2,
-                    onClick = { activeTab = 2 },
+                    onClick = tab2Click,
                     text = { Text("HISTORY", fontWeight = FontWeight.Bold) }
                 )
             }
 
-            when (activeTab) {
-                0 -> {
-                    val context = androidx.compose.ui.platform.LocalContext.current
-                    val repository = remember(context) {
-                        (context.applicationContext as? com.attract.attendance.app.AttractApplication)?.container?.repository
-                    }
-                    if (repository != null) {
-                        val calendarViewModel = remember(workspace.summary.id) {
-                            com.attract.attendance.feature.calendar.CalendarViewModel(workspace.summary.id, repository)
-                        }
-                        val calendarState by calendarViewModel.uiState.collectAsState()
-
-                        com.attract.attendance.feature.calendar.CalendarScreen(
-                            state = calendarState,
-                            onPreviousMonth = calendarViewModel::previousMonth,
-                            onNextMonth = calendarViewModel::nextMonth,
-                            onSelectDate = calendarViewModel::selectDate,
-                            onViewSessionDetails = { },
-                            onFaceAttendance = onFaceAttendance,
-                            onManualAttendance = onManualAttendance
+            AnimatedContent(
+                targetState = activeTab,
+                transitionSpec = {
+                    if (targetState > initialState) {
+                        (slideInHorizontally(
+                            animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
+                            initialOffsetX = { fullWidth -> fullWidth }
+                        ) + fadeIn(animationSpec = tween(300))).togetherWith(
+                            slideOutHorizontally(
+                                animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
+                                targetOffsetX = { fullWidth -> -fullWidth }
+                            ) + fadeOut(animationSpec = tween(300))
+                        )
+                    } else {
+                        (slideInHorizontally(
+                            animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
+                            initialOffsetX = { fullWidth -> -fullWidth }
+                        ) + fadeIn(animationSpec = tween(300))).togetherWith(
+                            slideOutHorizontally(
+                                animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
+                                targetOffsetX = { fullWidth -> fullWidth }
+                            ) + fadeOut(animationSpec = tween(300))
                         )
                     }
+                },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f),
+                label = "WorkspaceTabSlideAnimation"
+            ) { tabIndex ->
+                when (tabIndex) {
+                    0 -> {
+                        val context = androidx.compose.ui.platform.LocalContext.current
+                        val repository = remember(context) {
+                            (context.applicationContext as? com.attract.attendance.app.AttractApplication)?.container?.repository
+                        }
+                        if (repository != null) {
+                            val calendarViewModel = remember(workspace.summary.id) {
+                                com.attract.attendance.feature.calendar.CalendarViewModel(workspace.summary.id, repository)
+                            }
+                            val calendarState by calendarViewModel.uiState.collectAsState()
+
+                            com.attract.attendance.feature.calendar.CalendarScreen(
+                                state = calendarState,
+                                onPreviousMonth = calendarViewModel::previousMonth,
+                                onNextMonth = calendarViewModel::nextMonth,
+                                onSelectDate = calendarViewModel::selectDate,
+                                onViewSessionDetails = onSessionOpen,
+                                onFaceAttendance = onFaceAttendance,
+                                onManualAttendance = onManualAttendance
+                            )
+                        }
+                    }
+                    1 -> WorkspaceStudentsTab(
+                        students = workspace.students,
+                        onStudentClick = onStudentClick,
+                        onImportRoster = onImportRoster,
+                        onAddStudent = onAddStudent
+                    )
+                    2 -> WorkspaceHistoryTab(
+                        sessions = workspace.sessions,
+                        onSessionOpen = onSessionOpen,
+                        onExportReport = onExportReport
+                    )
                 }
-                1 -> WorkspaceStudentsTab(
-                    students = workspace.students,
-                    onStudentClick = onStudentClick,
-                    onImportRoster = onImportRoster,
-                    onAddStudent = onAddStudent
-                )
-                2 -> WorkspaceHistoryTab(
-                    sessions = workspace.sessions,
-                    onSessionOpen = onSessionOpen,
-                    onExportReport = onExportReport
-                )
             }
         }
     }
@@ -220,7 +265,8 @@ private fun WorkspaceStudentsTab(
 ) {
     var searchQuery by remember { mutableStateOf("") }
     val filteredStudents = remember(students, searchQuery) {
-        if (searchQuery.isBlank()) students else students.filter {
+        val sortedList = students.sortedWith { a, b -> RollNumberComparator.compare(a.rollNumber, b.rollNumber) }
+        if (searchQuery.isBlank()) sortedList else sortedList.filter {
             it.name.contains(searchQuery, ignoreCase = true) || it.rollNumber.contains(searchQuery, ignoreCase = true)
         }
     }

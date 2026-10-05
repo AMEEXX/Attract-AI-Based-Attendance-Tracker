@@ -99,7 +99,7 @@ class ExportAndBackupFunctionalTest {
         val snapshot = BackupSnapshot(
             generatedAt = 1700000000000L,
             teachers = listOf(TeacherEntity(1L, "Teacher A", "hash", 1000L, 1000L)),
-            classes = listOf(ClassSectionEntity(10L, 1L, "Physics", "PHYS101", "Sec A", "2026", 75, false, 1000L, 1000L)),
+            classes = listOf(ClassSectionEntity(10L, 1L, "Physics", "PHYS101", "Sec A", "2026", 75, 30, false, 1000L, 1000L)),
             students = listOf(StudentEntity(101L, 10L, "Student A", "P-01", "S1", EnrollmentStatus.ENROLLED, 1000L, null, false, 1000L, 1000L)),
             sessions = listOf(AttendanceSessionEntity(50L, 10L, "2026-08-08", "UTC", 2000L, null, SessionStatus.ACTIVE, SessionMode.FACE, 2000L, 2000L)),
             records = listOf(AttendanceRecordEntity(1L, 50L, 101L, AttendanceStatus.PRESENT, 2005L, AttendanceSource.AI_RECOGNITION, 0.95f, null, 2005L, 2005L))

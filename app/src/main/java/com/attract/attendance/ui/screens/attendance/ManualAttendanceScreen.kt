@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.attract.attendance.core.model.RollNumberComparator
 import com.attract.attendance.feature.app.ClassWorkspace
 import com.attract.attendance.ui.components.AttractCard
 import com.attract.attendance.ui.components.AttractPrimaryButton
@@ -47,6 +48,9 @@ fun ManualAttendanceScreen(
     if (workspace == null) return
 
     var presentIds by remember(workspace.students) { mutableStateOf(workspace.students.map { it.id }.toSet()) }
+    val sortedStudents = remember(workspace.students) {
+        workspace.students.sortedWith { a, b -> RollNumberComparator.compare(a.rollNumber, b.rollNumber) }
+    }
 
     var showZeroConfirmDialog by remember { mutableStateOf(false) }
 
@@ -121,7 +125,7 @@ fun ManualAttendanceScreen(
                 )
             }
 
-            items(workspace.students, key = { it.id }) { student ->
+            items(sortedStudents, key = { it.id }) { student ->
                 val checked = student.id in presentIds
                 AttractCard(
                     onClick = {

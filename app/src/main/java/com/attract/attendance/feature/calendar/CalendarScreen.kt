@@ -41,6 +41,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.attract.attendance.core.model.SessionSummary
+import com.attract.attendance.ui.components.feedbackClickable
+import com.attract.attendance.ui.components.rememberFeedbackClick
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -81,6 +83,8 @@ fun CalendarScreen(
 
         state.selectedDate?.let { date ->
             val dateStr = date.format(DateTimeFormatter.ISO_LOCAL_DATE)
+            val faceAttendanceClick = rememberFeedbackClick { onFaceAttendance(dateStr) }
+            val manualAttendanceClick = rememberFeedbackClick { onManualAttendance(dateStr) }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -88,7 +92,7 @@ fun CalendarScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Button(
-                    onClick = { onFaceAttendance(dateStr) },
+                    onClick = faceAttendanceClick,
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(
@@ -101,7 +105,7 @@ fun CalendarScreen(
                 }
 
                 OutlinedButton(
-                    onClick = { onManualAttendance(dateStr) },
+                    onClick = manualAttendanceClick,
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(
@@ -170,7 +174,9 @@ private fun MonthHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = onPreviousMonth) {
+        val prevClick = rememberFeedbackClick(onPreviousMonth)
+        val nextClick = rememberFeedbackClick(onNextMonth)
+        IconButton(onClick = prevClick) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                 contentDescription = "Previous Month"
@@ -183,7 +189,7 @@ private fun MonthHeader(
             fontWeight = FontWeight.Bold
         )
 
-        IconButton(onClick = onNextMonth) {
+        IconButton(onClick = nextClick) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = "Next Month"
@@ -281,7 +287,7 @@ private fun CalendarDayCell(
                 if (isSelected) MaterialTheme.colorScheme.primary
                 else Color.Transparent
             )
-            .clickable(onClick = onClick),
+            .feedbackClickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -347,7 +353,8 @@ private fun SessionCard(
                 )
             }
 
-            TextButton(onClick = onViewDetails) {
+            val viewDetailsClick = rememberFeedbackClick(onViewDetails)
+            TextButton(onClick = viewDetailsClick) {
                 Text("VIEW DETAILS")
             }
         }

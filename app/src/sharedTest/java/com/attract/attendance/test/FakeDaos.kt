@@ -38,6 +38,7 @@ class FakeSessionDao(var activeSession: AttendanceSessionEntity? = null) : Sessi
     override fun observeSessionsForDate(classId: Long, dateString: String): Flow<List<SessionRow>> = flowOf(emptyList())
     override suspend fun deleteActiveFaceSessionsForClass(classId: Long): Int = 0
     override suspend fun deleteAllActiveFaceSessions(): Int = 0
+    override fun observeEndedSessionCountForClass(classId: Long): Flow<Int> = flowOf(0)
 }
 
 class FakeStudentDao(initialStudents: List<StudentEntity> = emptyList()) : StudentDao {
@@ -101,6 +102,8 @@ class FakeAttendanceRecordDao : AttendanceRecordDao {
     override suspend fun deleteAllActiveFaceSessionRecords(): Int = 0
 
     override suspend fun presentCount(sessionId: Long): Int = records.count { it.sessionId == sessionId && it.status == AttendanceStatus.PRESENT }
+    override fun observePresentCountForStudent(studentId: Long): Flow<Int> =
+        flowOf(records.count { it.studentId == studentId && it.status == AttendanceStatus.PRESENT })
     override suspend fun all(): List<AttendanceRecordEntity> = records
     override suspend fun classReport(classId: Long): List<ClassReportStudentRow> = emptyList()
     override suspend fun sessionExportRows(classId: Long): List<SessionExportRow> = emptyList()

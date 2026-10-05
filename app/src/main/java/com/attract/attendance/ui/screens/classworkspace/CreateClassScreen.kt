@@ -41,6 +41,7 @@ fun CreateClassScreen(
     var section by remember { mutableStateOf("") }
     var batch by remember { mutableStateOf("2026") }
     var requiredPercentage by remember { mutableStateOf("75") }
+    var totalClasses by remember { mutableStateOf("30") }
 
     Scaffold(
         topBar = {
@@ -107,6 +108,15 @@ fun CreateClassScreen(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
+
+                    OutlinedTextField(
+                        value = totalClasses,
+                        onValueChange = { totalClasses = it.filter(Char::isDigit) },
+                        label = { Text("Total planned classes") },
+                        placeholder = { Text("30") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
 
@@ -121,7 +131,8 @@ fun CreateClassScreen(
                                 subject = subject.trim(),
                                 section = section.trim(),
                                 semesterBatch = batch.trim(),
-                                requiredAttendancePercent = requiredPercentage.toIntOrNull() ?: 75
+                                requiredAttendancePercent = requiredPercentage.toIntOrNull() ?: 75,
+                                totalPlannedSessions = totalClasses.toIntOrNull()?.coerceAtLeast(1) ?: 30
                             )
                         )
                     }

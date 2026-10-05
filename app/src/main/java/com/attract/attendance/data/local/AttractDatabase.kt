@@ -17,7 +17,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         AttendanceSessionEntity::class,
         AttendanceRecordEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -93,12 +93,21 @@ abstract class AttractDatabase : RoomDatabase() {
             }
         }
 
+        /** v5→v6: Total planned classes / target classes per class section. */
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE class_sections ADD COLUMN total_planned_sessions INTEGER NOT NULL DEFAULT 30"
+                )
+            }
+        }
+
         fun create(context: Context): AttractDatabase = Room.databaseBuilder(
             context.applicationContext,
             AttractDatabase::class.java,
             "attract.db",
         )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
             .fallbackToDestructiveMigrationOnDowngrade()
             .addCallback(object : Callback() {
                 override fun onOpen(db: SupportSQLiteDatabase) {

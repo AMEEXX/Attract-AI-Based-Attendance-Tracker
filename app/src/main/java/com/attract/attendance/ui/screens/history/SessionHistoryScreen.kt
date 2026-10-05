@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import com.attract.attendance.core.model.AttendanceStatus
+import com.attract.attendance.core.model.RollNumberComparator
 import com.attract.attendance.feature.app.SessionHistory
 import com.attract.attendance.ui.components.AttractCard
 import com.attract.attendance.ui.theme.Dimens
@@ -48,6 +49,9 @@ fun SessionHistoryScreen(
     if (history == null) return
 
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    val sortedRows = remember(history.rows) {
+        history.rows.sortedWith { a, b -> RollNumberComparator.compare(a.first.rollNumber, b.first.rollNumber) }
+    }
 
     Scaffold(
         topBar = {
@@ -95,7 +99,7 @@ fun SessionHistoryScreen(
                 )
             }
 
-            items(history.rows, key = { it.first.id }) { (student, status) ->
+            items(sortedRows, key = { it.first.id }) { (student, status) ->
                 AttractCard(modifier = Modifier.fillMaxWidth()) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),

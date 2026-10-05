@@ -17,6 +17,7 @@ data class DashboardClassRow(
     val section: String?,
     val semesterBatch: String?,
     val requiredAttendancePercent: Int,
+    val totalPlannedSessions: Int = 30,
     val activeStudentCount: Int,
     val endedSessionCount: Int,
 )
@@ -92,6 +93,7 @@ interface ClassDao {
         """
         SELECT c.id, c.name, c.subject, c.section, c.semester_batch AS semesterBatch,
                c.required_attendance_percent AS requiredAttendancePercent,
+               c.total_planned_sessions AS totalPlannedSessions,
                COUNT(DISTINCT CASE WHEN s.archived = 0 THEN s.id END) AS activeStudentCount,
                COUNT(DISTINCT CASE WHEN ses.status = 'ENDED' THEN ses.id END) AS endedSessionCount
         FROM class_sections c
@@ -111,6 +113,7 @@ interface ClassDao {
         """
         SELECT c.id, c.name, c.subject, c.section, c.semester_batch AS semesterBatch,
                c.required_attendance_percent AS requiredAttendancePercent,
+               c.total_planned_sessions AS totalPlannedSessions,
                COUNT(DISTINCT CASE WHEN s.archived = 0 THEN s.id END) AS activeStudentCount,
                COUNT(DISTINCT CASE WHEN ses.status = 'ENDED' THEN ses.id END) AS endedSessionCount
         FROM class_sections c
@@ -243,6 +246,9 @@ interface SessionDao {
         """,
     )
     fun observeSessionsForDate(classId: Long, dateString: String): Flow<List<SessionRow>>
+
+    @Query("SELECT COUNT(*) FROM attendance_sessions WHERE class_id = :classId AND status = 'ENDED'")
+    fun observeEndedSessionCountForClass(classId: Long): Flow<Int>
 }
 
 @Dao
@@ -303,8 +309,8 @@ interface AttendanceRecordDao {
         """
         SELECT s.id, s.name, s.roll_number AS rollNumber, s.serial_number AS serialNumber,
                s.enrollment_status AS enrollmentStatus,
-               COALESCE(SUM(CASE WHEN r.status = 'PRESENT' THEN 1 ELSE 0 END), 0) AS presentSessions,
-               COUNT(r.id) AS eligibleSessions
+               COALESCE(SUM(CASE WHEN r.status = 'PRESENT' AND ses.status = 'ENDED' THEN 1 ELSE 0 END), 0) AS presentSessions,
+               (SELECT COUNT(*) FROM attendance_sessions ses_sub WHERE ses_sub.class_id = :classId AND ses_sub.status = 'ENDED') AS eligibleSessions
         FROM students s
         LEFT JOIN attendance_records r ON r.student_id = s.id
         LEFT JOIN attendance_sessions ses ON ses.id = r.session_id AND ses.status = 'ENDED'
@@ -314,6 +320,16 @@ interface AttendanceRecordDao {
         """,
     )
     suspend fun classReport(classId: Long): List<ClassReportStudentRow>
+
+    @Query(
+        """
+        SELECT COUNT(DISTINCT r.session_id)
+        FROM attendance_records r
+        JOIN attendance_sessions ses ON ses.id = r.session_id
+        WHERE r.student_id = :studentId AND r.status = 'PRESENT' AND ses.status = 'ENDED'
+        """
+    )
+    fun observePresentCountForStudent(studentId: Long): Flow<Int>
 
     @Query(
         """

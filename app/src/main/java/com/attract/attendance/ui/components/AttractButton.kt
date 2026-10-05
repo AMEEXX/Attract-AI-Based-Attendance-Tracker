@@ -28,12 +28,13 @@ fun AttractPrimaryButton(
     enabled: Boolean = true,
     content: @Composable RowScope.() -> Unit
 ) {
+    val feedbackClick = rememberFeedbackClick(onClick)
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(if (isPressed) 0.97f else 1.0f, label = "buttonScale")
 
     Button(
-        onClick = onClick,
+        onClick = feedbackClick,
         modifier = modifier
             .heightIn(min = Dimens.ButtonHeight)
             .graphicsLayer {
@@ -59,12 +60,13 @@ fun AttractOutlinedButton(
     enabled: Boolean = true,
     content: @Composable RowScope.() -> Unit
 ) {
+    val feedbackClick = rememberFeedbackClick(onClick)
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(if (isPressed) 0.97f else 1.0f, label = "buttonScale")
 
     OutlinedButton(
-        onClick = onClick,
+        onClick = feedbackClick,
         modifier = modifier
             .heightIn(min = Dimens.ButtonHeight)
             .graphicsLayer {
@@ -86,8 +88,9 @@ fun AttractTextButton(
     enabled: Boolean = true,
     content: @Composable RowScope.() -> Unit
 ) {
+    val feedbackClick = rememberFeedbackClick(onClick)
     TextButton(
-        onClick = onClick,
+        onClick = feedbackClick,
         modifier = modifier,
         enabled = enabled,
         shape = Shapes.interactive,

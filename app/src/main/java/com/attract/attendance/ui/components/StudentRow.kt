@@ -39,7 +39,7 @@ fun StudentRow(
         modifier = modifier
             .fillMaxWidth()
             .clip(Shapes.card)
-            .clickable(onClick = onClick)
+            .feedbackClickable(onClick = onClick)
             .padding(horizontal = Dimens.ScreenPadding, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Dimens.MediumGap)

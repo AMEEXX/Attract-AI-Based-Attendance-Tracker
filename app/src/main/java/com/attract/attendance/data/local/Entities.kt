@@ -38,6 +38,7 @@ data class ClassSectionEntity(
     val section: String?,
     @ColumnInfo(name = "semester_batch") val semesterBatch: String?,
     @ColumnInfo(name = "required_attendance_percent") val requiredAttendancePercent: Int,
+    @ColumnInfo(name = "total_planned_sessions", defaultValue = "30") val totalPlannedSessions: Int = 30,
     val archived: Boolean = false,
     @ColumnInfo(name = "created_at") val createdAt: Long,
     @ColumnInfo(name = "updated_at") val updatedAt: Long,

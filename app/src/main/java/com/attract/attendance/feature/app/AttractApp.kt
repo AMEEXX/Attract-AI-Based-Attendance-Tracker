@@ -213,10 +213,14 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
                     is AppScreen.StudentDetail -> {
                         val currentStudent = state.workspace?.students?.firstOrNull { it.id == screen.studentId }
                         val className = state.workspace?.summary?.name ?: "Class"
+                        val attendanceStats by viewModel.observeStudentAttendanceStats(screen.classId, screen.studentId)
+                            .collectAsState(initial = 0 to (state.workspace?.summary?.endedSessionCount ?: 0))
                         if (currentStudent != null) {
                             StudentDetailScreen(
                                 student = currentStudent,
                                 className = className,
+                                presentSessions = attendanceStats.first,
+                                totalSessions = attendanceStats.second,
                                 onBack = viewModel::navigateBack,
                                 onReEnroll = { viewModel.openStandaloneEnrollment(screen.classId, screen.studentId) }
                             )

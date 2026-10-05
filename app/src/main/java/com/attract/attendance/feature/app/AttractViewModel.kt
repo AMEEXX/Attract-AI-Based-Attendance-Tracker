@@ -19,6 +19,7 @@ import com.attract.attendance.data.repository.CreateClassCommand
 import com.attract.attendance.data.repository.CreateStudentCommand
 import android.net.Uri
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -359,6 +360,9 @@ class AttractViewModel(
         val workspace = _uiState.value.workspace ?: return
         _uiState.update { it.copy(screen = AppScreen.StudentDetail(workspace.summary.id, studentId)) }
     }
+
+    fun observeStudentAttendanceStats(classId: Long, studentId: Long): Flow<Pair<Int, Int>> =
+        repository.observeStudentAttendanceStats(classId, studentId)
 
     fun navigateBack() {
         when (val screen = _uiState.value.screen) {

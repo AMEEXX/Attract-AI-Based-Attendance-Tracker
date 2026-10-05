@@ -206,20 +206,24 @@ private fun ClassCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "${classSummary.activeStudentCount} students · ${classSummary.endedSessionCount} sessions",
+                    text = "${classSummary.activeStudentCount} students · ${classSummary.endedSessionCount} completed",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "Target 75%",
+                    text = "${classSummary.endedSessionCount}/${classSummary.totalPlannedSessions} Classes",
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Bold,
                     color = AttractBlue
                 )
             }
 
+            val sessionProgress = if (classSummary.totalPlannedSessions > 0) {
+                (classSummary.endedSessionCount.toFloat() / classSummary.totalPlannedSessions.toFloat()).coerceIn(0f, 1f)
+            } else 0f
+
             LinearProgressIndicator(
-                progress = { 0.75f },
+                progress = { sessionProgress },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp)

@@ -50,6 +50,8 @@ import com.attract.attendance.ui.theme.SuccessGreen
 fun StudentDetailScreen(
     student: StudentSummary,
     className: String,
+    presentSessions: Int = 0,
+    totalSessions: Int = 0,
     onBack: () -> Unit,
     onReEnroll: () -> Unit,
     modifier: Modifier = Modifier
@@ -127,27 +129,35 @@ fun StudentDetailScreen(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
+                        val absentSessions = (totalSessions - presentSessions).coerceAtLeast(0)
+                        val attendancePercent = if (totalSessions > 0) {
+                            (presentSessions * 100) / totalSessions
+                        } else 0
+                        val attendanceProgress = if (totalSessions > 0) {
+                            (presentSessions.toFloat() / totalSessions.toFloat()).coerceIn(0f, 1f)
+                        } else 0f
+
                         Text(
-                            text = "86%",
+                            text = if (totalSessions == 0) "No classes held" else "$attendancePercent%",
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
-                            color = SuccessGreen
+                            color = if (totalSessions == 0) MaterialTheme.colorScheme.onSurfaceVariant else if (attendancePercent >= 75) SuccessGreen else MaterialTheme.colorScheme.error
                         )
                         LinearProgressIndicator(
-                            progress = { 0.86f },
+                            progress = { attendanceProgress },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(8.dp)
                                 .clip(CircleShape),
-                            color = SuccessGreen,
+                            color = if (attendancePercent >= 75) SuccessGreen else MaterialTheme.colorScheme.error,
                             trackColor = MaterialTheme.colorScheme.surface
                         )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("18 Present", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-                            Text("3 Absent", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("$presentSessions Present", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                            Text("$absentSessions Absent", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }

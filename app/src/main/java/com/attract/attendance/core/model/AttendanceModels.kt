@@ -22,6 +22,7 @@ data class ClassSummary(
     val section: String?,
     val semesterBatch: String?,
     val requiredAttendancePercent: Int,
+    val totalPlannedSessions: Int = 30,
     val activeStudentCount: Int,
     val endedSessionCount: Int,
 )

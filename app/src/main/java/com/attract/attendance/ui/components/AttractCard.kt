@@ -29,7 +29,7 @@ fun AttractCard(
     val baseModifier = modifier
         .fillMaxWidth()
         .clip(Shapes.card)
-        .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+        .then(if (onClick != null) Modifier.feedbackClickable(onClick = onClick) else Modifier)
 
     Card(
         modifier = baseModifier,

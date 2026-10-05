@@ -32,8 +32,7 @@ class FinalizeFaceSessionCommand(
         val recordedStudentIds = existingRecords.map { it.studentId }.toSet()
 
         val missingStudents = students.filter { student ->
-            student.id !in recordedStudentIds &&
-                (student.eligibleFromSessionId == null || student.eligibleFromSessionId <= sessionId)
+            student.id !in recordedStudentIds
         }
 
         if (missingStudents.isNotEmpty()) {

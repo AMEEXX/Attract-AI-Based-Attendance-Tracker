@@ -14,6 +14,7 @@ import com.attract.attendance.core.model.SessionStatus
 import com.attract.attendance.core.model.SessionSummary
 import com.attract.attendance.core.model.StudentSummary
 import com.attract.attendance.core.model.TeacherProfile
+import com.attract.attendance.core.model.RollNumberComparator
 import com.attract.attendance.core.model.RosterStudent
 import com.attract.attendance.data.local.AttendanceRecordEntity
 import com.attract.attendance.data.local.AttendanceSessionEntity
@@ -43,6 +44,7 @@ data class CreateClassCommand(
     val section: String = "",
     val semesterBatch: String = "",
     val requiredAttendancePercent: Int = 75,
+    val totalPlannedSessions: Int = 30,
 )
 
 data class CreateStudentCommand(
@@ -341,6 +343,7 @@ class AttractRepository(
                 section = it.section,
                 semesterBatch = it.semesterBatch,
                 requiredAttendancePercent = it.requiredAttendancePercent,
+                totalPlannedSessions = it.totalPlannedSessions,
                 activeStudentCount = it.activeStudentCount,
                 endedSessionCount = it.endedSessionCount,
             )
@@ -363,6 +366,7 @@ class AttractRepository(
                         section = command.section.cleanOptional(),
                         semesterBatch = command.semesterBatch.cleanOptional(),
                         requiredAttendancePercent = percentage,
+                        totalPlannedSessions = command.totalPlannedSessions,
                         createdAt = now,
                         updatedAt = now,
                     ),
@@ -386,7 +390,7 @@ class AttractRepository(
     }
 
     fun observeStudents(classId: Long): Flow<List<StudentSummary>> = students.observeActiveForClass(classId).map { rows ->
-        rows.map(::toStudentSummary)
+        rows.map(::toStudentSummary).sortedWith { a, b -> RollNumberComparator.compare(a.rollNumber, b.rollNumber) }
     }
 
     suspend fun getClass(classId: Long): ClassSectionEntity? = classes.find(classId)
@@ -400,6 +404,7 @@ class AttractRepository(
             section = row.section,
             semesterBatch = row.semesterBatch,
             requiredAttendancePercent = row.requiredAttendancePercent,
+            totalPlannedSessions = row.totalPlannedSessions,
             activeStudentCount = row.activeStudentCount,
             endedSessionCount = row.endedSessionCount,
         )
@@ -431,14 +436,13 @@ class AttractRepository(
                 if (classSection.archived) return@withTransaction CommandResult.Failure(AppError.NotFound)
                 if (sessions.activeForClass(command.classId) != null) return@withTransaction CommandResult.Failure(AppError.ActiveSessionExists)
                 val now = nowMillis()
-                val eligibilityBoundary = sessions.latestIdForClass(command.classId)?.plus(1)
                 val id = students.insert(
                     StudentEntity(
                         classId = command.classId,
                         name = name,
                         rollNumber = roll,
                         serialNumber = command.serialNumber.cleanOptional(),
-                        eligibleFromSessionId = eligibilityBoundary,
+                        eligibleFromSessionId = null,
                         createdAt = now,
                         updatedAt = now,
                     ),
@@ -480,7 +484,6 @@ class AttractRepository(
                 return@withTransaction CommandResult.Failure(AppError.DuplicateRollNumber)
             }
             val now = nowMillis()
-            val eligibilityBoundary = sessions.latestIdForClass(classId)?.plus(1)
             roster.indices.forEach { index ->
                 val item = roster[index]
                 val (name, roll) = prepared[index]
@@ -490,7 +493,7 @@ class AttractRepository(
                         name = name,
                         rollNumber = roll,
                         serialNumber = item.serialNumber?.cleanOptional(),
-                        eligibleFromSessionId = eligibilityBoundary,
+                        eligibleFromSessionId = null,
                         createdAt = now,
                         updatedAt = now,
                     ),
@@ -1427,7 +1430,8 @@ class AttractRepository(
             rows.map { SessionSummary(it.id, it.classId, it.sessionDate, it.status, it.mode, it.presentCount, it.absentCount) }
         }
 
-    suspend fun classReportRows(classId: Long): List<ClassReportStudentRow> = records.classReport(classId)
+    suspend fun classReportRows(classId: Long): List<ClassReportStudentRow> =
+        records.classReport(classId).sortedWith { a, b -> RollNumberComparator.compare(a.rollNumber, b.rollNumber) }
 
     suspend fun sessionExportRows(classId: Long): List<SessionExportRow> = records.sessionExportRows(classId)
 
@@ -1443,7 +1447,17 @@ class AttractRepository(
     }
 
     fun observeSessionStudents(classId: Long, sessionId: Long): Flow<List<Pair<StudentSummary, AttendanceStatus?>>> =
-        records.observeStudentsForSession(classId, sessionId).map { rows -> rows.map(::toStudentAttendance) }
+        records.observeStudentsForSession(classId, sessionId).map { rows ->
+            rows.map(::toStudentAttendance).sortedWith { a, b -> RollNumberComparator.compare(a.first.rollNumber, b.first.rollNumber) }
+        }
+
+    fun observeStudentAttendanceStats(classId: Long, studentId: Long): Flow<Pair<Int, Int>> =
+        kotlinx.coroutines.flow.combine(
+            records.observePresentCountForStudent(studentId),
+            sessions.observeEndedSessionCountForClass(classId)
+        ) { present, total ->
+            present to total
+        }
 
     suspend fun correctAttendance(sessionId: Long, studentId: Long, newStatus: AttendanceStatus): CommandResult<Unit> = try {
         database.withTransaction {
