@@ -34,3 +34,5 @@ opencode.json
 
 # Biometric eval datasets (downloaded on demand)
 .datasets/
+scratch/
+

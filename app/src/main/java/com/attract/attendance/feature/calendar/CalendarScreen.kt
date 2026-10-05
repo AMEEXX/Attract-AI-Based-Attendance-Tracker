@@ -47,6 +47,8 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import java.time.format.TextStyle
 import java.util.Locale
 
@@ -61,10 +63,13 @@ fun CalendarScreen(
     onManualAttendance: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val scrollState = rememberScrollState()
     Column(
         modifier = modifier
             .fillMaxSize()
+            .verticalScroll(scrollState)
             .padding(horizontal = 16.dp)
+            .padding(bottom = 24.dp)
     ) {
         MonthHeader(
             currentMonth = state.currentMonth,
@@ -146,11 +151,11 @@ fun CalendarScreen(
                 )
             }
         } else {
-            LazyColumn(
+            Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                items(state.sessionsForDate, key = { it.id }) { session ->
+                state.sessionsForDate.forEach { session ->
                     SessionCard(
                         session = session,
                         onViewDetails = { onViewSessionDetails(session) }
