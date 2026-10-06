@@ -15,7 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -38,7 +38,10 @@ import androidx.compose.ui.unit.dp
 import com.attract.attendance.core.model.EnrollmentStatus
 import com.attract.attendance.core.model.StudentSummary
 import com.attract.attendance.ui.components.AttractCard
+import com.attract.attendance.ui.components.AttractIconButton
+import com.attract.attendance.ui.components.AttractPrimaryButton
 import com.attract.attendance.ui.components.AttractOutlinedButton
+import com.attract.attendance.ui.components.AttractTextButton
 import com.attract.attendance.ui.components.StatCard
 import com.attract.attendance.ui.theme.AttractBlue
 import com.attract.attendance.ui.theme.Dimens
@@ -64,8 +67,8 @@ fun StudentDetailScreen(
             TopAppBar(
                 title = { Text(student.name, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    AttractIconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -78,7 +81,7 @@ fun StudentDetailScreen(
                 title = { Text("Re-register Face Data", fontWeight = FontWeight.Bold) },
                 text = { Text("Re-register ${student.name}'s face? This will delete their existing face data.") },
                 confirmButton = {
-                    androidx.compose.material3.Button(
+                    AttractPrimaryButton(
                         onClick = {
                             showReEnrollDialog = false
                             onReEnroll()
@@ -88,7 +91,7 @@ fun StudentDetailScreen(
                     }
                 },
                 dismissButton = {
-                    androidx.compose.material3.TextButton(onClick = { showReEnrollDialog = false }) {
+                    AttractTextButton(onClick = { showReEnrollDialog = false }) {
                         Text("Cancel")
                     }
                 }

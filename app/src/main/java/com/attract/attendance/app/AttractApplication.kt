@@ -35,6 +35,19 @@ class AttractApplication : Application() {
             android.util.Log.e("AttractApplication", "Failed to create AppContainer", t)
             startupError = t
         }
+
+        try {
+            val account = com.google.android.gms.auth.api.signin.GoogleSignIn.getLastSignedInAccount(this)
+            if (account != null && com.google.android.gms.auth.api.signin.GoogleSignIn.hasPermissions(
+                    account,
+                    com.google.android.gms.common.api.Scope(com.google.api.services.drive.DriveScopes.DRIVE_APPDATA)
+                )
+            ) {
+                com.attract.attendance.data.drive.BackupScheduler.schedulePeriodicBackup(this)
+            }
+        } catch (t: Throwable) {
+            android.util.Log.w("AttractApplication", "Could not check Drive account on startup", t)
+        }
     }
 }
 

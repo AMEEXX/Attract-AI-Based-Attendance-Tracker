@@ -19,6 +19,8 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
+import com.attract.attendance.ui.components.AttractTextButton
+import com.attract.attendance.ui.components.rememberFeedbackClick
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,7 +73,7 @@ fun HistoryFilterBottomSheet(
                     fontWeight = FontWeight.Bold
                 )
                 if (filterState.isFiltered) {
-                    TextButton(onClick = onResetFilter) {
+                    AttractTextButton(onClick = onResetFilter) {
                         Text("Reset")
                     }
                 }
@@ -84,16 +86,18 @@ fun HistoryFilterBottomSheet(
             )
 
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                val selectNewest = rememberFeedbackClick { onApplyFilter(filterState.copy(sortOrder = HistorySortOrder.NEWEST_FIRST)) }
+                val selectOldest = rememberFeedbackClick { onApplyFilter(filterState.copy(sortOrder = HistorySortOrder.OLDEST_FIRST)) }
                 SegmentedButton(
                     selected = filterState.sortOrder == HistorySortOrder.NEWEST_FIRST,
-                    onClick = { onApplyFilter(filterState.copy(sortOrder = HistorySortOrder.NEWEST_FIRST)) },
+                    onClick = selectNewest,
                     shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
                 ) {
                     Text("Newest first")
                 }
                 SegmentedButton(
                     selected = filterState.sortOrder == HistorySortOrder.OLDEST_FIRST,
-                    onClick = { onApplyFilter(filterState.copy(sortOrder = HistorySortOrder.OLDEST_FIRST)) },
+                    onClick = selectOldest,
                     shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
                 ) {
                     Text("Oldest first")
@@ -113,12 +117,13 @@ fun HistoryFilterBottomSheet(
                 ) {
                     items(availableMonths) { month ->
                         val isSelected = filterState.selectedMonth == month
+                        val chipClick = rememberFeedbackClick {
+                            val next = if (isSelected) null else month
+                            onApplyFilter(filterState.copy(selectedMonth = next))
+                        }
                         FilterChip(
                             selected = isSelected,
-                            onClick = {
-                                val next = if (isSelected) null else month
-                                onApplyFilter(filterState.copy(selectedMonth = next))
-                            },
+                            onClick = chipClick,
                             label = { Text(month) }
                         )
                     }

@@ -19,6 +19,10 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Tune
+import com.attract.attendance.core.model.RosterStudent
+import com.attract.attendance.ui.components.ImportRosterChoiceBottomSheet
+import com.attract.attendance.ui.components.OcrImportSheet
+import com.attract.attendance.ui.components.OcrConfirmationDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -56,6 +60,8 @@ import com.attract.attendance.ui.components.rememberFeedbackClick
 import com.attract.attendance.core.model.SessionSummary
 import com.attract.attendance.core.model.StudentSummary
 import com.attract.attendance.feature.app.ClassWorkspace
+import com.attract.attendance.ui.components.AttractIconButton
+import com.attract.attendance.ui.components.AttractTextButton
 import com.attract.attendance.ui.components.EmptyState
 import com.attract.attendance.ui.components.SearchField
 import com.attract.attendance.ui.components.SessionCard
@@ -76,13 +82,21 @@ fun ClassWorkspaceScreen(
     onSessionOpen: (SessionSummary) -> Unit,
     onAddStudentSubmit: (name: String, rollNumber: String, serialNumber: String?, (com.attract.attendance.core.model.CommandResult<Long>) -> Unit) -> Unit = { _, _, _, _ -> },
     onExportReport: () -> Unit,
+    onImportOcrStudents: (List<RosterStudent>) -> Unit = { },
     modifier: Modifier = Modifier
 ) {
-    if (workspace == null) return
+    var lastValidWorkspace by remember { mutableStateOf(workspace) }
+    if (workspace != null) {
+        lastValidWorkspace = workspace
+    }
+    val currentWorkspace = workspace ?: lastValidWorkspace ?: return
 
     var activeTab by remember(initialTab) { mutableIntStateOf(initialTab) }
     var showAddStudentSheet by remember { mutableStateOf(false) }
     var duplicateRollError by remember { mutableStateOf<String?>(null) }
+    var showImportChoiceSheet by remember { mutableStateOf(false) }
+    var showOcrSheet by remember { mutableStateOf(false) }
+    var ocrExtractedStudents by remember { mutableStateOf<List<RosterStudent>?>(null) }
 
     Scaffold(
         topBar = {
@@ -90,11 +104,11 @@ fun ClassWorkspaceScreen(
                 title = {
                     Column {
                         Text(
-                            text = workspace.summary.name,
+                            text = currentWorkspace.summary.name,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
-                        workspace.summary.section?.let {
+                        currentWorkspace.summary.section?.let {
                             Text(
                                 text = "Section $it",
                                 style = MaterialTheme.typography.bodySmall,
@@ -104,12 +118,12 @@ fun ClassWorkspaceScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    AttractIconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
-                    IconButton(onClick = onExportReport) {
+                    AttractIconButton(onClick = onExportReport) {
                         Icon(Icons.Default.Download, contentDescription = "Export Report")
                     }
                 }
@@ -117,11 +131,12 @@ fun ClassWorkspaceScreen(
         },
         floatingActionButton = {
             if (activeTab == 1) {
+                val addStudentClick = rememberFeedbackClick {
+                    duplicateRollError = null
+                    showAddStudentSheet = true
+                }
                 FloatingActionButton(
-                    onClick = {
-                        duplicateRollError = null
-                        showAddStudentSheet = true
-                    },
+                    onClick = addStudentClick,
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ) {
@@ -223,8 +238,8 @@ fun ClassWorkspaceScreen(
                             (context.applicationContext as? com.attract.attendance.app.AttractApplication)?.container?.repository
                         }
                         if (repository != null) {
-                            val calendarViewModel = remember(workspace.summary.id) {
-                                com.attract.attendance.feature.calendar.CalendarViewModel(workspace.summary.id, repository)
+                            val calendarViewModel = remember(currentWorkspace.summary.id) {
+                                com.attract.attendance.feature.calendar.CalendarViewModel(currentWorkspace.summary.id, repository)
                             }
                             val calendarState by calendarViewModel.uiState.collectAsState()
 
@@ -240,18 +255,46 @@ fun ClassWorkspaceScreen(
                         }
                     }
                     1 -> WorkspaceStudentsTab(
-                        students = workspace.students,
+                        students = currentWorkspace.students,
                         onStudentClick = onStudentClick,
-                        onImportRoster = onImportRoster,
+                        onImportRoster = { showImportChoiceSheet = true },
                         onAddStudent = onAddStudent
                     )
                     2 -> WorkspaceHistoryTab(
-                        sessions = workspace.sessions,
+                        sessions = currentWorkspace.sessions,
                         onSessionOpen = onSessionOpen,
                         onExportReport = onExportReport
                     )
                 }
             }
+        }
+
+        if (showImportChoiceSheet) {
+            ImportRosterChoiceBottomSheet(
+                onDismissRequest = { showImportChoiceSheet = false },
+                onChooseCsv = onImportRoster,
+                onChooseOcr = { showOcrSheet = true }
+            )
+        }
+
+        if (showOcrSheet) {
+            OcrImportSheet(
+                onDismissRequest = { showOcrSheet = false },
+                onStudentsExtracted = { students ->
+                    ocrExtractedStudents = students
+                }
+            )
+        }
+
+        ocrExtractedStudents?.let { students ->
+            OcrConfirmationDialog(
+                initialStudents = students,
+                onConfirm = { confirmed ->
+                    ocrExtractedStudents = null
+                    onImportOcrStudents(confirmed)
+                },
+                onDismiss = { ocrExtractedStudents = null }
+            )
         }
     }
 }
@@ -296,10 +339,10 @@ private fun WorkspaceStudentsTab(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                TextButton(onClick = onImportRoster) {
+                AttractTextButton(onClick = onImportRoster) {
                     Icon(Icons.Default.Download, contentDescription = null)
                     Spacer(Modifier.width(4.dp))
-                    Text("Import CSV")
+                    Text("Import")
                 }
             }
         }
@@ -309,8 +352,8 @@ private fun WorkspaceStudentsTab(
                 EmptyState(
                     icon = Icons.Default.Person,
                     title = if (searchQuery.isBlank()) "No students enrolled yet" else "No matching students",
-                    message = if (searchQuery.isBlank()) "Import a CSV roster or tap + to add students." else "Try a different search term.",
-                    actionLabel = "Import Roster CSV",
+                    message = if (searchQuery.isBlank()) "Import a roster or tap + to add students." else "Try a different search term.",
+                    actionLabel = "Import Students",
                     onAction = onImportRoster
                 )
             }
@@ -368,14 +411,14 @@ private fun WorkspaceHistoryTab(
                     fontWeight = FontWeight.Bold
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { showFilterSheet = true }) {
+                    AttractIconButton(onClick = { showFilterSheet = true }) {
                         Icon(
                             imageVector = Icons.Default.Tune,
                             contentDescription = "Filter Sessions",
                             tint = if (filterState.isFiltered) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    TextButton(onClick = onExportReport) {
+                    AttractTextButton(onClick = onExportReport) {
                         Icon(Icons.Default.Download, contentDescription = null)
                         Spacer(Modifier.width(4.dp))
                         Text("Export CSV")

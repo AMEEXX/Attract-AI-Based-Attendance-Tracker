@@ -15,6 +15,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
+import com.attract.attendance.ui.components.AttractPrimaryButton
+import com.attract.attendance.ui.components.AttractTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -100,11 +102,11 @@ fun AddStudentBottomSheet(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                TextButton(onClick = onDismissRequest) {
+                AttractTextButton(onClick = onDismissRequest) {
                     Text("Cancel")
                 }
                 Spacer(modifier = Modifier.padding(horizontal = 4.dp))
-                androidx.compose.material3.Button(
+                AttractPrimaryButton(
                     onClick = {
                         if (isSaveEnabled) {
                             onAddStudent(nameInput.trim(), rollInput.trim(), serialInput.trim().ifBlank { null })

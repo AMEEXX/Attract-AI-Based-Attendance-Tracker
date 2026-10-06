@@ -27,7 +27,7 @@ fun SearchField(
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
         trailingIcon = {
             if (query.isNotEmpty()) {
-                IconButton(onClick = { onQueryChange("") }) {
+                AttractIconButton(onClick = { onQueryChange("") }) {
                     Icon(Icons.Default.Clear, contentDescription = "Clear search")
                 }
             }

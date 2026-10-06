@@ -44,6 +44,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import com.attract.attendance.ui.components.AttractIconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -74,6 +75,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
+import com.attract.attendance.ui.components.feedbackClickable
 import com.attract.attendance.core.model.ClassSummary
 import com.attract.attendance.core.model.EnrollmentStatus
 import com.attract.attendance.feature.attendance.AttendanceStrings
@@ -131,6 +136,12 @@ fun AttendanceScreen(
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
+    val fragmentActivity = context as? FragmentActivity
+    val biometricManager = remember { BiometricManager.from(context) }
+    val canUseBiometric = remember(biometricManager, fragmentActivity) {
+        fragmentActivity != null &&
+        biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
+    }
     val scope = rememberCoroutineScope()
 
     var hasCameraPermission by remember {
@@ -298,6 +309,119 @@ fun AttendanceScreen(
     var teacherAssistPinInput by remember { mutableStateOf("") }
     var teacherAssistPinError by remember { mutableStateOf<String?>(null) }
     var isAuthenticatingAssist by remember { mutableStateOf(false) }
+
+    val launchExitAuth: () -> Unit = {
+        if (!canUseBiometric || fragmentActivity == null) {
+            showPinDialog = true
+        } else {
+            val executor = ContextCompat.getMainExecutor(context)
+            var failureCount = 0
+            var prompt: BiometricPrompt? = null
+            prompt = BiometricPrompt(
+                fragmentActivity,
+                executor,
+                object : BiometricPrompt.AuthenticationCallback() {
+                    override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                        scope.launch {
+                            if (presentIds.isEmpty()) {
+                                showZeroConfirmDialog = true
+                            } else {
+                                try {
+                                    lockTaskController?.stop()
+                                    isScreenPinned = false
+                                    Log.d(TAG, "Screen pinning stopped on session exit")
+                                } catch (e: Exception) {
+                                    Log.w(TAG, "stopLockTask failed: ${e.message}")
+                                }
+                                onEndSession(presentIds)
+                            }
+                        }
+                    }
+
+                    override fun onAuthenticationFailed() {
+                        failureCount++
+                        if (failureCount >= 3) {
+                            prompt?.cancelAuthentication()
+                            showPinDialog = true
+                            pinError = "Too many failed fingerprint attempts. Please enter your PIN."
+                        }
+                    }
+
+                    override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                        when (errorCode) {
+                            BiometricPrompt.ERROR_LOCKOUT,
+                            BiometricPrompt.ERROR_LOCKOUT_PERMANENT -> {
+                                showPinDialog = true
+                                pinError = "Biometric locked. Please enter your PIN."
+                            }
+                            BiometricPrompt.ERROR_NEGATIVE_BUTTON -> {
+                                showPinDialog = true
+                            }
+                        }
+                    }
+                }
+            )
+
+            val promptInfo = BiometricPrompt.PromptInfo.Builder()
+                .setTitle("Teacher Verification")
+                .setSubtitle("Scan fingerprint to end session & unpin")
+                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                .setNegativeButtonText("Use PIN Instead")
+                .build()
+
+            prompt.authenticate(promptInfo)
+        }
+    }
+
+    val launchTeacherAssistAuth: () -> Unit = {
+        if (!canUseBiometric || fragmentActivity == null) {
+            showTeacherAssistPinDialog = true
+        } else {
+            val executor = ContextCompat.getMainExecutor(context)
+            var failureCount = 0
+            var prompt: BiometricPrompt? = null
+            prompt = BiometricPrompt(
+                fragmentActivity,
+                executor,
+                object : BiometricPrompt.AuthenticationCallback() {
+                    override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                        showTeacherAssistDialog = true
+                    }
+
+                    override fun onAuthenticationFailed() {
+                        failureCount++
+                        if (failureCount >= 3) {
+                            prompt?.cancelAuthentication()
+                            showTeacherAssistPinDialog = true
+                            teacherAssistPinError = "Too many failed fingerprint attempts. Please enter your PIN."
+                        }
+                    }
+
+                    override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                        when (errorCode) {
+                            BiometricPrompt.ERROR_LOCKOUT,
+                            BiometricPrompt.ERROR_LOCKOUT_PERMANENT -> {
+                                showTeacherAssistPinDialog = true
+                                teacherAssistPinError = "Biometric locked. Please enter your PIN."
+                            }
+                            BiometricPrompt.ERROR_NEGATIVE_BUTTON -> {
+                                showTeacherAssistPinDialog = true
+                            }
+                        }
+                    }
+                }
+            )
+
+            val promptInfo = BiometricPrompt.PromptInfo.Builder()
+                .setTitle("Teacher Authorization")
+                .setSubtitle("Scan fingerprint for assisted check-in")
+                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                .setNegativeButtonText("Use PIN Instead")
+                .build()
+
+            prompt.authenticate(promptInfo)
+        }
+    }
 
     var latestFrameBundle by remember { mutableStateOf<com.attract.attendance.domain.face.FrameBundle?>(null) }
     var latestFrameSignals by remember { mutableStateOf<FaceQualitySignals?>(null) }
@@ -1242,7 +1366,7 @@ fun AttendanceScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (isStandaloneMode) {
-                IconButton(onClick = onBack) {
+                AttractIconButton(onClick = onBack) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
@@ -1304,7 +1428,7 @@ fun AttendanceScreen(
                     )
                 }
 
-                IconButton(onClick = { showPinDialog = true }) {
+                AttractIconButton(onClick = { launchExitAuth() }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                         contentDescription = "End Session & Unpin Screen",
@@ -1598,7 +1722,7 @@ fun AttendanceScreen(
                 },
                 onTeacherAssistRequested = {
                     showEnrollBottomSheet = false
-                    showTeacherAssistPinDialog = true
+                    launchTeacherAssistAuth()
                 }
             )
         }
@@ -1754,7 +1878,7 @@ fun AttendanceScreen(
                                             .fillMaxWidth()
                                             .clip(RoundedCornerShape(8.dp))
                                             .background(Color.White.copy(alpha = 0.05f))
-                                            .clickable {
+                                            .feedbackClickable {
                                                 val grant = TeacherAuthorizationGrant(
                                                     sessionId = activeSessionId ?: 0L,
                                                     classId = classId,
@@ -1894,7 +2018,7 @@ fun AttendanceScreen(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = { showZeroConfirmDialog = false }) {
+                        AttractIconButton(onClick = { showZeroConfirmDialog = false }) {
                             Icon(
                                 imageVector = androidx.compose.material.icons.Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Cancel"

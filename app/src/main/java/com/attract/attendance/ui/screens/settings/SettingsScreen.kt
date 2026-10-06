@@ -1,6 +1,7 @@
 package com.attract.attendance.ui.screens.settings
 
 import androidx.compose.foundation.clickable
+import com.attract.attendance.ui.components.feedbackClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,7 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -26,6 +27,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.attract.attendance.ui.components.AttractCard
+import com.attract.attendance.ui.components.AttractIconButton
+import com.attract.attendance.ui.components.AttractTextButton
+import com.attract.attendance.ui.components.rememberFeedbackClick
 import com.attract.attendance.ui.theme.AppThemeMode
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -47,6 +51,12 @@ fun SettingsScreen(
     onExportBackup: () -> Unit,
     onImportBackup: () -> Unit,
     onResetBiometricData: ((pin: String, confirmText: String, onResult: (Boolean, String) -> Unit) -> Unit)? = null,
+    driveAccountEmail: String? = null,
+    driveSyncStatus: com.attract.attendance.data.drive.DriveSyncStatus = com.attract.attendance.data.drive.DriveSyncStatus.Idle,
+    driveLastSyncMillis: Long = 0L,
+    onConnectDrive: () -> Unit = {},
+    onDisconnectDrive: () -> Unit = {},
+    onSyncDriveNow: () -> Unit = {},
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -60,8 +70,8 @@ fun SettingsScreen(
             TopAppBar(
                 title = { Text("Settings", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    AttractIconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -118,7 +128,7 @@ fun SettingsScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable(onClick = onExportBackup)
+                                .feedbackClickable(onClick = onExportBackup)
                                 .padding(vertical = 12.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
@@ -128,7 +138,7 @@ fun SettingsScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable(onClick = onImportBackup)
+                                .feedbackClickable(onClick = onImportBackup)
                                 .padding(vertical = 12.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
@@ -139,7 +149,7 @@ fun SettingsScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { showResetDialog = true }
+                                    .feedbackClickable { showResetDialog = true }
                                     .padding(vertical = 12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
@@ -154,6 +164,19 @@ fun SettingsScreen(
                         }
                     }
                 }
+            }
+
+            // Cloud Backup (Google Drive) Section
+            item {
+                Spacer(modifier = Modifier.height(Dimens.SmallGap))
+                GoogleDriveSyncCard(
+                    accountEmail = driveAccountEmail,
+                    syncStatus = driveSyncStatus,
+                    lastSyncMillis = driveLastSyncMillis,
+                    onConnectClick = onConnectDrive,
+                    onDisconnectClick = onDisconnectDrive,
+                    onSyncNowClick = onSyncDriveNow,
+                )
             }
 
             // About Section
@@ -215,30 +238,31 @@ fun SettingsScreen(
                     }
                 },
                 confirmButton = {
+                    val resetClick = rememberFeedbackClick {
+                        if (resetConfirmText.trim() != "RESET") {
+                            resetErrorMessage = "Type RESET in all caps to confirm"
+                            return@rememberFeedbackClick
+                        }
+                        onResetBiometricData?.invoke(resetPin, resetConfirmText) { success, msg ->
+                            if (success) {
+                                showResetDialog = false
+                                resetPin = ""
+                                resetConfirmText = ""
+                                resetErrorMessage = null
+                            } else {
+                                resetErrorMessage = msg
+                            }
+                        }
+                    }
                     Button(
-                        onClick = {
-                            if (resetConfirmText.trim() != "RESET") {
-                                resetErrorMessage = "Type RESET in all caps to confirm"
-                                return@Button
-                            }
-                            onResetBiometricData?.invoke(resetPin, resetConfirmText) { success, msg ->
-                                if (success) {
-                                    showResetDialog = false
-                                    resetPin = ""
-                                    resetConfirmText = ""
-                                    resetErrorMessage = null
-                                } else {
-                                    resetErrorMessage = msg
-                                }
-                            }
-                        },
+                        onClick = resetClick,
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                     ) {
                         Text("Reset Data")
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = {
+                    AttractTextButton(onClick = {
                         showResetDialog = false
                         resetPin = ""
                         resetConfirmText = ""
@@ -261,12 +285,12 @@ private fun ThemeSelectionRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .feedbackClickable(onClick = onClick)
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-        RadioButton(selected = selected, onClick = onClick)
+        RadioButton(selected = selected, onClick = null)
     }
 }
