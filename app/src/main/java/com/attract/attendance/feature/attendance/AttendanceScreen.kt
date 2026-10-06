@@ -35,10 +35,13 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -73,6 +76,18 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.attract.attendance.core.model.ClassSummary
 import com.attract.attendance.core.model.EnrollmentStatus
+import com.attract.attendance.feature.attendance.AttendanceStrings
+import com.attract.attendance.ui.components.biometric.FaceFrameOverlay
+import com.attract.attendance.ui.components.biometric.FrameState
+import com.attract.attendance.ui.components.biometric.GuidanceCard
+import com.attract.attendance.ui.components.biometric.PoseStepper
+import com.attract.attendance.ui.components.biometric.RosterSelectionBottomSheet
+import com.attract.attendance.ui.components.biometric.VerificationMeter
+import com.attract.attendance.ui.theme.BiometricError
+import com.attract.attendance.ui.theme.BiometricIndigo
+import com.attract.attendance.ui.theme.BiometricSuccess
+import com.attract.attendance.ui.theme.BiometricSurface
+import com.attract.attendance.ui.theme.BiometricWarning
 import com.attract.attendance.core.model.StudentSummary
 import com.attract.attendance.data.repository.AttractRepository
 import com.attract.attendance.domain.face.FaceQualityConfig
@@ -216,7 +231,18 @@ fun AttendanceScreen(
     var presentIds by remember { mutableStateOf(setOf<Long>()) }
     var collectedFrames by remember { mutableIntStateOf(0) }
     var lastRecognizedStudent by remember { mutableStateOf<StudentSummary?>(null) }
-    var statusMessage by remember { mutableStateOf("📷 Step 1/3 (STRAIGHT): Position face straight in ample lighting & tap CLICK") }
+    var statusMessage by remember {
+        mutableStateOf(
+            if (isStandaloneMode) AttendanceStrings.ENROLL_STEP1_TITLE
+            else AttendanceStrings.ATTENDANCE_READY_TITLE
+        )
+    }
+    var statusSubtitle by remember {
+        mutableStateOf<String?>(
+            if (isStandaloneMode) AttendanceStrings.ENROLL_STEP1_SUBTITLE
+            else AttendanceStrings.ATTENDANCE_READY_SUBTITLE
+        )
+    }
 
     // 2c. CANONICAL SESSION START (LLD-06 amendment, 2026-08-26): the attendance
     // session is created/resolved HERE — the DB row is the single source of truth.
@@ -313,14 +339,14 @@ fun AttendanceScreen(
 
     fun stepPrompt(step: Int): String {
         if (isStandaloneMode) return when (step) {
-            0 -> "📷 Step 1/3 (STRAIGHT): Position face straight in ample lighting"
-            1 -> "👈 Step 2/3 (LEFT PROFILE): Slowly turn head LEFT"
-            else -> "👉 Step 3/3 (RIGHT PROFILE): Slowly turn head RIGHT"
+            0 -> AttendanceStrings.ENROLL_STEP1_TITLE
+            1 -> AttendanceStrings.ENROLL_STEP2_TITLE
+            else -> AttendanceStrings.ENROLL_STEP3_TITLE
         }
         return when (step) {
-            0 -> "📷 Step 1: Look straight at the camera"
-            1 -> "🙂 Almost there — hold still naturally"
-            else -> "🙂 Final check — hold still"
+            0 -> AttendanceStrings.ATTENDANCE_READY_TITLE
+            1 -> AttendanceStrings.NEED_MORE_FRAMES_TITLE
+            else -> AttendanceStrings.NEED_MORE_FRAMES_TITLE
         }
     }
 
@@ -338,6 +364,7 @@ fun AttendanceScreen(
         state = SessionScreenState.READY
         collectedFrames = 0
         statusMessage = stepPrompt(0)
+        statusSubtitle = if (isStandaloneMode) AttendanceStrings.ENROLL_STEP1_SUBTITLE else AttendanceStrings.ATTENDANCE_READY_SUBTITLE
         selectedStudentForEnroll = null
         lastQualitySignals = null
         capturedPoseBitmaps = emptyList()
@@ -374,7 +401,8 @@ fun AttendanceScreen(
         adaptiveEngine = null
         recognitionAttemptCount = 0
         state = SessionScreenState.UNKNOWN_STUDENT
-        statusMessage = "Face not recognized. Choose an option below."
+        statusMessage = AttendanceStrings.UNKNOWN_FACE_TITLE
+        statusSubtitle = AttendanceStrings.UNKNOWN_FACE_SUBTITLE
         showEnrollBottomSheet = true
     }
 
@@ -393,7 +421,8 @@ fun AttendanceScreen(
         adaptiveEngine = null
         isValidatingFrame = false
         state = SessionScreenState.CAPTURING
-        statusMessage = "📋 Enrolling ${selected.name} — Step 1/3: Look straight at camera"
+        statusMessage = "Enrolling ${selected.name}"
+        statusSubtitle = AttendanceStrings.ENROLL_STEP1_SUBTITLE
         Log.i("ATTRACT_ATTENDANCE_FALLBACK", "Inline enrollment started for studentId=${selected.id} name=${selected.name}")
     }
 
@@ -693,18 +722,20 @@ fun AttendanceScreen(
             if (now - lastPoseHintTimeMs > 1000L) {
                 lastPoseHintTimeMs = now
                 val targetName = inlineEnrollmentTarget?.name ?: selectedStudentForEnroll?.name ?: targetStudentForStandalone?.name ?: "Student"
-                statusMessage = when (qualityEval.reason) {
-                    com.attract.attendance.domain.face.QualityReason.DARK -> "⚠️ Lighting too dark. Move to better lighting."
-                    com.attract.attendance.domain.face.QualityReason.OVEREXPOSED -> "⚠️ Too bright/glare. Adjust lighting."
-                    com.attract.attendance.domain.face.QualityReason.BLUR -> "⚠️ Image blurry. Hold steady."
-                    com.attract.attendance.domain.face.QualityReason.TOO_SMALL -> "⚠️ Move a bit closer to camera."
-                    com.attract.attendance.domain.face.QualityReason.OFF_CENTER -> "⚠️ Center your face inside the frame."
-                    com.attract.attendance.domain.face.QualityReason.POSE_NOT_STRAIGHT -> "📋 Enrolling $targetName — Step 1/3: Look straight at camera"
-                    com.attract.attendance.domain.face.QualityReason.POSE_NOT_LEFT -> "👈 Step 2/3 (LEFT): Slowly turn your head LEFT"
-                    com.attract.attendance.domain.face.QualityReason.POSE_NOT_RIGHT -> "👉 Step 3/3 (RIGHT): Now slowly turn your head RIGHT"
-                    com.attract.attendance.domain.face.QualityReason.POSE -> "⚠️ Keep head level — avoid tilting up or down."
-                    else -> "⚠️ Hold steady in good lighting"
+                val (msgTitle, msgSubtitle) = when (qualityEval.reason) {
+                    com.attract.attendance.domain.face.QualityReason.DARK -> AttendanceStrings.QUALITY_DARK_TITLE to AttendanceStrings.QUALITY_DARK_SUBTITLE
+                    com.attract.attendance.domain.face.QualityReason.OVEREXPOSED -> AttendanceStrings.QUALITY_OVEREXPOSED_TITLE to AttendanceStrings.QUALITY_OVEREXPOSED_SUBTITLE
+                    com.attract.attendance.domain.face.QualityReason.BLUR -> AttendanceStrings.QUALITY_BLUR_TITLE to AttendanceStrings.QUALITY_BLUR_SUBTITLE
+                    com.attract.attendance.domain.face.QualityReason.TOO_SMALL -> AttendanceStrings.QUALITY_TOO_SMALL_TITLE to AttendanceStrings.QUALITY_TOO_SMALL_SUBTITLE
+                    com.attract.attendance.domain.face.QualityReason.OFF_CENTER -> AttendanceStrings.QUALITY_OFF_CENTER_TITLE to AttendanceStrings.QUALITY_OFF_CENTER_SUBTITLE
+                    com.attract.attendance.domain.face.QualityReason.POSE_NOT_STRAIGHT -> AttendanceStrings.ENROLL_STEP1_TITLE to AttendanceStrings.ENROLL_STEP1_SUBTITLE
+                    com.attract.attendance.domain.face.QualityReason.POSE_NOT_LEFT -> AttendanceStrings.ENROLL_STEP2_TITLE to AttendanceStrings.ENROLL_STEP2_SUBTITLE
+                    com.attract.attendance.domain.face.QualityReason.POSE_NOT_RIGHT -> AttendanceStrings.ENROLL_STEP3_TITLE to AttendanceStrings.ENROLL_STEP3_SUBTITLE
+                    com.attract.attendance.domain.face.QualityReason.POSE -> AttendanceStrings.QUALITY_POSE_TITLE to AttendanceStrings.QUALITY_POSE_SUBTITLE
+                    else -> "Hold steady in good lighting" to null
                 }
+                statusMessage = msgTitle
+                statusSubtitle = msgSubtitle
             }
             return
         }
@@ -715,16 +746,13 @@ fun AttendanceScreen(
                 val embedding = withContext(Dispatchers.IO) {
                     com.attract.attendance.domain.face.EmbeddingEngine.extractEmbedding(context, cropBitmap)
                 }
-                if (embedding == null) {
-                    isValidatingFrame = false
-                    return@launch
-                }
 
                 if (currentSlot > 0 && enrollmentSlotEmbeddings.isNotEmpty()) {
                     val straightEmbedding = enrollmentSlotEmbeddings[0]
                     val sim = com.attract.attendance.domain.face.IdentityScorer.cosineSimilarity(straightEmbedding, embedding)
                     if (sim < com.attract.attendance.domain.face.BiometricModelProfile.CURRENT.continuityThreshold) {
-                        statusMessage = "⚠️ Person swap suspected (continuity failed). Retake pose."
+                        statusMessage = "Person swap suspected"
+                        statusSubtitle = "Hold steady and retake pose"
                         isValidatingFrame = false
                         return@launch
                     }
@@ -739,20 +767,23 @@ fun AttendanceScreen(
                     anchorStraightYaw = signals.yawDegrees
                     captureStep = 1
                     collectedFrames = 1
-                    statusMessage = "✓ Straight captured! 👈 Step 2/3: Slowly turn your head LEFT"
+                    statusMessage = AttendanceStrings.ENROLL_STEP2_TITLE
+                    statusSubtitle = AttendanceStrings.ENROLL_STEP2_SUBTITLE
                     delay(500)
                     isValidatingFrame = false
                 } else if (currentSlot == 1) {
                     captureStep = 2
                     collectedFrames = 2
-                    statusMessage = "✓ Left captured! 👉 Step 3/3: Now slowly turn your head RIGHT"
+                    statusMessage = AttendanceStrings.ENROLL_STEP3_TITLE
+                    statusSubtitle = AttendanceStrings.ENROLL_STEP3_SUBTITLE
                     delay(500)
                     isValidatingFrame = false
                 } else {
                     captureStep = 3
                     collectedFrames = 3
                     state = SessionScreenState.PROCESSING
-                    statusMessage = "✓ All poses captured! Saving biometric data..."
+                    statusMessage = AttendanceStrings.ENROLL_SAVING_TITLE
+                    statusSubtitle = AttendanceStrings.ENROLL_SAVING_SUBTITLE
                     if (inlineEnrollmentTarget != null) {
                         completeInlineEnrollment()
                     } else if (isStandaloneMode) {
@@ -776,7 +807,8 @@ fun AttendanceScreen(
         if (matchedStudent.id in presentIds) {
             isValidatingFrame = false
             state = SessionScreenState.ALREADY_PRESENT
-            statusMessage = "Already Checked In: ${matchedStudent.name}"
+            statusMessage = "${AttendanceStrings.ALREADY_PRESENT_TITLE}: ${matchedStudent.name}"
+            statusSubtitle = matchedStudent.rollNumber
             scope.launch { delay(2000); resetToReady(resetAttempts = true) }
             return
         }
@@ -795,16 +827,19 @@ fun AttendanceScreen(
                     presentIds = presentIds + matchedStudent.id
                     lastRecognizedStudent = matchedStudent
                     state = SessionScreenState.MATCH_SUCCESS
-                    statusMessage = "PRESENT: ${matchedStudent.name}"
+                    statusMessage = "${AttendanceStrings.MATCH_TITLE}: ${matchedStudent.name}"
+                    statusSubtitle = matchedStudent.rollNumber
                 }
                 is com.attract.attendance.data.repository.AttractRepository.FallbackMarkResult.AlreadyPresent -> {
                     state = SessionScreenState.ALREADY_PRESENT
-                    statusMessage = "Already Checked In: ${matchedStudent.name}"
+                    statusMessage = "${AttendanceStrings.ALREADY_PRESENT_TITLE}: ${matchedStudent.name}"
+                    statusSubtitle = matchedStudent.rollNumber
                 }
                 else -> {
                     Log.e("ATTRACT_ATTENDANCE_FALLBACK", "AI attendance persist failed: $result")
                     state = SessionScreenState.ERROR
-                    statusMessage = "Could not record attendance. Please try again."
+                    statusMessage = "Could not record attendance"
+                    statusSubtitle = "Please try again"
                 }
             }
             delay(2000)
@@ -841,7 +876,8 @@ fun AttendanceScreen(
         } else {
             recognitionAttemptCount += 1
             state = SessionScreenState.READY
-            statusMessage = "Couldn't verify clearly, please try again (Attempt 1/2)."
+            statusMessage = "Couldn't verify clearly, please try again"
+            statusSubtitle = "Attempt 1 of 2 · Hold still and look straight"
             feedbackJob = scope.launch {
                 delay(2000)
                 if (currentInteractionToken == attemptToken) {
@@ -867,12 +903,14 @@ fun AttendanceScreen(
         val frameBitmap = bundle?.alignedCrop ?: latestFrameBitmap
 
         if (signals == null || signals.faceCount == 0) {
-            statusMessage = "⚠️ No face detected. Position your face in the frame."
+            statusMessage = AttendanceStrings.NO_FACE_TITLE
+            statusSubtitle = AttendanceStrings.NO_FACE_SUBTITLE
             return
         }
 
         if (signals.faceCount > 1) {
-            statusMessage = "⚠️ Multiple faces detected. Only one person at a time."
+            statusMessage = AttendanceStrings.MULTIPLE_FACES_TITLE
+            statusSubtitle = AttendanceStrings.MULTIPLE_FACES_SUBTITLE
             return
         }
 
@@ -898,7 +936,8 @@ fun AttendanceScreen(
                     signals, FaceQualityConfig.calibrationDefaults(),
                 )
             if (!supportPoseOk) {
-                statusMessage = "⚠️ Keep your head roughly facing the camera  —  extreme angles can't be used."
+                statusMessage = AttendanceStrings.QUALITY_POSE_TITLE
+                statusSubtitle = "Keep your head roughly facing the camera"
                 isValidatingFrame = false
                 return
             }
@@ -912,19 +951,20 @@ fun AttendanceScreen(
             FaceQualityEngine.evaluate(signals, cfg, measured)
         }
         if (qualityEval is QualityResult.Rejected) {
-            statusMessage = when (qualityEval.reason) {
-                com.attract.attendance.domain.face.QualityReason.DARK -> "⚠️ Lighting too dark. Move to better lighting."
-                com.attract.attendance.domain.face.QualityReason.OVEREXPOSED -> "⚠️ Too bright/glare. Adjust lighting."
-                com.attract.attendance.domain.face.QualityReason.BLUR -> "⚠️ Image blurry. Hold steady and try again."
-                com.attract.attendance.domain.face.QualityReason.TOO_SMALL -> "⚠️ Move closer to the camera."
-                com.attract.attendance.domain.face.QualityReason.OFF_CENTER -> "⚠️ Center your face inside the frame."
-                com.attract.attendance.domain.face.QualityReason.POSE_NOT_STRAIGHT -> "⚠️ Please look straight at the camera for this step."
-                com.attract.attendance.domain.face.QualityReason.POSE_NOT_LEFT -> "👈 Turn your head LEFT until your profile shows, then tap CLICK."
-                com.attract.attendance.domain.face.QualityReason.POSE_NOT_RIGHT -> "👉 Turn your head RIGHT until your profile shows, then tap CLICK."
-                com.attract.attendance.domain.face.QualityReason.POSE -> "⚠️ Keep your head level — do not tilt up or down."
-                com.attract.attendance.domain.face.QualityReason.EYES_UNCLEAR -> "⚠️ Please keep your eyes open."
-                else -> "⚠️ Quality check failed. Please reposition."
+            val (qTitle, qSub) = when (qualityEval.reason) {
+                com.attract.attendance.domain.face.QualityReason.DARK -> AttendanceStrings.QUALITY_DARK_TITLE to AttendanceStrings.QUALITY_DARK_SUBTITLE
+                com.attract.attendance.domain.face.QualityReason.OVEREXPOSED -> AttendanceStrings.QUALITY_OVEREXPOSED_TITLE to AttendanceStrings.QUALITY_OVEREXPOSED_SUBTITLE
+                com.attract.attendance.domain.face.QualityReason.BLUR -> AttendanceStrings.QUALITY_BLUR_TITLE to AttendanceStrings.QUALITY_BLUR_SUBTITLE
+                com.attract.attendance.domain.face.QualityReason.TOO_SMALL -> AttendanceStrings.QUALITY_TOO_SMALL_TITLE to AttendanceStrings.QUALITY_TOO_SMALL_SUBTITLE
+                com.attract.attendance.domain.face.QualityReason.OFF_CENTER -> AttendanceStrings.QUALITY_OFF_CENTER_TITLE to AttendanceStrings.QUALITY_OFF_CENTER_SUBTITLE
+                com.attract.attendance.domain.face.QualityReason.POSE_NOT_STRAIGHT,
+                com.attract.attendance.domain.face.QualityReason.POSE_NOT_LEFT,
+                com.attract.attendance.domain.face.QualityReason.POSE_NOT_RIGHT,
+                com.attract.attendance.domain.face.QualityReason.POSE -> AttendanceStrings.QUALITY_POSE_TITLE to AttendanceStrings.QUALITY_POSE_SUBTITLE
+                else -> "Reposition face in frame" to "Hold steady and try again"
             }
+            statusMessage = qTitle
+            statusSubtitle = qSub
             isValidatingFrame = false
             return
         }
@@ -934,7 +974,8 @@ fun AttendanceScreen(
 
         val livenessEval = LivenessEngine.check(signals, lastQualitySignals, patSignals)
         if (livenessEval is LivenessResult.Rejected) {
-            statusMessage = "⚠️ ${livenessEval.message}"
+            statusMessage = "Liveness check failed"
+            statusSubtitle = livenessEval.message
             isValidatingFrame = false
             return
         }
@@ -942,13 +983,17 @@ fun AttendanceScreen(
         lastQualitySignals = signals
         lastFrameLive = livenessEval is LivenessResult.Passed
         lastFrameQualityScore = (qualityEval as QualityResult.Accepted).score
-        capturedYawDegrees = capturedYawDegrees + signals.yawDegrees
-        capturedQualityScores = capturedQualityScores + qualityEval.score
-        if (frameBitmap != null) {
-            capturedPoseBitmaps = capturedPoseBitmaps + frameBitmap
-        }
-        if (captureStep == 0) {
-            anchorStraightYaw = signals.yawDegrees
+
+        val isEnrollmentMode = isStandaloneMode || inlineEnrollmentTarget != null
+        if (isEnrollmentMode) {
+            capturedYawDegrees = capturedYawDegrees + signals.yawDegrees
+            capturedQualityScores = capturedQualityScores + qualityEval.score
+            if (frameBitmap != null) {
+                capturedPoseBitmaps = capturedPoseBitmaps + frameBitmap
+            }
+            if (captureStep == 0) {
+                anchorStraightYaw = signals.yawDegrees
+            }
         }
 
         // ---- STANDALONE ENROLLMENT (Face Biometrics Setup): collect 3 poses, then the
@@ -960,11 +1005,12 @@ fun AttendanceScreen(
                 val nextFrame = collectedFrames + 1
                 collectedFrames = nextFrame
                 when (nextFrame) {
-                    1 -> { captureStep = 1; state = SessionScreenState.CAPTURING; statusMessage = stepPrompt(1) }
-                    2 -> { captureStep = 2; state = SessionScreenState.CAPTURING; statusMessage = stepPrompt(2) }
+                    1 -> { captureStep = 1; state = SessionScreenState.CAPTURING; statusMessage = stepPrompt(1); statusSubtitle = AttendanceStrings.ENROLL_STEP2_SUBTITLE }
+                    2 -> { captureStep = 2; state = SessionScreenState.CAPTURING; statusMessage = stepPrompt(2); statusSubtitle = AttendanceStrings.ENROLL_STEP3_SUBTITLE }
                     else -> {
                         state = SessionScreenState.FRAMES_COLLECTED
-                        statusMessage = "✅ Straight + Left + Right photos captured & validated! Tap SUBMIT"
+                        statusMessage = AttendanceStrings.ENROLL_ALL_CAPTURED_TITLE
+                        statusSubtitle = AttendanceStrings.ENROLL_ALL_CAPTURED_SUBTITLE
                     }
                 }
             }
@@ -981,8 +1027,12 @@ fun AttendanceScreen(
                 collectedFrames = nextFrame
                 captureStep = nextFrame
                 state = SessionScreenState.CAPTURING
-                val poseName = when (nextFrame) { 1 -> "LEFT" else -> "RIGHT" }
-                statusMessage = "📋 Enrolling ${target.name} — Step ${nextFrame + 1}/3 ($poseName): Tap CLICK"
+                val (stepTitle, stepSub) = when (nextFrame) {
+                    1 -> AttendanceStrings.ENROLL_STEP2_TITLE to AttendanceStrings.ENROLL_STEP2_SUBTITLE
+                    else -> AttendanceStrings.ENROLL_STEP3_TITLE to AttendanceStrings.ENROLL_STEP3_SUBTITLE
+                }
+                statusMessage = stepTitle
+                statusSubtitle = stepSub
                 isValidatingFrame = false
             } else {
                 // All 3 frames captured → enroll + mark present
@@ -995,7 +1045,8 @@ fun AttendanceScreen(
         // ---- Adaptive submission (LLD-16): embed this frame, submit to the engine, and
         // either accept immediately, request another natural capture, or finalize safely.
         state = SessionScreenState.PROCESSING
-        statusMessage = "Analyzing face..."
+        statusMessage = AttendanceStrings.PROCESSING_TITLE
+        statusSubtitle = AttendanceStrings.PROCESSING_SUBTITLE
         scope.launch {
             runCatching {
                 val signalsNow = lastQualitySignals
@@ -1003,7 +1054,8 @@ fun AttendanceScreen(
                 val scoreNow = lastFrameQualityScore
                 val cropBitmap = frameBitmap
                 if (signalsNow == null || cropBitmap == null) {
-                    statusMessage = "⚠️ Frame capture failed. Please retake."
+                    statusMessage = AttendanceStrings.QUALITY_NO_FACE_TITLE
+                    statusSubtitle = AttendanceStrings.QUALITY_NO_FACE_SUBTITLE
                     state = SessionScreenState.CAPTURING
                     isValidatingFrame = false
                     return@launch
@@ -1034,7 +1086,8 @@ fun AttendanceScreen(
                         collectedFrames = step.framesSubmitted
                         captureStep = minOf(step.framesSubmitted, 2)
                         state = SessionScreenState.CAPTURING
-                        statusMessage = step.reason + " Tap CLICK"
+                        statusMessage = AttendanceStrings.NEED_MORE_FRAMES_TITLE
+                        statusSubtitle = AttendanceStrings.NEED_MORE_FRAMES_SUBTITLE
                         isValidatingFrame = false
                     }
                     is com.attract.attendance.domain.face.AdaptiveVerificationEngine.Step.Final -> {
@@ -1224,17 +1277,28 @@ fun AttendanceScreen(
                         )
                     }
                 } else if (isScreenPinned) {
-                    Text(
-                        text = "ðŸ“Œ Screen Pinned (Attendance Mode)",
-                        color = Color(0xFF81C995),
-                        style = MaterialTheme.typography.labelSmall,
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(start = 8.dp)
-                    )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = null,
+                            tint = BiometricSuccess,
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Screen Pinned",
+                            color = BiometricSuccess,
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
                 } else {
                     // Pinning in progress or not yet confirmed
                     Text(
-                        text = "⏳ Starting session...",
-                        color = Color.White.copy(alpha = 0.5f),
+                        text = AttendanceStrings.SESSION_STARTING,
+                        color = Color.White.copy(alpha = 0.6f),
                         style = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.padding(start = 8.dp)
                     )
@@ -1262,16 +1326,12 @@ fun AttendanceScreen(
             Box(
                 modifier = Modifier
                     .size(280.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(24.dp))
                     .background(Color(0xFF111111))
                     .border(
-                        width = 2.dp,
-                        color = when (state) {
-                            SessionScreenState.MATCH_SUCCESS -> Color(0xFF81C995)
-                            SessionScreenState.CAPTURING -> Color(0xFFFDD835)
-                            else -> Color(0xFF333333)
-                        },
-                        shape = RoundedCornerShape(12.dp)
+                        width = 1.dp,
+                        color = Color.White.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(24.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -1291,6 +1351,28 @@ fun AttendanceScreen(
                     Text("Camera permission required", color = Color.White, style = MaterialTheme.typography.bodySmall)
                 }
 
+                // Face frame brackets overlay (indigo idle, amber quality issue, emerald success)
+                val bracketState = when (state) {
+                    SessionScreenState.MATCH_SUCCESS -> FrameState.SUCCESS
+                    SessionScreenState.ALREADY_PRESENT -> FrameState.WARNING
+                    SessionScreenState.UNKNOWN_STUDENT, SessionScreenState.ERROR -> FrameState.ERROR
+                    else -> {
+                        val hasQualityIssue = latestFrameBundle?.qualitySignals?.let { signals ->
+                            signals.faceCount != 1 ||
+                                FaceQualityEngine.evaluate(signals, FaceQualityConfig.calibrationDefaults()) is QualityResult.Rejected
+                        } ?: false
+                        if (hasQualityIssue && (state == SessionScreenState.CAPTURING || state == SessionScreenState.PROCESSING)) {
+                            FrameState.WARNING
+                        } else {
+                            FrameState.NEUTRAL
+                        }
+                    }
+                }
+                FaceFrameOverlay(
+                    frameState = bracketState,
+                    modifier = Modifier.fillMaxSize().padding(10.dp)
+                )
+
                 if (state == SessionScreenState.PROCESSING) {
                     Box(
                         modifier = Modifier
@@ -1298,73 +1380,92 @@ fun AttendanceScreen(
                             .background(Color.Black.copy(alpha = 0.6f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(color = Color.White)
+                        CircularProgressIndicator(color = BiometricIndigo)
                     }
                 } else if (state == SessionScreenState.MATCH_SUCCESS) {
                     Box(
                         modifier = Modifier
-                            .size(72.dp)
+                            .size(88.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF1E8E3E)),
+                            .background(BiometricSuccess),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = "Verified",
-                            tint = Color.White,
-                            modifier = Modifier.size(48.dp)
+                            tint = Color(0xFF06301F),
+                            modifier = Modifier.size(52.dp)
+                        )
+                    }
+                } else if (state == SessionScreenState.ALREADY_PRESENT) {
+                    Box(
+                        modifier = Modifier
+                            .size(88.dp)
+                            .clip(CircleShape)
+                            .background(BiometricWarning),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Already Checked In",
+                            tint = Color(0xFF3D2600),
+                            modifier = Modifier.size(52.dp)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // Glass Status Pill
-            Box(
+            // Guidance Card (Title + Subtitle, state colors & icons)
+            GuidanceCard(
+                state = state,
+                title = statusMessage,
+                subtitle = statusSubtitle,
                 modifier = Modifier
-                    .clip(com.attract.attendance.ui.theme.PillShape)
-                    .background(Color.White.copy(alpha = 0.08f))
-                    .padding(horizontal = 20.dp, vertical = 10.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = statusMessage,
-                    color = when (state) {
-                        SessionScreenState.MATCH_SUCCESS -> com.attract.attendance.ui.theme.CameraScreenColors.glowEmerald
-                        SessionScreenState.ALREADY_PRESENT -> com.attract.attendance.ui.theme.CameraScreenColors.glowAmber
-                        else -> com.attract.attendance.ui.theme.CameraScreenColors.onBackground
-                    },
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center
-                )
-            }
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+            )
 
             if (state == SessionScreenState.MATCH_SUCCESS && lastRecognizedStudent != null) {
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "${lastRecognizedStudent?.rollNumber}",
-                    color = Color.Gray,
+                    text = "${lastRecognizedStudent?.name} • ${lastRecognizedStudent?.rollNumber}",
+                    color = Color.White.copy(alpha = 0.7f),
                     style = com.attract.attendance.ui.theme.NumericBody
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Progress Indicators & Retake Option for Frame Collection
-            if (state == SessionScreenState.CAPTURING || state == SessionScreenState.FRAMES_COLLECTED) {
-                com.attract.attendance.ui.components.biometric.PoseProgress(completedCount = collectedFrames)
-                if (collectedFrames > 0) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    TextButton(
-                        onClick = { resetToReady() },
-                        modifier = Modifier.height(44.dp)
-                    ) {
-                        Text("↺ Retake Poses", color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.bodySmall)
+            // Progress Indicators: PoseStepper for enrollment only, VerificationMeter for adaptive checks
+            val isEnrollment = isStandaloneMode || inlineEnrollmentTarget != null
+            if (isEnrollment) {
+                if (state == SessionScreenState.CAPTURING || state == SessionScreenState.FRAMES_COLLECTED) {
+                    PoseStepper(
+                        completedCount = collectedFrames,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                    if (collectedFrames > 0) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        TextButton(
+                            onClick = { resetToReady() },
+                            modifier = Modifier.height(44.dp)
+                        ) {
+                            Text("↺ Retake Poses", color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.bodySmall)
+                        }
                     }
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+            } else {
+                if (state == SessionScreenState.CAPTURING && collectedFrames > 0) {
+                    VerificationMeter(
+                        completedChecks = collectedFrames,
+                        totalBudget = 2,
+                        modifier = Modifier.padding(horizontal = 24.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
             }
 
             // Hero Glow Action Button (120dp Halo with 72dp Core)
@@ -1377,13 +1478,21 @@ fun AttendanceScreen(
                     else -> com.attract.attendance.ui.components.biometric.GlowButtonState.READY
                 }
 
-                // Issue 3: Reopening Roster Sheet when selectedStudentForEnroll == null
                 if (state == SessionScreenState.UNKNOWN_STUDENT && selectedStudentForEnroll == null) {
-                    TextButton(
+                    Button(
                         onClick = { showEnrollBottomSheet = true },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = BiometricIndigo,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.height(48.dp)
                     ) {
-                        Text(if (isStandaloneMode) "📋 Select ID to Enroll" else "📋 Options: New Profile / Ask Teacher", color = Color(0xFF8AB4F8), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            if (isStandaloneMode) "Select Student to Enroll" else "Select Name / Ask Teacher",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
                     }
                 } else {
                     com.attract.attendance.ui.components.biometric.GlowCaptureButton(
@@ -1392,7 +1501,8 @@ fun AttendanceScreen(
                             if (state == SessionScreenState.PROCESSING || isValidatingFrame) return@GlowCaptureButton
                             // Guard against starting capture before session is initialized in attendance mode (prevents session id 0 error)
                             if (!isStandaloneMode && activeSessionId == null) {
-                                statusMessage = "⏳ Initializing session, please wait..."
+                                statusMessage = AttendanceStrings.SESSION_STARTING
+                                statusSubtitle = ""
                                 return@GlowCaptureButton
                             }
                             if (state == SessionScreenState.FRAMES_COLLECTED) {
@@ -1428,135 +1538,67 @@ fun AttendanceScreen(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
             }
+            val totalStudents = students.size
+            val presentCount = presentIds.size
+            val animatedCount by animateIntAsState(
+                targetValue = presentCount,
+                label = "presentCountAnim"
+            )
+            val progressFraction = if (totalStudents > 0) presentCount.toFloat() / totalStudents.toFloat() else 0f
+            val animatedProgress by animateFloatAsState(
+                targetValue = progressFraction,
+                label = "presentProgressAnim"
+            )
+
             Box(
                 modifier = Modifier
                     .clip(com.attract.attendance.ui.theme.PillShape)
                     .background(Color.White.copy(alpha = 0.05f))
-                    .padding(horizontal = 16.dp, vertical = 6.dp)
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
             ) {
-                Text(
-                    text = "Present: ${presentIds.size} / ${students.size}",
-                    color = Color.White.copy(alpha = 0.6f),
-                    style = com.attract.attendance.ui.theme.NumericBody,
-                    fontWeight = FontWeight.Medium
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "Present: $animatedCount / $totalStudents",
+                        color = Color.White.copy(alpha = 0.85f),
+                        style = com.attract.attendance.ui.theme.NumericBody,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    LinearProgressIndicator(
+                        progress = { animatedProgress },
+                        modifier = Modifier
+                            .width(100.dp)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp)),
+                        color = BiometricSuccess,
+                        trackColor = Color.White.copy(alpha = 0.12f)
+                    )
+                }
             }
         }
 
-        // Roster Selection dialog: ONLY NOT_ENROLLED students for new profile, or Ask Teacher path (fixes R01 & R02)
+        // Roster Selection dialog: Material3 ModalBottomSheet
         if (showEnrollBottomSheet) {
-            var selectedTab by remember { mutableIntStateOf(0) }
-            val unenrolledStudents = students.filter { it.enrollmentStatus == EnrollmentStatus.NOT_ENROLLED && it.id !in presentIds }
-
-            AlertDialog(
+            RosterSelectionBottomSheet(
                 onDismissRequest = { showEnrollBottomSheet = false },
-                title = { Text(if (isStandaloneMode) "Select Student to Enroll" else "Recognition Options", fontWeight = FontWeight.Bold) },
-                text = {
-                    Column(modifier = Modifier.height(320.dp).fillMaxWidth()) {
-                        if (!isStandaloneMode) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(Color.White.copy(alpha = 0.08f))
-                                    .padding(4.dp),
-                                horizontalArrangement = Arrangement.SpaceEvenly
-                            ) {
-                                Button(
-                                    onClick = { selectedTab = 0 },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (selectedTab == 0) MaterialTheme.colorScheme.primary else Color.Transparent,
-                                        contentColor = if (selectedTab == 0) MaterialTheme.colorScheme.onPrimary else Color.Gray,
-                                    ),
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text("New Profile", style = MaterialTheme.typography.bodySmall)
-                                }
-                                Button(
-                                    onClick = { selectedTab = 1 },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (selectedTab == 1) MaterialTheme.colorScheme.primary else Color.Transparent,
-                                        contentColor = if (selectedTab == 1) MaterialTheme.colorScheme.onPrimary else Color.Gray,
-                                    ),
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text("Ask Teacher", style = MaterialTheme.typography.bodySmall)
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(12.dp))
-                        }
-
-                        if (selectedTab == 0 || isStandaloneMode) {
-                            Text(
-                                "Un-enrolled students only (Self-Service):",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.Gray
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            if (unenrolledStudents.isEmpty()) {
-                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    Text("No un-enrolled students available.", color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
-                                }
-                            } else {
-                                LazyColumn(
-                                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    items(unenrolledStudents, key = { it.id }) { student ->
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .background(if (selectedStudentForEnroll?.id == student.id) Color(0xFF333333) else Color.Transparent)
-                                                .clickable {
-                                                    if (isStandaloneMode) {
-                                                        selectedStudentForEnroll = student
-                                                        showEnrollBottomSheet = false
-                                                    } else {
-                                                        // D-007: Student self-service identity confirmation
-                                                        pendingEnrollmentStudent = student
-                                                        showEnrollBottomSheet = false
-                                                        showStudentConfirmDialog = true
-                                                    }
-                                                }
-                                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(student.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
-                                                Text(student.rollNumber, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        } else {
-                            // Ask Teacher path: opens PIN dialog
-                            Text("Teacher-Assisted Check-In & Profile Repair:", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(
-                                "If you are already enrolled and could not be verified by camera, request teacher assistance.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.LightGray
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = {
-                                    showEnrollBottomSheet = false
-                                    showTeacherAssistPinDialog = true
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text("Teacher Login for Assisted Check-in")
-                            }
-                        }
+                isStandaloneMode = isStandaloneMode,
+                students = students,
+                presentIds = presentIds,
+                selectedStudent = selectedStudentForEnroll,
+                onSelectStudent = { student ->
+                    if (isStandaloneMode) {
+                        selectedStudentForEnroll = student
+                        showEnrollBottomSheet = false
+                    } else {
+                        // D-007: Student self-service identity confirmation
+                        pendingEnrollmentStudent = student
+                        showEnrollBottomSheet = false
+                        showStudentConfirmDialog = true
                     }
                 },
-                confirmButton = {},
-                dismissButton = {
-                    TextButton(onClick = { showEnrollBottomSheet = false }) {
-                        Text("Cancel")
-                    }
+                onTeacherAssistRequested = {
+                    showEnrollBottomSheet = false
+                    showTeacherAssistPinDialog = true
                 }
             )
         }
@@ -1570,6 +1612,9 @@ fun AttendanceScreen(
                     showStudentConfirmDialog = false
                     pendingEnrollmentStudent = null
                 },
+                containerColor = BiometricSurface,
+                titleContentColor = Color.White,
+                textContentColor = Color.White.copy(alpha = 0.85f),
                 title = { Text("Confirm Your Name", fontWeight = FontWeight.Bold) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -1586,7 +1631,11 @@ fun AttendanceScreen(
                             val target = pendingEnrollmentStudent!!
                             pendingEnrollmentStudent = null
                             startInlineEnrollment(target, grant = null)
-                        }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = BiometricIndigo,
+                            contentColor = Color.White
+                        )
                     ) {
                         Text("Yes, that's me")
                     }
@@ -1599,7 +1648,7 @@ fun AttendanceScreen(
                             showEnrollBottomSheet = true
                         }
                     ) {
-                        Text("Back")
+                        Text("Back", color = Color.White.copy(alpha = 0.7f))
                     }
                 }
             )
