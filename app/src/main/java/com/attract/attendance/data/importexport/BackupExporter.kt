@@ -30,7 +30,7 @@ class BackupExporter(
         }
     }
 
-    internal fun toJson(snapshot: BackupSnapshot): String = buildString {
+    fun toJson(snapshot: BackupSnapshot): String = buildString {
         append("{")
         field("format", "attract-backup-v1")
         comma()

@@ -34,6 +34,9 @@ import com.attract.attendance.core.model.AttendanceStatus
 import com.attract.attendance.core.model.RollNumberComparator
 import com.attract.attendance.feature.app.SessionHistory
 import com.attract.attendance.ui.components.AttractCard
+import com.attract.attendance.ui.components.AttractIconButton
+import com.attract.attendance.ui.components.AttractTextButton
+import com.attract.attendance.ui.components.rememberFeedbackClick
 import com.attract.attendance.ui.theme.Dimens
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,12 +67,12 @@ fun SessionHistoryScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    AttractIconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
-                    IconButton(
+                    AttractIconButton(
                         onClick = { showDeleteConfirm = true },
                         enabled = !working
                     ) {
@@ -119,11 +122,12 @@ fun SessionHistoryScreen(
                         }
 
                         val isPresent = status == AttendanceStatus.PRESENT
+                        val chipClick = rememberFeedbackClick {
+                            val nextStatus = if (isPresent) AttendanceStatus.ABSENT else AttendanceStatus.PRESENT
+                            onCorrect(history.session.id, student.id, nextStatus)
+                        }
                         AssistChip(
-                            onClick = {
-                                val nextStatus = if (isPresent) AttendanceStatus.ABSENT else AttendanceStatus.PRESENT
-                                onCorrect(history.session.id, student.id, nextStatus)
-                            },
+                            onClick = chipClick,
                             label = {
                                 Text(
                                     text = if (isPresent) "Present" else "Absent",
@@ -142,7 +146,7 @@ fun SessionHistoryScreen(
                 title = { Text("Delete Attendance Session?") },
                 text = { Text("This will permanently remove session records. This action cannot be undone.") },
                 confirmButton = {
-                    TextButton(
+                    AttractTextButton(
                         onClick = {
                             showDeleteConfirm = false
                             onDelete()
@@ -152,7 +156,7 @@ fun SessionHistoryScreen(
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showDeleteConfirm = false }) {
+                    AttractTextButton(onClick = { showDeleteConfirm = false }) {
                         Text("Cancel")
                     }
                 }

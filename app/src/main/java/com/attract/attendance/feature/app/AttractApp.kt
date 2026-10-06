@@ -40,9 +40,14 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.GroupOff
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import com.attract.attendance.ui.components.AttractPrimaryButton
+import com.attract.attendance.ui.components.AttractOutlinedButton
+import com.attract.attendance.ui.components.AttractTextButton
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -116,6 +121,23 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
     val viewModel: AttractViewModel = viewModel(factory = viewModelFactory)
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHost = remember { SnackbarHostState() }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val driveAuthManager = remember(context) { com.attract.attendance.data.drive.DriveAuthManager(context) }
+    val driveSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val signInResult = driveAuthManager.handleSignInResult(result.data)
+        signInResult.onSuccess { account ->
+            viewModel.onDriveConnected(account, context)
+        }.onFailure { error ->
+            viewModel.onDriveSignInFailed(error.message ?: "Google Sign-In failed")
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.initDriveSync(context)
+    }
+
     val rosterPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         val classId = (state.screen as? AppScreen.ClassWorkspace)?.classId
         if (uri != null && classId != null) viewModel.prepareRosterImport(classId, uri)
@@ -208,6 +230,14 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
                         onExportBackup = { exportBackupPicker.launch("attract-backup.json") },
                         onImportBackup = { importBackupPicker.launch(arrayOf("application/json", "*/*")) },
                         onResetBiometricData = viewModel::resetBiometricData,
+                        driveAccountEmail = state.driveAccountEmail,
+                        driveSyncStatus = state.driveSyncStatus,
+                        driveLastSyncMillis = state.driveLastSyncMillis,
+                        onConnectDrive = {
+                            driveSignInLauncher.launch(driveAuthManager.getSignInIntent())
+                        },
+                        onDisconnectDrive = { viewModel.onDriveDisconnected(context) },
+                        onSyncDriveNow = { viewModel.syncDriveNow(context) },
                         onBack = viewModel::navigateBack
                     )
                     is AppScreen.StudentDetail -> {
@@ -259,6 +289,7 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
                         onAddStudent = { },
                         onStudentClick = viewModel::openStudentDetail,
                         onImportRoster = { rosterPicker.launch(arrayOf("text/csv", "text/comma-separated-values", "application/csv")) },
+                        onImportOcrStudents = { students -> viewModel.importRosterDirectly(screen.classId, students) },
                         onManualAttendance = viewModel::openManualAttendance,
                         onFaceAttendance = viewModel::openFaceAttendance,
                         onSessionOpen = viewModel::openSessionHistory,
@@ -282,10 +313,12 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
                         workspace = state.workspace,
                         working = state.isWorking,
                         onBack = viewModel::navigateBack,
-                        onSave = { present -> viewModel.saveManualAttendance(screen.classId, present, screen.sessionDate) },
+                        onSave = { present ->
+                            viewModel.saveManualAttendance(screen.classId, present, screen.sessionDate)
+                            com.attract.attendance.data.drive.BackupScheduler.triggerImmediateBackup(context)
+                        },
                     )
                     is AppScreen.FaceAttendance -> {
-                        val context = androidx.compose.ui.platform.LocalContext.current
                         val repository = remember(context) {
                             (context.applicationContext as? com.attract.attendance.app.AttractApplication)?.container?.repository
                         }
@@ -298,7 +331,10 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
                                 onEnrollStudent = { studentId, embeddings, qualityScores, onComplete ->
                                     viewModel.enrollStudentFace(studentId, embeddings, qualityScores, onComplete)
                                 },
-                                onEndSession = { present -> viewModel.saveFaceAttendance(screen.classId, present, screen.sessionDate) },
+                                onEndSession = { present ->
+                                    viewModel.saveFaceAttendance(screen.classId, present, screen.sessionDate)
+                                    com.attract.attendance.data.drive.BackupScheduler.triggerImmediateBackup(context)
+                                },
                                 onDiscardSession = { viewModel.discardFaceAttendance(screen.classId) },
                                 onBack = viewModel::navigateBack
                             )
@@ -326,12 +362,62 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
                 onDismiss = viewModel::cancelRosterImport,
             )
         }
+        state.noEnrolledStudentsWarning?.let { warning ->
+            NoEnrolledStudentsDialog(
+                warning = warning,
+                onDismiss = viewModel::dismissNoEnrolledStudentsWarning,
+                onGoToStudents = { viewModel.openStudentsTabFromWarning(warning.classId) },
+            )
+        }
     }
 }
 
 @Composable
 private fun LoadingScreen() = Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+}
+
+@Composable
+private fun NoEnrolledStudentsDialog(
+    warning: NoEnrolledStudentsDialogState,
+    onDismiss: () -> Unit,
+    onGoToStudents: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                imageVector = Icons.Default.GroupOff,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(36.dp)
+            )
+        },
+        title = {
+            Text(
+                text = "No Students Found",
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleLarge
+            )
+        },
+        text = {
+            Text(
+                text = "This class has no students added yet. Please add students or import a roster before starting AI attendance.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        confirmButton = {
+            AttractPrimaryButton(onClick = onGoToStudents) {
+                Text("Go to Students")
+            }
+        },
+        dismissButton = {
+            AttractTextButton(onClick = onDismiss) {
+                Text("Dismiss")
+            }
+        }
+    )
 }
 
 @Composable
@@ -354,8 +440,8 @@ private fun RosterImportPreviewDialog(
                 if (studentCount > sample.size) Text("+ ${studentCount - sample.size} more", style = MaterialTheme.typography.bodySmall)
             }
         },
-        confirmButton = { TextButton(onClick = onConfirm, enabled = !working) { Text(if (working) "Importing…" else "Import") } },
-        dismissButton = { TextButton(onClick = onDismiss, enabled = !working) { Text("Cancel") } },
+        confirmButton = { AttractTextButton(onClick = onConfirm, enabled = !working) { Text(if (working) "Importing…" else "Import") } },
+        dismissButton = { AttractTextButton(onClick = onDismiss, enabled = !working) { Text("Cancel") } },
     )
 }
 

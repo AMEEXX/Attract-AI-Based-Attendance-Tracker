@@ -1,0 +1,290 @@
+# Implementation Plan — Attract v5 Feature Sprint
+
+> **Scope**: Fingerprint Teacher Exit · AI Attendance Guard · Global Click Feedback · OCR Import · Google Drive Backup  
+> **Constraint**: Zero breaking changes to existing functionality
+
+---
+
+## Feature 1 — Fingerprint-First Teacher Exit (with PIN Fallback)
+
+### 1.1 Problem & Goal
+Currently, when the teacher taps the exit icon (🚪) during a pinned AI attendance session, a PIN dialog appears immediately. The user wants:
+
+1. **Fingerprint first** — show the system `BiometricPrompt` fingerprint dialog when the exit icon is tapped.
+2. **3-strike fallback** — if fingerprint fails 3 times, automatically dismiss the biometric prompt and show the existing PIN dialog.
+3. **Onboarding enrollment** — during teacher setup, require both fingerprint enrollment AND PIN setup (compulsory).
+
+### 1.2 Current State
+
+| Component | Status |
+|-----------|--------|
+| `androidx.biometric:biometric:1.1.0` | ✅ Already in [`build.gradle.kts`](file:///c:/Users/amitk/OneDrive/Documents/ChatGPT/Attract%20-%20Face%20Based%20Attendance%20Tracker/app/build.gradle.kts#L93) |
+| [`BiometricTeacherAuthenticator.kt`](file:///c:/Users/amitk/OneDrive/Documents/ChatGPT/Attract%20-%20Face%20Based%20Attendance%20Tracker/app/src/main/java/com/attract/attendance/lockdown/platform/BiometricTeacherAuthenticator.kt) | ✅ Exists but not wired into exit flow |
+| `BiometricPrompt` with `BIOMETRIC_STRONG` | ✅ Already configured in `tryBiometric()` |
+| `AuthMethod.BIOMETRIC` / `AuthMethod.PIN` | ✅ Enums exist in [`LockdownModels.kt`](file:///c:/Users/amitk/OneDrive/Documents/ChatGPT/Attract%20-%20Face%20Based%20Attendance%20Tracker/app/src/main/java/com/attract/attendance/lockdown/domain/LockdownModels.kt#L15-L18) |
+| Exit flow in [`AttendanceScreen.kt:1805-1886`](file:///c:/Users/amitk/OneDrive/Documents/ChatGPT/Attract%20-%20Face%20Based%20Attendance%20Tracker/app/src/main/java/com/attract/attendance/feature/attendance/AttendanceScreen.kt#L1805-L1886) | ⚠️ PIN-only — needs fingerprint-first gate |
+| Onboarding in [`OnboardingScreen.kt`](file:///c:/Users/amitk/OneDrive/Documents/ChatGPT/Attract%20-%20Face%20Based%20Attendance%20Tracker/app/src/main/java/com/attract/attendance/ui/screens/onboarding/OnboardingScreen.kt) | ⚠️ PIN-only — needs fingerprint step |
+
+### 1.3 User Flow — Session Exit
+
+```mermaid
+graph TD
+    A["Teacher taps 🚪 exit icon"] --> B["Show System BiometricPrompt<br/>'Teacher Verification'<br/>'Scan your fingerprint to end session'"]
+    B -->|Fingerprint OK| C["✅ Authenticated → Unpin + End Session"]
+    B -->|Fail #1| D["BiometricPrompt shows 'Try again'<br/>(system handles retry UI)"]
+    D -->|Fail #2| E["BiometricPrompt shows 'Try again'"]
+    E -->|Fail #3| F["System locks out biometric<br/>(ERROR_LOCKOUT)"]
+    F --> G["Auto-show PIN Dialog<br/>(existing AlertDialog)"]
+    G -->|PIN correct| C
+    G -->|PIN wrong| H["'Incorrect PIN. Try again.'"]
+    B -->|User taps 'Use PIN'| G
+```
+
+### 1.4 User Flow — Onboarding (Fingerprint Enrollment)
+
+```mermaid
+graph TD
+    A["Step 1: Theme Selection"] --> B["Step 2: Name + PIN Setup"]
+    B --> C{"Device has fingerprint<br/>hardware?"}
+    C -->|Yes| D["Step 3: Fingerprint Enrollment<br/>'Place your finger on the sensor<br/>to register for session exit'"]
+    D -->|Success| E["✅ Setup Complete → Dashboard"]
+    D -->|Skip not allowed| D
+    C -->|No hardware| E2["⚠️ Skip fingerprint step<br/>(PIN-only mode)<br/>Show info: 'Your device doesn't<br/>support fingerprint. PIN will<br/>be used for session exit.'"]
+    E2 --> E
+```
+
+### 1.5 Implementation Details
+
+#### A. Modify Exit Icon Handler ([`AttendanceScreen.kt:1307`](file:///c:/Users/amitk/OneDrive/Documents/ChatGPT/Attract%20-%20Face%20Based%20Attendance%20Tracker/app/src/main/java/com/attract/attendance/feature/attendance/AttendanceScreen.kt#L1307))
+
+**Current:**
+```kotlin
+IconButton(onClick = { showPinDialog = true }) { ... }
+```
+
+**New:**
+```kotlin
+IconButton(onClick = { launchFingerprintAuth() }) { ... }
+```
+
+Where `launchFingerprintAuth()` is a function that:
+1. Checks if biometric is available via `BiometricManager.canAuthenticate(BIOMETRIC_STRONG)`
+2. If available → show `BiometricPrompt` with:
+   - Title: `"Teacher Verification"`
+   - Subtitle: `"Scan your fingerprint to end session"`
+   - Negative button: `"Use PIN Instead"`
+3. If NOT available (no hardware or not enrolled) → fall directly to `showPinDialog = true`
+
+#### B. BiometricPrompt Callbacks
+
+```kotlin
+val biometricPrompt = BiometricPrompt(activity, executor, object : AuthenticationCallback() {
+    override fun onAuthenticationSucceeded(result: AuthenticationResult) {
+        // ✅ Fingerprint verified → unpin + end session
+        scope.launch {
+            lockTaskController?.stop()
+            isScreenPinned = false
+            if (presentIds.isEmpty()) {
+                showZeroConfirmDialog = true
+            } else {
+                onEndSession(presentIds)
+            }
+        }
+    }
+
+    override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+        when (errorCode) {
+            ERROR_LOCKOUT, ERROR_LOCKOUT_PERMANENT -> {
+                // 3+ failures → auto-show PIN dialog
+                showPinDialog = true
+            }
+            ERROR_NEGATIVE_BUTTON -> {
+                // User tapped "Use PIN Instead"
+                showPinDialog = true
+            }
+            ERROR_USER_CANCELED -> {
+                // User cancelled → do nothing, stay on screen
+            }
+        }
+    }
+
+    override fun onAuthenticationFailed() {
+        // System shows "Not recognized. Try again." automatically
+        // No action needed — system handles retry counter
+    }
+})
+```
+
+> [!NOTE]
+> The system `BiometricPrompt` already handles:
+> - The fingerprint animation and scanning UI (beautiful system dialog)
+> - "Not recognized. Try again." retry message
+> - Automatic lockout after 3-5 failed attempts (triggers `ERROR_LOCKOUT`)
+> - There is no need for a custom fingerprint UI — the system dialog is premium and consistent across Android devices.
+
+#### C. Modify Onboarding ([`OnboardingScreen.kt`](file:///c:/Users/amitk/OneDrive/Documents/ChatGPT/Attract%20-%20Face%20Based%20Attendance%20Tracker/app/src/main/java/com/attract/attendance/ui/screens/onboarding/OnboardingScreen.kt))
+
+Add a **Step 3** after PIN setup:
+
+1. Check `BiometricManager.canAuthenticate(BIOMETRIC_STRONG)`:
+   - `BIOMETRIC_SUCCESS` → Show fingerprint enrollment screen with a `BiometricPrompt` for the teacher to verify their fingerprint. This confirms the OS has at least one fingerprint enrolled.
+   - `BIOMETRIC_ERROR_NONE_ENROLLED` → Show a card explaining "No fingerprint registered on this device" with a button to open **Android Settings → Fingerprint** (`ACTION_FINGERPRINT_ENROLL` or `ACTION_BIOMETRIC_ENROLL`). Block "Continue" until at least one fingerprint is enrolled.
+   - `BIOMETRIC_ERROR_NO_HARDWARE` → Show info card: "This device doesn't have a fingerprint sensor. You'll use your PIN to end sessions." → Auto-skip to Dashboard.
+
+2. The fingerprint enrollment step uses the same premium design system (card style, colors, animations) as the existing onboarding.
+
+#### D. Teacher Assist Dialog — Same Pattern
+
+The Teacher Assist PIN dialog ([`AttendanceScreen.kt:1657-1720`](file:///c:/Users/amitk/OneDrive/Documents/ChatGPT/Attract%20-%20Face%20Based%20Attendance%20Tracker/app/src/main/java/com/attract/attendance/feature/attendance/AttendanceScreen.kt#L1657-L1720)) should also get the fingerprint-first treatment:
+- When teacher taps "Help" icon → fingerprint prompt first → PIN fallback on lockout
+
+### 1.6 Files to Modify
+
+| # | File | Change |
+|---|------|--------|
+| 1 | [`AttendanceScreen.kt`](file:///c:/Users/amitk/OneDrive/Documents/ChatGPT/Attract%20-%20Face%20Based%20Attendance%20Tracker/app/src/main/java/com/attract/attendance/feature/attendance/AttendanceScreen.kt) | Replace exit icon `onClick` with fingerprint-first → PIN fallback. Same for teacher assist. |
+| 2 | [`OnboardingScreen.kt`](file:///c:/Users/amitk/OneDrive/Documents/ChatGPT/Attract%20-%20Face%20Based%20Attendance%20Tracker/app/src/main/java/com/attract/attendance/ui/screens/onboarding/OnboardingScreen.kt) | Add Step 3: Fingerprint enrollment verification. Block progression until fingerprint is enrolled (or skip if no hardware). |
+| 3 | [`BiometricTeacherAuthenticator.kt`](file:///c:/Users/amitk/OneDrive/Documents/ChatGPT/Attract%20-%20Face%20Based%20Attendance%20Tracker/app/src/main/java/com/attract/attendance/lockdown/platform/BiometricTeacherAuthenticator.kt) | Clean up `readPinSecurely()` (currently returns null). May refactor `tryBiometric()` to be usable from Compose scope. |
+| 4 | [`LockdownModels.kt`](file:///c:/Users/amitk/OneDrive/Documents/ChatGPT/Attract%20-%20Face%20Based%20Attendance%20Tracker/app/src/main/java/com/attract/attendance/lockdown/domain/LockdownModels.kt) | Add `SetupCheck.FINGERPRINT_ENROLLED` enum value |
+
+### 1.7 Edge Cases
+
+| Scenario | Behavior |
+|----------|----------|
+| Device has no fingerprint hardware | Skip fingerprint in onboarding, go straight to PIN on exit |
+| Teacher hasn't enrolled any fingerprint in Android Settings | Onboarding blocks and guides to Settings |
+| Fingerprint sensor broken / disabled after setup | `canAuthenticate()` returns error → fall straight to PIN |
+| Wet fingers / repeated failures | System BiometricPrompt handles retry UI; after lockout → PIN |
+| Concurrent biometric prompt shown | Guard against double-launch with boolean flag |
+
+---
+
+## Feature 2 — AI Attendance Guard: "No Students Enrolled" Popup
+
+### 2.1 Goal
+Prevent AI Attendance from starting when no students are enrolled (face biometrics). Show a contextual popup:
+- **0 students in class** → "Please add or import students first"
+- **Students exist but 0 enrolled** → "No facial biometrics registered yet" + option to switch to Manual Attendance
+
+### 2.2 Implementation
+
+**In [`AttractViewModel.kt:249-252`](file:///c:/Users/amitk/OneDrive/Documents/ChatGPT/Attract%20-%20Face%20Based%20Attendance%20Tracker/app/src/main/java/com/attract/attendance/feature/app/AttractViewModel.kt#L249-L252):**
+
+```kotlin
+fun openFaceAttendance(sessionDate: String) {
+    val workspace = _uiState.value.workspace ?: return
+    val totalStudents = workspace.students.size
+    val enrolledCount = workspace.students.count { 
+        it.enrollmentStatus == EnrollmentStatus.ENROLLED 
+    }
+
+    if (enrolledCount == 0) {
+        _uiState.update {
+            it.copy(noEnrolledStudentsWarning = NoEnrolledStudentsDialogState(
+                classId = workspace.summary.id,
+                sessionDate = sessionDate,
+                totalStudents = totalStudents,
+                enrolledCount = 0
+            ))
+        }
+        return
+    }
+    // Proceed normally
+    _uiState.update { it.copy(screen = AppScreen.FaceAttendance(workspace.summary.id, sessionDate)) }
+}
+```
+
+**Dialog in [`AttractApp.kt`](file:///c:/Users/amitk/OneDrive/Documents/ChatGPT/Attract%20-%20Face%20Based%20Attendance%20Tracker/app/src/main/java/com/attract/attendance/feature/app/AttractApp.kt):**
+- If `totalStudents == 0`: Title "No Students Found", buttons: "Go to Students" / "Dismiss"
+- If `totalStudents > 0 && enrolledCount == 0`: Title "No Students Enrolled for AI", buttons: "Use Manual Attendance" / "Dismiss"
+
+---
+
+## Feature 3 — Global Click Feedback (Sound + Haptic)
+
+### 3.1 Goal
+Every interactive element provides consistent `SoundEffectConstants.CLICK` + `HapticFeedbackType.TextHandleMove` feedback, using the existing [`FeedbackUtils.kt`](file:///c:/Users/amitk/OneDrive/Documents/ChatGPT/Attract%20-%20Face%20Based%20Attendance%20Tracker/app/src/main/java/com/attract/attendance/ui/components/FeedbackUtils.kt).
+
+### 3.2 Strategy
+1. Fix at component level first: `AttractButton.kt`, `AttractCard.kt`, `StudentRow.kt`, `SessionCard.kt`
+2. Screen-level audit: Replace all remaining bare `.clickable { }` and `onClick = { }` with `feedbackClickable` / `rememberFeedbackClick`
+3. ~16 files to audit
+
+---
+
+## Feature 4 — OCR Attendance Sheet Import
+
+### 4.1 Goal
+In Students tab, "Import" popup offers **CSV/XLSX** or **Scan Attendance Sheet**. Teacher takes 2–3 photos → ML Kit on-device OCR → smart parser extracts roll+name pairs → editable confirmation → import.
+
+### 4.2 New Dependency
+```kotlin
+implementation("com.google.mlkit:text-recognition:16.0.1")
+```
+
+### 4.3 New Files
+| File | Purpose |
+|------|---------|
+| `OcrRosterParser.kt` | ML Kit Text → `List<RosterStudent>` with heuristics |
+| `OcrImportSheet.kt` | Multi-photo capture bottom sheet |
+| `OcrConfirmationScreen.kt` | Editable confirmation list with checkboxes |
+
+### 4.4 Parser Heuristics
+1. Numbered list: `^\d+[.)\s]+(.+)$`
+2. Columnar: Multi-space split between Roll and Name columns
+3. Header suppression: Filter "Roll No", "Student Name", etc.
+4. Cross-image deduplication by normalized roll number
+
+---
+
+## Feature 5 — Google Drive Silent Background Backup
+
+### 5.1 Goal
+Auto-backup full attendance DB to Google Drive `appDataFolder` via `WorkManager` (30-min periodic, `CONNECTED` constraint).
+
+### 5.2 New Dependencies
+```kotlin
+implementation("com.google.android.gms:play-services-auth:21.3.0")
+implementation("com.google.api-client:google-api-client-android:2.7.0")
+implementation("com.google.apis:google-api-services-drive:v3-rev20241027-2.0.0")
+implementation("com.google.http-client:google-http-client-gson:1.45.1")
+implementation("androidx.work:work-runtime-ktx:2.10.0")
+```
+
+### 5.3 New Files
+| File | Purpose |
+|------|---------|
+| `GoogleSignInManager.kt` | Google Sign-In, token refresh, sign-out |
+| `DriveBackupManager.kt` | Upload/download JSON to Drive appDataFolder |
+| `DriveBackupWorker.kt` | `CoroutineWorker` — snapshot DB → upload |
+| `BackupScheduler.kt` | Schedule/cancel WorkManager jobs |
+| `SyncStatus.kt` | Sealed class for UI state |
+
+### 5.4 Settings UI
+- Sign-in status, last sync time, "Sync Now" / "Sign Out" buttons
+- Requires Google Cloud Console OAuth Client ID setup
+
+---
+
+## Execution Order
+
+| Phase | Feature | Risk | External Setup |
+|:---:|---|:---:|:---:|
+| **1** | AI Attendance Guard (no enrolled popup) | 🟢 Low | None |
+| **2** | Global Click Feedback | 🟢 Low | None |
+| **3** | Fingerprint-First Teacher Exit | 🟢 Low | None — `biometric:1.1.0` already included |
+| **4** | OCR Attendance Sheet Import | 🟡 Medium | None — ML Kit bundled |
+| **5** | Google Drive Background Backup | 🟠 Medium-High | Google Cloud Console OAuth |
+
+> [!IMPORTANT]
+> Phase 3 (Fingerprint) has zero new dependencies — `androidx.biometric` is already in the project, and the system `BiometricPrompt` provides a beautiful, consistent UI across all Android devices. No custom fingerprint UI is needed.
+
+---
+
+## Pre-flight Decision Needed
+
+> [!NOTE]
+> **Google Drive backup**: Should it include face template data (encrypted embeddings — potentially large binary blobs) or only metadata (classes, students, sessions, records)?  
+> **Recommendation**: Metadata only — face templates are device-encrypted and large.
+
+**Ready to proceed?** Click "Proceed" and I'll begin with **Phase 1 (AI Attendance Guard)** + **Phase 2 (Click Feedback)** + **Phase 3 (Fingerprint Exit)** — all three require zero external setup.

@@ -55,4 +55,52 @@ class AttractViewModelTest {
         assertEquals("Lockdown active", updatedState.message)
         assertEquals(AppScreen.ClassWorkspace(10L), updatedState.screen)
     }
+
+    @Test
+    fun noEnrolledStudentsWarning_canBeSetAndDismissed() = runTest {
+        val warning = NoEnrolledStudentsDialogState(
+            classId = 1L,
+            sessionDate = "2026-10-06",
+            totalStudents = 0,
+            enrolledCount = 0
+        )
+        val state = AttractUiState(noEnrolledStudentsWarning = warning)
+        assertNotNull(state.noEnrolledStudentsWarning)
+        assertEquals(0, state.noEnrolledStudentsWarning?.totalStudents)
+
+        val dismissedState = state.copy(noEnrolledStudentsWarning = null)
+        assertNull(dismissedState.noEnrolledStudentsWarning)
+    }
+
+    @Test
+    fun driveSyncState_initialValues() {
+        val state = AttractUiState()
+        assertNull(state.driveAccountEmail)
+        assertEquals(com.attract.attendance.data.drive.DriveSyncStatus.Idle, state.driveSyncStatus)
+        assertEquals(0L, state.driveLastSyncMillis)
+    }
+
+    @Test
+    fun driveSyncState_transitions() {
+        val connectedState = AttractUiState(
+            driveAccountEmail = "teacher@school.edu",
+            driveSyncStatus = com.attract.attendance.data.drive.DriveSyncStatus.Syncing,
+            driveLastSyncMillis = 0L
+        )
+        assertEquals("teacher@school.edu", connectedState.driveAccountEmail)
+        assertTrue(connectedState.driveSyncStatus is com.attract.attendance.data.drive.DriveSyncStatus.Syncing)
+
+        val successState = connectedState.copy(
+            driveSyncStatus = com.attract.attendance.data.drive.DriveSyncStatus.Success(1700000000000L),
+            driveLastSyncMillis = 1700000000000L
+        )
+        assertEquals(1700000000000L, successState.driveLastSyncMillis)
+        assertTrue(successState.driveSyncStatus is com.attract.attendance.data.drive.DriveSyncStatus.Success)
+
+        val errorState = connectedState.copy(
+            driveSyncStatus = com.attract.attendance.data.drive.DriveSyncStatus.Error("Network timeout")
+        )
+        assertTrue(errorState.driveSyncStatus is com.attract.attendance.data.drive.DriveSyncStatus.Error)
+        assertEquals("Network timeout", (errorState.driveSyncStatus as com.attract.attendance.data.drive.DriveSyncStatus.Error).message)
+    }
 }

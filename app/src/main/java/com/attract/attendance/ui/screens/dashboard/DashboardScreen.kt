@@ -41,7 +41,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.attract.attendance.core.model.ClassSummary
 import com.attract.attendance.ui.components.AttractCard
+import com.attract.attendance.ui.components.AttractIconButton
 import com.attract.attendance.ui.components.EmptyState
+import com.attract.attendance.ui.components.rememberFeedbackClick
 import com.attract.attendance.ui.theme.AttractBlue
 import com.attract.attendance.ui.theme.Dimens
 import com.attract.attendance.ui.theme.Shapes
@@ -84,7 +86,7 @@ fun DashboardScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onOpenSettings) {
+                    AttractIconButton(onClick = onOpenSettings) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
                 },
@@ -92,8 +94,9 @@ fun DashboardScreen(
             )
         },
         floatingActionButton = {
+            val fabClick = rememberFeedbackClick(onCreateClassClick)
             FloatingActionButton(
-                onClick = onCreateClassClick,
+                onClick = fabClick,
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.White,
                 shape = CircleShape

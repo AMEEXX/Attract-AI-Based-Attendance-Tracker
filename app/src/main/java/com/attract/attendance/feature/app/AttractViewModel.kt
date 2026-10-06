@@ -17,6 +17,7 @@ import com.attract.attendance.data.importexport.RosterParseResult
 import com.attract.attendance.data.repository.AttractRepository
 import com.attract.attendance.data.repository.CreateClassCommand
 import com.attract.attendance.data.repository.CreateStudentCommand
+import android.content.Context
 import android.net.Uri
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
@@ -60,6 +61,13 @@ data class PendingRosterImport(
     val entries: List<RosterStudent>,
 )
 
+data class NoEnrolledStudentsDialogState(
+    val classId: Long,
+    val sessionDate: String,
+    val totalStudents: Int,
+    val enrolledCount: Int,
+)
+
 data class AttractUiState(
     val screen: AppScreen = AppScreen.Loading,
     val themeMode: AppThemeMode = AppThemeMode.LIGHT,
@@ -69,6 +77,10 @@ data class AttractUiState(
     val workspace: ClassWorkspace? = null,
     val sessionHistory: SessionHistory? = null,
     val pendingRosterImport: PendingRosterImport? = null,
+    val noEnrolledStudentsWarning: NoEnrolledStudentsDialogState? = null,
+    val driveAccountEmail: String? = null,
+    val driveSyncStatus: com.attract.attendance.data.drive.DriveSyncStatus = com.attract.attendance.data.drive.DriveSyncStatus.Idle,
+    val driveLastSyncMillis: Long = 0L,
     val isWorking: Boolean = false,
     val message: String? = null,
 )
@@ -222,6 +234,13 @@ class AttractViewModel(
         )
     }
 
+    fun importRosterDirectly(classId: Long, entries: List<RosterStudent>) = runCommand(
+        work = { repository.importRoster(classId, entries) },
+        onSuccess = { count ->
+            showMessage("Added $count students from attendance sheet.")
+        },
+    )
+
     fun cancelRosterImport() = _uiState.update { it.copy(pendingRosterImport = null) }
 
     fun openStandaloneEnrollment(classId: Long, studentId: Long) {
@@ -248,7 +267,45 @@ class AttractViewModel(
 
     fun openFaceAttendance(sessionDate: String) {
         val workspace = _uiState.value.workspace ?: return
+        val totalStudents = workspace.students.size
+
+        if (totalStudents == 0) {
+            _uiState.update {
+                it.copy(
+                    noEnrolledStudentsWarning = NoEnrolledStudentsDialogState(
+                        classId = workspace.summary.id,
+                        sessionDate = sessionDate,
+                        totalStudents = 0,
+                        enrolledCount = 0
+                    )
+                )
+            }
+            return
+        }
         _uiState.update { it.copy(screen = AppScreen.FaceAttendance(workspace.summary.id, sessionDate)) }
+    }
+
+    fun dismissNoEnrolledStudentsWarning() {
+        _uiState.update { it.copy(noEnrolledStudentsWarning = null) }
+    }
+
+    fun openStudentsTabFromWarning(classId: Long) {
+        _uiState.update {
+            it.copy(
+                screen = AppScreen.ClassWorkspace(classId, initialTab = 1),
+                noEnrolledStudentsWarning = null
+            )
+        }
+    }
+
+    fun openManualAttendanceFromWarning(sessionDate: String) {
+        val workspace = _uiState.value.workspace ?: return
+        _uiState.update {
+            it.copy(
+                screen = AppScreen.ManualAttendance(workspace.summary.id, sessionDate),
+                noEnrolledStudentsWarning = null
+            )
+        }
     }
 
     fun faceAttendanceRequested(sessionDate: String) {
@@ -359,6 +416,100 @@ class AttractViewModel(
 
     fun openSettings() = _uiState.update { it.copy(screen = AppScreen.Settings) }
 
+    fun initDriveSync(context: Context) {
+        val prefs = com.attract.attendance.data.drive.DriveBackupPreferences(context)
+        val authManager = com.attract.attendance.data.drive.DriveAuthManager(context)
+        val account = authManager.getLastSignedInAccount()
+        _uiState.update {
+            it.copy(
+                driveAccountEmail = account?.email,
+                driveLastSyncMillis = prefs.lastSyncMillis,
+                driveSyncStatus = if (prefs.lastSyncError != null) {
+                    com.attract.attendance.data.drive.DriveSyncStatus.Error(prefs.lastSyncError ?: "")
+                } else if (prefs.lastSyncMillis > 0) {
+                    com.attract.attendance.data.drive.DriveSyncStatus.Success(prefs.lastSyncMillis)
+                } else {
+                    com.attract.attendance.data.drive.DriveSyncStatus.Idle
+                }
+            )
+        }
+        if (account != null && prefs.isAutoSyncEnabled) {
+            com.attract.attendance.data.drive.BackupScheduler.schedulePeriodicBackup(context)
+        }
+    }
+
+    fun onDriveConnected(account: com.google.android.gms.auth.api.signin.GoogleSignInAccount, context: Context) {
+        _uiState.update {
+            it.copy(
+                driveAccountEmail = account.email,
+                driveSyncStatus = com.attract.attendance.data.drive.DriveSyncStatus.Idle
+            )
+        }
+        com.attract.attendance.data.drive.BackupScheduler.schedulePeriodicBackup(context)
+        syncDriveNow(context)
+    }
+
+    fun onDriveSignInFailed(errorMessage: String) {
+        _uiState.update {
+            it.copy(driveSyncStatus = com.attract.attendance.data.drive.DriveSyncStatus.Error(errorMessage))
+        }
+        showMessage("Google Drive: $errorMessage")
+    }
+
+    fun onDriveDisconnected(context: Context) {
+        val prefs = com.attract.attendance.data.drive.DriveBackupPreferences(context)
+        prefs.clear()
+        com.attract.attendance.data.drive.BackupScheduler.cancelPeriodicBackup(context)
+        val authManager = com.attract.attendance.data.drive.DriveAuthManager(context)
+        authManager.signOut {
+            _uiState.update {
+                it.copy(
+                    driveAccountEmail = null,
+                    driveSyncStatus = com.attract.attendance.data.drive.DriveSyncStatus.Idle,
+                    driveLastSyncMillis = 0L
+                )
+            }
+            showMessage("Disconnected from Google Drive.")
+        }
+    }
+
+    fun syncDriveNow(context: Context) {
+        val account = com.attract.attendance.data.drive.DriveAuthManager(context).getLastSignedInAccount()
+        if (account == null) {
+            showMessage("Please connect to Google Drive first.")
+            return
+        }
+        _uiState.update { it.copy(driveSyncStatus = com.attract.attendance.data.drive.DriveSyncStatus.Syncing) }
+        viewModelScope.launch {
+            try {
+                val snapshot = repository.backupSnapshot()
+                val json = backupExporter.toJson(snapshot)
+                val result = com.attract.attendance.data.drive.DriveServiceHelper(context).uploadBackupJson(account, json)
+                if (result.isSuccess) {
+                    val timestamp = result.getOrThrow()
+                    val prefs = com.attract.attendance.data.drive.DriveBackupPreferences(context)
+                    prefs.lastSyncMillis = timestamp
+                    prefs.lastSyncError = null
+                    _uiState.update {
+                        it.copy(
+                            driveLastSyncMillis = timestamp,
+                            driveSyncStatus = com.attract.attendance.data.drive.DriveSyncStatus.Success(timestamp)
+                        )
+                    }
+                    showMessage("Google Drive backup completed successfully.")
+                } else {
+                    val errorMsg = result.exceptionOrNull()?.message ?: "Sync failed"
+                    _uiState.update { it.copy(driveSyncStatus = com.attract.attendance.data.drive.DriveSyncStatus.Error(errorMsg)) }
+                    showMessage("Backup error: $errorMsg")
+                }
+            } catch (t: Throwable) {
+                val errorMsg = t.message ?: "Sync failed"
+                _uiState.update { it.copy(driveSyncStatus = com.attract.attendance.data.drive.DriveSyncStatus.Error(errorMsg)) }
+                showMessage("Backup error: $errorMsg")
+            }
+        }
+    }
+
     fun openCreateClass() = _uiState.update { it.copy(screen = AppScreen.CreateClass) }
 
     fun openStudentDetail(studentId: Long) {
@@ -376,7 +527,7 @@ class AttractViewModel(
             is AppScreen.StudentDetail -> _uiState.update { it.copy(screen = AppScreen.ClassWorkspace(screen.classId)) }
             is AppScreen.ClassWorkspace -> {
                 workspaceJob?.cancel()
-                _uiState.update { it.copy(screen = AppScreen.Dashboard, workspace = null) }
+                _uiState.update { it.copy(screen = AppScreen.Dashboard) }
             }
             is AppScreen.ManualAttendance -> _uiState.update { it.copy(screen = AppScreen.ClassWorkspace(screen.classId)) }
             is AppScreen.FaceAttendance -> _uiState.update { it.copy(screen = AppScreen.ClassWorkspace(screen.classId)) }

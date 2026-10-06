@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import com.attract.attendance.data.repository.CreateClassCommand
 import com.attract.attendance.ui.components.AttractCard
+import com.attract.attendance.ui.components.AttractIconButton
 import com.attract.attendance.ui.components.AttractPrimaryButton
 import com.attract.attendance.ui.theme.Dimens
 
@@ -41,7 +42,7 @@ fun CreateClassScreen(
     var name by remember { mutableStateOf("") }
     var subject by remember { mutableStateOf("") }
     var section by remember { mutableStateOf("") }
-    var batch by remember { mutableStateOf("2026") }
+    var batch by remember { mutableStateOf("") }
     var requiredPercentage by remember { mutableStateOf("75") }
     var totalClasses by remember { mutableStateOf("30") }
 
@@ -50,8 +51,8 @@ fun CreateClassScreen(
             TopAppBar(
                 title = { Text("Create class", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    AttractIconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -73,7 +74,7 @@ fun CreateClassScreen(
                         value = name,
                         onValueChange = { name = it },
                         label = { Text("Class name") },
-                        placeholder = { Text("Operating Systems") },
+                        placeholder = { Text("CSE") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -82,7 +83,7 @@ fun CreateClassScreen(
                         value = subject,
                         onValueChange = { subject = it },
                         label = { Text("Subject") },
-                        placeholder = { Text("Computer Science") },
+                        placeholder = { Text("Operating System") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -91,7 +92,7 @@ fun CreateClassScreen(
                         value = section,
                         onValueChange = { section = it },
                         label = { Text("Section") },
-                        placeholder = { Text("7th A") },
+                        placeholder = { Text("A") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -100,7 +101,7 @@ fun CreateClassScreen(
                         value = batch,
                         onValueChange = { batch = it },
                         label = { Text("Semester / Batch") },
-                        placeholder = { Text("2026") },
+                        placeholder = { Text("6") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -133,8 +134,8 @@ fun CreateClassScreen(
                             CreateClassCommand(
                                 name = name.trim(),
                                 subject = subject.trim(),
-                                section = section.trim(),
-                                semesterBatch = batch.trim(),
+                                section = section.trim().ifBlank { "A" },
+                                semesterBatch = batch.trim().ifBlank { "6" },
                                 requiredAttendancePercent = requiredPercentage.toIntOrNull() ?: 75,
                                 totalPlannedSessions = totalClasses.toIntOrNull()?.coerceAtLeast(1) ?: 30
                             )

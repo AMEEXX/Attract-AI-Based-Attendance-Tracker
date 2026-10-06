@@ -33,7 +33,9 @@ import androidx.compose.ui.unit.dp
 import com.attract.attendance.core.model.RollNumberComparator
 import com.attract.attendance.feature.app.ClassWorkspace
 import com.attract.attendance.ui.components.AttractCard
+import com.attract.attendance.ui.components.AttractIconButton
 import com.attract.attendance.ui.components.AttractPrimaryButton
+import com.attract.attendance.ui.components.AttractTextButton
 import com.attract.attendance.ui.theme.Dimens
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,7 +63,7 @@ fun ManualAttendanceScreen(
                     Text("Manual Attendance", fontWeight = FontWeight.Bold)
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    AttractIconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
@@ -94,7 +96,7 @@ fun ManualAttendanceScreen(
                 title = { Text("No Students Present", fontWeight = FontWeight.Bold) },
                 text = { Text("No students marked present. Save this session anyway?") },
                 confirmButton = {
-                    androidx.compose.material3.Button(
+                    AttractPrimaryButton(
                         onClick = {
                             showZeroConfirmDialog = false
                             onSave(emptySet())
@@ -104,7 +106,7 @@ fun ManualAttendanceScreen(
                     }
                 },
                 dismissButton = {
-                    androidx.compose.material3.TextButton(onClick = { showZeroConfirmDialog = false }) {
+                    AttractTextButton(onClick = { showZeroConfirmDialog = false }) {
                         Text("Cancel")
                     }
                 }
@@ -139,9 +141,7 @@ fun ManualAttendanceScreen(
                     ) {
                         Checkbox(
                             checked = checked,
-                            onCheckedChange = { isChecked ->
-                                presentIds = if (isChecked) presentIds + student.id else presentIds - student.id
-                            }
+                            onCheckedChange = null
                         )
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
