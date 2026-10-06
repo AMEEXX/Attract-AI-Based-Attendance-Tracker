@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.LightMode
@@ -51,6 +52,7 @@ import androidx.fragment.app.FragmentActivity
 import com.attract.attendance.ui.components.AttractCard
 import com.attract.attendance.ui.components.AttractOutlinedButton
 import com.attract.attendance.ui.components.AttractPrimaryButton
+import com.attract.attendance.ui.components.AttractTextButton
 import com.attract.attendance.ui.components.feedbackClickable
 import com.attract.attendance.ui.theme.AppThemeMode
 import com.attract.attendance.ui.theme.Dimens
@@ -61,6 +63,8 @@ import com.attract.attendance.ui.theme.SuccessGreen
 fun OnboardingScreen(
     currentThemeMode: AppThemeMode,
     onComplete: (name: String, pin: String, themeMode: AppThemeMode) -> Unit,
+    onConnectDrive: (() -> Unit)? = null,
+    isDriveConnected: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -330,11 +334,12 @@ fun OnboardingScreen(
                         } else {
                             AttractPrimaryButton(
                                 onClick = {
-                                    onComplete(teacherName.trim(), pinInput, selectedThemeMode)
+                                    if (onConnectDrive != null) step = 4
+                                    else onComplete(teacherName.trim(), pinInput, selectedThemeMode)
                                 },
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text("Complete Setup")
+                                Text(if (onConnectDrive != null) "Continue" else "Complete Setup")
                             }
                         }
                     } else if (canAuth == BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED) {
@@ -376,11 +381,12 @@ fun OnboardingScreen(
                             Spacer(modifier = Modifier.height(Dimens.SmallGap))
                             AttractPrimaryButton(
                                 onClick = {
-                                    onComplete(teacherName.trim(), pinInput, selectedThemeMode)
+                                    if (onConnectDrive != null) step = 4
+                                    else onComplete(teacherName.trim(), pinInput, selectedThemeMode)
                                 },
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text("Continue with PIN Only")
+                                Text(if (onConnectDrive != null) "Continue" else "Continue with PIN Only")
                             }
                         }
                     } else {
@@ -394,12 +400,89 @@ fun OnboardingScreen(
                             Spacer(modifier = Modifier.height(Dimens.MediumGap))
                             AttractPrimaryButton(
                                 onClick = {
-                                    onComplete(teacherName.trim(), pinInput, selectedThemeMode)
+                                    if (onConnectDrive != null) step = 4
+                                    else onComplete(teacherName.trim(), pinInput, selectedThemeMode)
                                 },
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text("Complete Setup (PIN Only)")
+                                Text(if (onConnectDrive != null) "Continue" else "Complete Setup (PIN Only)")
                             }
+                        }
+                    }
+                }
+                4 -> {
+                    // Step 4: Google Drive Cloud Backup
+                    Text(
+                        text = "Cloud Backup",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Connect Google Drive to automatically back up your attendance data. You can always connect later from Settings.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(Dimens.LargeGap))
+
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(72.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (isDriveConnected) SuccessGreen.copy(alpha = 0.15f)
+                                    else MaterialTheme.colorScheme.primaryContainer
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (isDriveConnected) Icons.Default.CheckCircle else Icons.Default.Cloud,
+                                contentDescription = null,
+                                tint = if (isDriveConnected) SuccessGreen else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(40.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = if (isDriveConnected) "Google Drive Connected!" else "Backup your data securely",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (isDriveConnected) SuccessGreen else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(Dimens.LargeGap))
+
+                    if (!isDriveConnected) {
+                        AttractPrimaryButton(
+                            onClick = { onConnectDrive?.invoke() },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Cloud, contentDescription = null)
+                            Spacer(modifier = Modifier.size(8.dp))
+                            Text("Connect Google Drive")
+                        }
+                        Spacer(modifier = Modifier.height(Dimens.SmallGap))
+                        AttractTextButton(
+                            onClick = { onComplete(teacherName.trim(), pinInput, selectedThemeMode) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Skip for now")
+                        }
+                    } else {
+                        AttractPrimaryButton(
+                            onClick = { onComplete(teacherName.trim(), pinInput, selectedThemeMode) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Complete Setup")
                         }
                     }
                 }

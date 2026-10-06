@@ -61,6 +61,7 @@ fun GuidanceCard(
         SessionScreenState.CAPTURING -> BiometricWarning
         SessionScreenState.UNKNOWN_STUDENT, SessionScreenState.ERROR -> BiometricError
         SessionScreenState.TEACHER_ASSIST -> BiometricIndigo
+        SessionScreenState.AUTO_ENDED -> BiometricWarning
         SessionScreenState.PROCESSING, SessionScreenState.READY, SessionScreenState.FRAMES_COLLECTED -> BiometricIndigo
     }
 
@@ -70,7 +71,7 @@ fun GuidanceCard(
         SessionScreenState.CAPTURING -> Icons.Default.Face
         SessionScreenState.UNKNOWN_STUDENT -> Icons.AutoMirrored.Filled.HelpOutline
         SessionScreenState.ERROR -> Icons.Default.Warning
-        SessionScreenState.TEACHER_ASSIST -> Icons.Default.Lock
+        SessionScreenState.TEACHER_ASSIST, SessionScreenState.AUTO_ENDED -> Icons.Default.Lock
         SessionScreenState.READY, SessionScreenState.FRAMES_COLLECTED -> Icons.Default.Face
         SessionScreenState.PROCESSING -> null
     }

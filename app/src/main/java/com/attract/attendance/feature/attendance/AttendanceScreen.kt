@@ -59,6 +59,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -118,7 +119,8 @@ enum class SessionScreenState {
     UNKNOWN_STUDENT,
     ALREADY_PRESENT,
     TEACHER_ASSIST,
-    ERROR
+    ERROR,
+    AUTO_ENDED
 }
 
 @Composable
@@ -130,6 +132,7 @@ fun AttendanceScreen(
     onEndSession: (Set<Long>) -> Unit,
     onDiscardSession: () -> Unit = {},
     onBack: () -> Unit,
+    onSessionAutoEnded: (Int) -> Unit = { onBack() },
     isStandaloneMode: Boolean = false,
     targetStudentForStandalone: StudentSummary? = null,
     modifier: Modifier = Modifier
@@ -285,6 +288,68 @@ fun AttendanceScreen(
                 .toSet()
             presentIds = existing
             Log.i("ATTRACT_ATTENDANCE_PIPELINE", "[RECOVERED_SESSION_ATTENDANCE] presentCount=${existing.size}")
+        }
+    }
+
+    var isAutoEnding by remember { mutableStateOf(false) }
+
+    val currentPresentIds by rememberUpdatedState(presentIds)
+    val currentActiveSessionId by rememberUpdatedState(activeSessionId)
+    val currentClassId by rememberUpdatedState(classId)
+    val currentIsStandaloneMode by rememberUpdatedState(isStandaloneMode)
+    val currentOnSessionAutoEnded by rememberUpdatedState(onSessionAutoEnded)
+
+    val handleAutoInterrupt: () -> Unit = remember {
+        {
+            if (!currentIsStandaloneMode && !isAutoEnding && currentActiveSessionId != null && state != SessionScreenState.AUTO_ENDED) {
+                isAutoEnding = true
+                scope.launch {
+                    Log.w(TAG, "Session interrupted (device locked / screen unpinned / screen off). Auto-saving session...")
+                    val result = withContext(Dispatchers.IO) {
+                        repository.saveFaceAttendance(currentClassId, currentPresentIds)
+                    }
+                    if (result is com.attract.attendance.core.model.CommandResult.Success) {
+                        currentOnSessionAutoEnded(currentPresentIds.size)
+                    } else {
+                        state = SessionScreenState.AUTO_ENDED
+                        statusMessage = "Attendance Paused & Saved"
+                        statusSubtitle = "Screen unpinned or device was locked. You can continue from the calendar within 24 hours."
+                    }
+                }
+            }
+        }
+    }
+
+    DisposableEffect(context) {
+        val receiver = object : android.content.BroadcastReceiver() {
+            override fun onReceive(ctx: android.content.Context?, intent: android.content.Intent?) {
+                if (intent?.action == android.content.Intent.ACTION_SCREEN_OFF) {
+                    handleAutoInterrupt()
+                }
+            }
+        }
+        val filter = android.content.IntentFilter(android.content.Intent.ACTION_SCREEN_OFF)
+        context.registerReceiver(receiver, filter)
+        onDispose {
+            try {
+                context.unregisterReceiver(receiver)
+            } catch (ignored: Exception) {}
+        }
+    }
+
+    LaunchedEffect(isScreenPinned, activeSessionId, isAutoEnding) {
+        if (isScreenPinned && activeSessionId != null && !isAutoEnding) {
+            while (true) {
+                delay(1000L)
+                if (state == SessionScreenState.AUTO_ENDED || isAutoEnding) break
+                val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+                val currentMode = am?.lockTaskModeState ?: ActivityManager.LOCK_TASK_MODE_NONE
+                if (currentMode == ActivityManager.LOCK_TASK_MODE_NONE) {
+                    Log.w(TAG, "Screen pinning lost (mode is NONE). Triggering auto-save.")
+                    handleAutoInterrupt()
+                    break
+                }
+            }
         }
     }
 
@@ -1592,8 +1657,38 @@ fun AttendanceScreen(
                 }
             }
 
-            // Hero Glow Action Button (120dp Halo with 72dp Core)
-            if (state == SessionScreenState.READY || state == SessionScreenState.CAPTURING || state == SessionScreenState.FRAMES_COLLECTED || state == SessionScreenState.UNKNOWN_STUDENT) {
+            if (state == SessionScreenState.AUTO_ENDED) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f), RoundedCornerShape(16.dp))
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = "Attendance Paused & Saved",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Screen was unpinned or device entered lock screen. All marks are saved safely in the database. You can continue taking attendance from the Calendar within 24 hours.",
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Button(
+                        onClick = launchExitAuth,
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Exit to Workspace", fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            } else if (state == SessionScreenState.READY || state == SessionScreenState.CAPTURING || state == SessionScreenState.FRAMES_COLLECTED || state == SessionScreenState.UNKNOWN_STUDENT) {
                 val glowState = when (state) {
                     SessionScreenState.FRAMES_COLLECTED -> com.attract.attendance.ui.components.biometric.GlowButtonState.SUBMIT
                     SessionScreenState.MATCH_SUCCESS -> com.attract.attendance.ui.components.biometric.GlowButtonState.SUCCESS

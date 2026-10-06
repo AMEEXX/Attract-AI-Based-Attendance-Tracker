@@ -57,6 +57,7 @@ fun SettingsScreen(
     onConnectDrive: () -> Unit = {},
     onDisconnectDrive: () -> Unit = {},
     onSyncDriveNow: () -> Unit = {},
+    onRestoreDriveBackup: () -> Unit = {},
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -176,6 +177,7 @@ fun SettingsScreen(
                     onConnectClick = onConnectDrive,
                     onDisconnectClick = onDisconnectDrive,
                     onSyncNowClick = onSyncDriveNow,
+                    onRestoreDriveClick = onRestoreDriveBackup,
                 )
             }
 

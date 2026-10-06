@@ -123,14 +123,36 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
     val snackbarHost = remember { SnackbarHostState() }
     val context = androidx.compose.ui.platform.LocalContext.current
     val driveAuthManager = remember(context) { com.attract.attendance.data.drive.DriveAuthManager(context) }
-    val driveSignInLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
+    var onboardingDriveConnected by remember { mutableStateOf(false) }
+    val driveAuthLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartIntentSenderForResult()
     ) { result ->
-        val signInResult = driveAuthManager.handleSignInResult(result.data)
-        signInResult.onSuccess { account ->
-            viewModel.onDriveConnected(account, context)
+        android.util.Log.i("ATTRACT_DRIVE", "Authorization result code: ${result.resultCode}, data: ${result.data}")
+        val authResult = driveAuthManager.handleAuthorizationResult(result.resultCode, result.data)
+        authResult.onSuccess { email ->
+            android.util.Log.i("ATTRACT_DRIVE", "Drive authorization success for $email")
+            onboardingDriveConnected = true
+            viewModel.onDriveConnected(email, context)
         }.onFailure { error ->
-            viewModel.onDriveSignInFailed(error.message ?: "Google Sign-In failed")
+            android.util.Log.e("ATTRACT_DRIVE", "Drive authorization failed: ${error.message}", error)
+            viewModel.onDriveSignInFailed(error.message ?: "Google Drive authorization failed")
+        }
+    }
+
+    val connectDrive = remember(driveAuthManager, driveAuthLauncher, context) {
+        {
+            driveAuthManager.requestAuthorization(
+                onLaunchResolution = { intentSenderRequest ->
+                    driveAuthLauncher.launch(intentSenderRequest)
+                },
+                onDirectSuccess = { email ->
+                    onboardingDriveConnected = true
+                    viewModel.onDriveConnected(email, context)
+                },
+                onError = { error ->
+                    viewModel.onDriveSignInFailed(error)
+                }
+            )
         }
     }
 
@@ -189,12 +211,14 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
                             (initialState is AppScreen.StandaloneEnrollment && targetState is AppScreen.StudentDetail) ||
                             (initialState is AppScreen.SessionHistory && targetState is AppScreen.ClassWorkspace)
 
+                        val slideSpec = com.attract.attendance.ui.theme.AttractMotion.navTween<androidx.compose.ui.unit.IntOffset>()
+
                         if (isBack) {
-                            (slideInHorizontally(animationSpec = tween(300)) { width -> -width } + fadeIn(animationSpec = tween(300)))
-                                .togetherWith(slideOutHorizontally(animationSpec = tween(300)) { width -> width } + fadeOut(animationSpec = tween(300)))
+                            slideInHorizontally(animationSpec = slideSpec) { width -> -width / 3 }
+                                .togetherWith(slideOutHorizontally(animationSpec = slideSpec) { width -> width / 3 })
                         } else {
-                            (slideInHorizontally(animationSpec = tween(300)) { width -> width } + fadeIn(animationSpec = tween(300)))
-                                .togetherWith(slideOutHorizontally(animationSpec = tween(300)) { width -> -width } + fadeOut(animationSpec = tween(300)))
+                            slideInHorizontally(animationSpec = slideSpec) { width -> width / 3 }
+                                .togetherWith(slideOutHorizontally(animationSpec = slideSpec) { width -> -width / 3 })
                         }
                     },
                     label = "TeacherNavHost"
@@ -211,7 +235,9 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
                         onComplete = { name, pin, themeMode ->
                             viewModel.setThemeMode(themeMode)
                             viewModel.createTeacher(name, pin)
-                        }
+                        },
+                        onConnectDrive = connectDrive,
+                        isDriveConnected = onboardingDriveConnected || state.driveAccountEmail != null
                     )
                     AppScreen.Dashboard -> DashboardScreen(
                         teacherName = state.teacher?.displayName.orEmpty(),
@@ -233,11 +259,10 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
                         driveAccountEmail = state.driveAccountEmail,
                         driveSyncStatus = state.driveSyncStatus,
                         driveLastSyncMillis = state.driveLastSyncMillis,
-                        onConnectDrive = {
-                            driveSignInLauncher.launch(driveAuthManager.getSignInIntent())
-                        },
+                        onConnectDrive = connectDrive,
                         onDisconnectDrive = { viewModel.onDriveDisconnected(context) },
                         onSyncDriveNow = { viewModel.syncDriveNow(context) },
+                        onRestoreDriveBackup = { viewModel.restoreDriveBackup(context) },
                         onBack = viewModel::navigateBack
                     )
                     is AppScreen.StudentDetail -> {
@@ -308,6 +333,7 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
                             val className = state.workspace?.summary?.name ?: "attendance"
                             exportReportPicker.launch("$className-report.csv")
                         },
+                        onContinueSession = viewModel::continueSession,
                     )
                     is AppScreen.ManualAttendance -> ManualAttendanceScreen(
                         workspace = state.workspace,
@@ -336,6 +362,10 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
                                     com.attract.attendance.data.drive.BackupScheduler.triggerImmediateBackup(context)
                                 },
                                 onDiscardSession = { viewModel.discardFaceAttendance(screen.classId) },
+                                onSessionAutoEnded = { presentCount ->
+                                    viewModel.showMessage("Attendance auto-saved — $presentCount present. Continue from the calendar within 24 hours.")
+                                    viewModel.navigateBack()
+                                },
                                 onBack = viewModel::navigateBack
                             )
                         } else {

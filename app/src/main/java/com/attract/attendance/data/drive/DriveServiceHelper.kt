@@ -1,7 +1,6 @@
 package com.attract.attendance.data.drive
 
 import android.content.Context
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
 import com.google.api.client.http.ByteArrayContent
 import com.google.api.client.http.javanet.NetHttpTransport
@@ -14,12 +13,12 @@ import java.io.ByteArrayOutputStream
 
 class DriveServiceHelper(private val context: Context) {
 
-    private fun getDriveService(account: GoogleSignInAccount): Drive {
+    private fun getDriveService(accountName: String): Drive {
         val credential = GoogleAccountCredential.usingOAuth2(
             context.applicationContext,
             listOf(DriveScopes.DRIVE_APPDATA)
         )
-        credential.selectedAccount = account.account
+        credential.selectedAccountName = accountName
         return Drive.Builder(
             NetHttpTransport(),
             GsonFactory.getDefaultInstance(),
@@ -30,11 +29,11 @@ class DriveServiceHelper(private val context: Context) {
     }
 
     suspend fun uploadBackupJson(
-        account: GoogleSignInAccount,
+        accountName: String,
         jsonContent: String
     ): Result<Long> = withContext(Dispatchers.IO) {
         runCatching {
-            val drive = getDriveService(account)
+            val drive = getDriveService(accountName)
             val jsonBytes = jsonContent.toByteArray(Charsets.UTF_8)
             val mediaContent = ByteArrayContent("application/json", jsonBytes)
 
@@ -62,9 +61,9 @@ class DriveServiceHelper(private val context: Context) {
         }
     }
 
-    suspend fun downloadBackupJson(account: GoogleSignInAccount): Result<String?> = withContext(Dispatchers.IO) {
+    suspend fun downloadBackupJson(accountName: String): Result<String?> = withContext(Dispatchers.IO) {
         runCatching {
-            val drive = getDriveService(account)
+            val drive = getDriveService(accountName)
             val fileList = drive.files().list()
                 .setSpaces("appDataFolder")
                 .setQ("name = 'attract_backup.json' and trashed = false")

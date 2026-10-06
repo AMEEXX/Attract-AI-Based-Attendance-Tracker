@@ -51,7 +51,18 @@ data class SessionSummary(
     val mode: SessionMode,
     val presentCount: Int,
     val absentCount: Int,
-)
+    val startedAt: Long = 0L,
+    val endedAt: Long? = null,
+) {
+    val isResumable: Boolean
+        get() {
+            if (mode != SessionMode.FACE) return false
+            val now = System.currentTimeMillis()
+            val referenceTime = endedAt ?: startedAt
+            if (referenceTime <= 0L) return false
+            return (now - referenceTime) <= 24 * 60 * 60 * 1000L
+        }
+}
 
 data class ActiveSessionSummary(
     val id: Long,

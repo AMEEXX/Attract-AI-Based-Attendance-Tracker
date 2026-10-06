@@ -30,6 +30,8 @@ data class SessionRow(
     val mode: SessionMode,
     val presentCount: Int,
     val absentCount: Int,
+    val startedAt: Long = 0L,
+    val endedAt: Long? = null,
 )
 
 data class ActiveSessionRow(
@@ -83,6 +85,9 @@ interface TeacherDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(teacher: TeacherEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(values: List<TeacherEntity>)
+
     @Query("SELECT * FROM teachers ORDER BY id")
     suspend fun all(): List<TeacherEntity>
 }
@@ -131,6 +136,9 @@ interface ClassDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(value: ClassSectionEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(values: List<ClassSectionEntity>)
+
     @Query("UPDATE class_sections SET archived = :archived, updated_at = :updatedAt WHERE id = :classId")
     suspend fun setArchived(classId: Long, archived: Boolean, updatedAt: Long): Int
 }
@@ -154,6 +162,9 @@ interface StudentDao {
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(value: StudentEntity): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(values: List<StudentEntity>)
 
     @Query("UPDATE students SET archived = :archived, updated_at = :updatedAt WHERE id = :studentId")
     suspend fun setArchived(studentId: Long, archived: Boolean, updatedAt: Long): Int
@@ -204,6 +215,15 @@ interface SessionDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(value: AttendanceSessionEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(values: List<AttendanceSessionEntity>)
+
+    @Query("UPDATE attendance_sessions SET status = 'ACTIVE', ended_at = NULL, updated_at = :now WHERE id = :sessionId")
+    suspend fun reactivate(sessionId: Long, now: Long): Int
+
+    @Query("SELECT * FROM attendance_sessions WHERE status = 'ACTIVE' AND started_at < :cutoffMillis")
+    suspend fun findStaleActiveSessions(cutoffMillis: Long): List<AttendanceSessionEntity>
+
     @Query("UPDATE attendance_sessions SET status = :status, ended_at = :endedAt, updated_at = :updatedAt WHERE id = :sessionId AND status = 'ACTIVE'")
     suspend fun finish(sessionId: Long, status: SessionStatus, endedAt: Long, updatedAt: Long): Int
 
@@ -217,10 +237,11 @@ interface SessionDao {
         """
         SELECT ses.id, ses.class_id AS classId, ses.session_date AS sessionDate, ses.status, ses.mode,
                COALESCE(SUM(CASE WHEN r.status = 'PRESENT' THEN 1 ELSE 0 END), 0) AS presentCount,
-               COALESCE(SUM(CASE WHEN r.status = 'ABSENT' THEN 1 ELSE 0 END), 0) AS absentCount
+               COALESCE(SUM(CASE WHEN r.status = 'ABSENT' THEN 1 ELSE 0 END), 0) AS absentCount,
+               ses.started_at AS startedAt, ses.ended_at AS endedAt
         FROM attendance_sessions ses
         LEFT JOIN attendance_records r ON r.session_id = ses.id
-        WHERE ses.class_id = :classId AND ses.status = 'ENDED'
+        WHERE ses.class_id = :classId AND (ses.status = 'ENDED' OR (ses.status = 'ACTIVE' AND ses.mode = 'FACE'))
         GROUP BY ses.id
         ORDER BY ses.session_date DESC, ses.started_at DESC, ses.id DESC
         """,
@@ -230,17 +251,18 @@ interface SessionDao {
     @Query("DELETE FROM attendance_sessions WHERE id = :sessionId AND status = 'ENDED'")
     suspend fun deleteEnded(sessionId: Long): Int
 
-    @Query("SELECT DISTINCT CAST(SUBSTR(session_date, 9, 2) AS INTEGER) FROM attendance_sessions WHERE class_id = :classId AND status = 'ENDED' AND session_date LIKE :yearMonthPrefix || '%'")
+    @Query("SELECT DISTINCT CAST(SUBSTR(session_date, 9, 2) AS INTEGER) FROM attendance_sessions WHERE class_id = :classId AND (status = 'ENDED' OR status = 'ACTIVE') AND session_date LIKE :yearMonthPrefix || '%'")
     fun observeSessionDaysForMonth(classId: Long, yearMonthPrefix: String): Flow<List<Int>>
 
     @Query(
         """
         SELECT ses.id, ses.class_id AS classId, ses.session_date AS sessionDate, ses.status, ses.mode,
                COALESCE(SUM(CASE WHEN r.status = 'PRESENT' THEN 1 ELSE 0 END), 0) AS presentCount,
-               COALESCE(SUM(CASE WHEN r.status = 'ABSENT' THEN 1 ELSE 0 END), 0) AS absentCount
+               COALESCE(SUM(CASE WHEN r.status = 'ABSENT' THEN 1 ELSE 0 END), 0) AS absentCount,
+               ses.started_at AS startedAt, ses.ended_at AS endedAt
         FROM attendance_sessions ses
         LEFT JOIN attendance_records r ON r.session_id = ses.id
-        WHERE ses.class_id = :classId AND ses.session_date = :dateString AND ses.status = 'ENDED'
+        WHERE ses.class_id = :classId AND ses.session_date = :dateString AND (ses.status = 'ENDED' OR (ses.status = 'ACTIVE' AND ses.mode = 'FACE'))
         GROUP BY ses.id
         ORDER BY ses.started_at ASC
         """,
@@ -258,6 +280,9 @@ interface AttendanceRecordDao {
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertAll(values: List<AttendanceRecordEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun replaceAll(values: List<AttendanceRecordEntity>)
 
     @Query("SELECT * FROM attendance_records WHERE session_id = :sessionId")
     suspend fun forSession(sessionId: Long): List<AttendanceRecordEntity>
