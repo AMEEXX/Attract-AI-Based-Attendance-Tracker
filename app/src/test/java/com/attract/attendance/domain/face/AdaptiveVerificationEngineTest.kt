@@ -1,4 +1,4 @@
-﻿package com.attract.attendance.domain.face
+package com.attract.attendance.domain.face
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -46,6 +46,14 @@ class AdaptiveVerificationEngineTest {
 
     /** Weak/unknown: below accept threshold against everything. */
     private fun unknownFace() = observation(embedding = unit(50))
+
+    /** Borderline A: sim≈0.40 to A (above notFoundCeiling 0.35, below accept 0.50). */
+    private fun borderlineA(sim: Float = 0.40f): FrameObservation {
+        val v = FloatArray(EmbeddingEngine.EMBEDDING_SIZE)
+        v[0] = sim
+        v[2] = kotlin.math.sqrt(1f - sim * sim)
+        return observation(embedding = v)
+    }
 
     private fun signals(
         yaw: Float = 0f,
@@ -133,7 +141,7 @@ class AdaptiveVerificationEngineTest {
     @Test
     fun `uncertain first frame requests second frame`() {
         val engine = engine()
-        val step1 = engine.submit(unknownFace())
+        val step1 = engine.submit(borderlineA())
         assertTrue(step1 is AdaptiveVerificationEngine.Step.NeedMoreFrames)
 
         val step2 = engine.submit(strongA().let { o -> o.copy(signals = o.signals.copy(yawDegrees = 4f)) })
@@ -162,7 +170,7 @@ class AdaptiveVerificationEngineTest {
     @Test
     fun `third frame can still rescue the transaction`() {
         val engine = engine(maxFrames = 3)
-        assertTrue(engine.submit(unknownFace()) is AdaptiveVerificationEngine.Step.NeedMoreFrames)
+        assertTrue(engine.submit(borderlineA()) is AdaptiveVerificationEngine.Step.NeedMoreFrames)
         assertTrue(engine.submit(ambiguousAB().let { o -> o.copy(signals = o.signals.copy(yawDegrees = -6f)) }) is AdaptiveVerificationEngine.Step.NeedMoreFrames)
         val final = engine.submit(strongA().let { o -> o.copy(signals = o.signals.copy(yawDegrees = -4f)) }) as AdaptiveVerificationEngine.Step.Final
         val match = final.outcome as AdaptiveVerificationEngine.Outcome.Match
@@ -236,48 +244,78 @@ class AdaptiveVerificationEngineTest {
     fun `identical repeated frames do not multiply evidence`() {
         val engine = engine()
         val repeatedSignals = signals(yaw = 5f, blur = 400f, brightness = 110f)
-        // Below-threshold embedding: usable frame, but recognition-uncertain.
-        val uncertain = observation(embedding = unit(50), signals = repeatedSignals)
+        // Borderline embedding above ceiling: usable frame, but recognition-uncertain.
+        val uncertain = borderlineA().copy(signals = repeatedSignals)
 
         assertTrue(engine.submit(uncertain) is AdaptiveVerificationEngine.Step.NeedMoreFrames)
         // Replay #1: identical signals -> not independent evidence.
-        assertTrue(engine.submit(observation(unit(50), repeatedSignals)) is AdaptiveVerificationEngine.Step.NeedMoreFrames)
+        val replayObs = borderlineA().copy(signals = repeatedSignals)
+        assertTrue(engine.submit(replayObs) is AdaptiveVerificationEngine.Step.NeedMoreFrames)
         // Replay #2 exhausts budget -> only ONE usable independent observation exists.
-        val final = engine.submit(observation(unit(50), repeatedSignals)) as AdaptiveVerificationEngine.Step.Final
+        val final = engine.submit(replayObs) as AdaptiveVerificationEngine.Step.Final
         assertEquals(AdaptiveVerificationEngine.Outcome.Unknown, final.outcome)
         assertEquals(2, engine.diagnostics.staticReplays)
     }
 
     // ==================================================================
-    // 9. Static replay sequence (saved photos) â€” labelled & non-independent.
+    // 9. Static replay sequence (saved photos) — labelled & non-independent.
     //    Liveness-level rejection itself is covered by LivenessEngineTest;
     //    here we verify the engine never treats replays as extra evidence.
     // ==================================================================
     @Test
     fun `static replay sequence cannot rescue an unknown person`() {
         val engine = engine()
-        assertTrue(engine.submit(unknownFace()) is AdaptiveVerificationEngine.Step.NeedMoreFrames)
+        assertTrue(engine.submit(borderlineA()) is AdaptiveVerificationEngine.Step.NeedMoreFrames)
         val replaySignals = signals(yaw = 12f)
-        assertTrue(engine.submit(observation(unit(50), replaySignals)) is AdaptiveVerificationEngine.Step.NeedMoreFrames)
-        val final = engine.submit(observation(unit(50), replaySignals)) as AdaptiveVerificationEngine.Step.Final
+        val replayObs = borderlineA().copy(signals = replaySignals)
+        assertTrue(engine.submit(replayObs) is AdaptiveVerificationEngine.Step.NeedMoreFrames)
+        val final = engine.submit(replayObs) as AdaptiveVerificationEngine.Step.Final
         assertEquals(AdaptiveVerificationEngine.Outcome.Unknown, final.outcome)
         assertTrue(engine.diagnostics.staticReplays >= 1)
     }
 
     // ==================================================================
-    // 10. Unknown person -> UNKNOWN after full budget.
+    // 10. Unknown person -> UNKNOWN immediately on frame 1 (LLD-16 S6).
     // ==================================================================
     @Test
     fun `unknown person ends unknown`() {
         val engine = engine()
-        assertTrue(engine.submit(unknownFace()) is AdaptiveVerificationEngine.Step.NeedMoreFrames)
-        assertTrue(engine.submit(unknownFace().let { o ->
-            o.copy(signals = o.signals.copy(yawDegrees = -6f))
-        }) is AdaptiveVerificationEngine.Step.NeedMoreFrames)
-        val final = engine.submit(unknownFace().let { o ->
-            o.copy(signals = o.signals.copy(yawDegrees = 7f))
-        }) as AdaptiveVerificationEngine.Step.Final
-        assertEquals(AdaptiveVerificationEngine.Outcome.Unknown, final.outcome)
+        val step = engine.submit(unknownFace())
+        assertTrue(step is AdaptiveVerificationEngine.Step.Final)
+        assertEquals(AdaptiveVerificationEngine.Outcome.Unknown, (step as AdaptiveVerificationEngine.Step.Final).outcome)
+        assertEquals(1, engine.diagnostics.framesSubmitted)
+        assertTrue(engine.diagnostics.failFastTriggered)
+    }
+
+    @Test
+    fun `hopeless first frame ends unknown immediately`() {
+        val engine = engine()
+        val step = engine.submit(unknownFace())
+        assertTrue(step is AdaptiveVerificationEngine.Step.Final)
+        assertEquals(AdaptiveVerificationEngine.Outcome.Unknown, (step as AdaptiveVerificationEngine.Step.Final).outcome)
+        assertEquals(1, engine.diagnostics.framesSubmitted)
+        assertTrue(engine.diagnostics.failFastTriggered)
+    }
+
+    @Test
+    fun `borderline unknown frame keeps multi-frame budget`() {
+        val engine = engine()
+        val step = engine.submit(borderlineA(0.40f))
+        assertTrue(step is AdaptiveVerificationEngine.Step.NeedMoreFrames)
+        assertEquals(false, engine.diagnostics.failFastTriggered)
+    }
+
+    @Test
+    fun `no compatible templates fails fast to unknown`() {
+        val engine = AdaptiveVerificationEngine(
+            templates = listOf(StudentTemplatePair(studentId = 9L, templateId = 99L, embedding = FloatArray(256) { 0.1f })),
+            maxFrames = 3,
+        )
+        val step = engine.submit(observation(embedding = unit(0)))
+        assertTrue(step is AdaptiveVerificationEngine.Step.Final)
+        assertEquals(AdaptiveVerificationEngine.Outcome.Unknown, (step as AdaptiveVerificationEngine.Step.Final).outcome)
+        assertEquals(1, engine.diagnostics.framesSubmitted)
+        assertTrue(engine.diagnostics.failFastTriggered)
     }
 
     // ==================================================================

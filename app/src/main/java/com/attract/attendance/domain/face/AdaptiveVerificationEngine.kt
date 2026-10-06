@@ -24,6 +24,9 @@ package com.attract.attendance.domain.face
  *      independent evidence.
  *  S5. Pose remains a validity check only: extreme yaw/pitch/roll frames are unusable, but
  *      specific profile poses are no longer required for acceptance.
+ *  S6. Hopelessness fail-fast: if the FIRST biometrically usable frame's best gallery score is
+ *      below notFoundCeiling, the transaction ends Unknown immediately — no further captures
+ *      are requested. Borderline frames (>= ceiling) keep the full 1→2→3 budget.
  */
 class AdaptiveVerificationEngine(
     private val templates: List<StudentTemplatePair>,
@@ -47,6 +50,7 @@ class AdaptiveVerificationEngine(
         val identityConflicts: Int = 0,
         val crossFrameEmbeddingSimilarity: Float? = null,
         val lastOutcome: FusedOutcome? = null,
+        val failFastTriggered: Boolean = false,
     )
 
     sealed interface Step {
@@ -85,6 +89,7 @@ class AdaptiveVerificationEngine(
     private var conflictCount = 0
     private var replayCount = 0
     private var lastCrossFrameSim: Float? = null
+    private var failFast = false
 
     val diagnostics: Diagnostics
         get() = Diagnostics(
@@ -94,6 +99,7 @@ class AdaptiveVerificationEngine(
             staticReplays = replayCount,
             identityConflicts = conflictCount,
             crossFrameEmbeddingSimilarity = lastCrossFrameSim,
+            failFastTriggered = failFast,
         )
 
     val isFinished: Boolean get() = finished
@@ -178,6 +184,21 @@ class AdaptiveVerificationEngine(
                     finished = true
                     return Step.Final(Outcome.Match(decision.studentId, decision.confidence, framesUsed = submitted))
                 }
+            }
+        }
+
+        // ---- Hopelessness fail-fast (invariant S6): if the FIRST biometrically usable frame's
+        // best gallery score is below notFoundCeiling (or no compatible templates exist), the
+        // face can never reach acceptThreshold (0.50). End Unknown immediately without wasting captures.
+        if (usable && usableSoFar == 1 && analysis.decision !is RecognitionOutcome.Match) {
+            val topScore = analysis.scores.values.maxOrNull()
+            val ceiling = BiometricModelProfile.CURRENT.notFoundCeiling
+            if (topScore == null || topScore < ceiling) {
+                finished = true
+                failFast = true
+                val msg = "FAILFAST frame1 top=$topScore ceiling=$ceiling"
+                try { android.util.Log.i("ATTRACT_RECOGNITION", msg) } catch (_: Throwable) { println("[ATTRACT_RECOGNITION] $msg") }
+                return Step.Final(Outcome.Unknown)
             }
         }
 
