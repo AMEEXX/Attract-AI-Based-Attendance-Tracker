@@ -25,6 +25,17 @@ class FakeSessionDao(var activeSession: AttendanceSessionEntity? = null) : Sessi
     override suspend fun find(sessionId: Long): AttendanceSessionEntity? = activeSession
     override suspend fun latestIdForClass(classId: Long): Long? = activeSession?.id
     override suspend fun insert(value: AttendanceSessionEntity): Long = value.id
+    override suspend fun insertAll(values: List<AttendanceSessionEntity>) {
+        if (values.isNotEmpty()) activeSession = values.last()
+    }
+    override suspend fun reactivate(sessionId: Long, updatedAt: Long): Int {
+        if (activeSession?.id == sessionId) {
+            activeSession = activeSession?.copy(status = SessionStatus.ACTIVE, endedAt = null, updatedAt = updatedAt)
+            return 1
+        }
+        return 0
+    }
+    override suspend fun findStaleActiveSessions(cutoffMillis: Long): List<AttendanceSessionEntity> = emptyList()
     override suspend fun finish(sessionId: Long, status: SessionStatus, endedAt: Long, updatedAt: Long): Int {
         if (activeSession != null && activeSession?.id == sessionId) {
             activeSession = activeSession?.copy(status = status, endedAt = endedAt, updatedAt = updatedAt)
@@ -52,6 +63,9 @@ class FakeStudentDao(initialStudents: List<StudentEntity> = emptyList()) : Stude
         studentsList.add(value)
         return value.id
     }
+    override suspend fun insertAll(values: List<StudentEntity>) {
+        studentsList.addAll(values)
+    }
     override suspend fun setArchived(studentId: Long, archived: Boolean, updatedAt: Long): Int = 1
     override suspend fun update(student: StudentEntity) {
         val index = studentsList.indexOfFirst { it.id == student.id }
@@ -75,6 +89,11 @@ class FakeAttendanceRecordDao : AttendanceRecordDao {
 
     override suspend fun insertAll(values: List<AttendanceRecordEntity>) {
         values.forEach { insert(it) }
+    }
+
+    override suspend fun replaceAll(values: List<AttendanceRecordEntity>) {
+        records.clear()
+        records.addAll(values)
     }
 
     override suspend fun forSession(sessionId: Long): List<AttendanceRecordEntity> {

@@ -47,6 +47,11 @@ object AttractMotion {
         dampingRatio = Spring.DampingRatioMediumBouncy,
         stiffness = Spring.StiffnessMediumLow
     )
+
+    fun <T> navTween(): androidx.compose.animation.core.TweenSpec<T> = androidx.compose.animation.core.tween(
+        durationMillis = 170,
+        easing = androidx.compose.animation.core.FastOutSlowInEasing
+    )
 }
 
 /**

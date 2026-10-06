@@ -141,6 +141,9 @@ class AttractViewModel(
             }
         }
         viewModelScope.launch(startupExceptionHandler) {
+            repository.finalizeStaleSessions()
+        }
+        viewModelScope.launch(startupExceptionHandler) {
             repository.observeClasses().collect { classes ->
                 _uiState.update { it.copy(classes = classes) }
             }
@@ -371,7 +374,31 @@ class AttractViewModel(
     }
 
     fun importBackup(uri: Uri) {
-        showMessage("Backup file selected. Restoring backup data...")
+        if (_uiState.value.isWorking) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isWorking = true) }
+            try {
+                backupExporter.import(uri)
+                    .onSuccess { snapshot ->
+                        when (val result = repository.restoreBackup(snapshot)) {
+                            is com.attract.attendance.core.model.CommandResult.Success -> {
+                                _uiState.value.workspace?.summary?.id?.let { loadWorkspace(it) }
+                                showMessage("Backup restored successfully.")
+                            }
+                            is com.attract.attendance.core.model.CommandResult.Failure -> {
+                                showMessage(result.error.toUserMessage())
+                            }
+                        }
+                    }
+                    .onFailure {
+                        showMessage(it.message ?: "Could not read backup file.")
+                    }
+            } catch (e: Throwable) {
+                showMessage("Restore failed: ${e.message}")
+            } finally {
+                _uiState.update { it.copy(isWorking = false) }
+            }
+        }
     }
 
     fun openSessionHistory(session: SessionSummary) {
@@ -418,11 +445,10 @@ class AttractViewModel(
 
     fun initDriveSync(context: Context) {
         val prefs = com.attract.attendance.data.drive.DriveBackupPreferences(context)
-        val authManager = com.attract.attendance.data.drive.DriveAuthManager(context)
-        val account = authManager.getLastSignedInAccount()
+        val email = prefs.accountEmail
         _uiState.update {
             it.copy(
-                driveAccountEmail = account?.email,
+                driveAccountEmail = email,
                 driveLastSyncMillis = prefs.lastSyncMillis,
                 driveSyncStatus = if (prefs.lastSyncError != null) {
                     com.attract.attendance.data.drive.DriveSyncStatus.Error(prefs.lastSyncError ?: "")
@@ -433,15 +459,17 @@ class AttractViewModel(
                 }
             )
         }
-        if (account != null && prefs.isAutoSyncEnabled) {
+        if (!email.isNullOrBlank() && prefs.isAutoSyncEnabled) {
             com.attract.attendance.data.drive.BackupScheduler.schedulePeriodicBackup(context)
         }
     }
 
-    fun onDriveConnected(account: com.google.android.gms.auth.api.signin.GoogleSignInAccount, context: Context) {
+    fun onDriveConnected(email: String, context: Context) {
+        val prefs = com.attract.attendance.data.drive.DriveBackupPreferences(context)
+        prefs.accountEmail = email
         _uiState.update {
             it.copy(
-                driveAccountEmail = account.email,
+                driveAccountEmail = email,
                 driveSyncStatus = com.attract.attendance.data.drive.DriveSyncStatus.Idle
             )
         }
@@ -474,8 +502,9 @@ class AttractViewModel(
     }
 
     fun syncDriveNow(context: Context) {
-        val account = com.attract.attendance.data.drive.DriveAuthManager(context).getLastSignedInAccount()
-        if (account == null) {
+        val prefs = com.attract.attendance.data.drive.DriveBackupPreferences(context)
+        val email = prefs.accountEmail
+        if (email.isNullOrBlank()) {
             showMessage("Please connect to Google Drive first.")
             return
         }
@@ -484,7 +513,7 @@ class AttractViewModel(
             try {
                 val snapshot = repository.backupSnapshot()
                 val json = backupExporter.toJson(snapshot)
-                val result = com.attract.attendance.data.drive.DriveServiceHelper(context).uploadBackupJson(account, json)
+                val result = com.attract.attendance.data.drive.DriveServiceHelper(context).uploadBackupJson(email, json)
                 if (result.isSuccess) {
                     val timestamp = result.getOrThrow()
                     val prefs = com.attract.attendance.data.drive.DriveBackupPreferences(context)
@@ -506,6 +535,66 @@ class AttractViewModel(
                 val errorMsg = t.message ?: "Sync failed"
                 _uiState.update { it.copy(driveSyncStatus = com.attract.attendance.data.drive.DriveSyncStatus.Error(errorMsg)) }
                 showMessage("Backup error: $errorMsg")
+            }
+        }
+    }
+
+    fun restoreDriveBackup(context: Context) {
+        val prefs = com.attract.attendance.data.drive.DriveBackupPreferences(context)
+        val email = prefs.accountEmail
+        if (email.isNullOrBlank()) {
+            showMessage("Please connect to Google Drive first.")
+            return
+        }
+        if (_uiState.value.isWorking) return
+        _uiState.update { it.copy(isWorking = true) }
+        viewModelScope.launch {
+            try {
+                val helper = com.attract.attendance.data.drive.DriveServiceHelper(context)
+                val downloadResult = helper.downloadBackupJson(email)
+                if (downloadResult.isSuccess) {
+                    val json = downloadResult.getOrThrow()
+                    if (json.isNullOrBlank()) {
+                        showMessage("No backup found on Google Drive.")
+                    } else {
+                        val snapshot = backupExporter.fromJson(json)
+                        when (val restoreResult = repository.restoreBackup(snapshot)) {
+                            is com.attract.attendance.core.model.CommandResult.Success -> {
+                                _uiState.value.workspace?.summary?.id?.let { loadWorkspace(it) }
+                                showMessage("Backup restored from Google Drive successfully.")
+                            }
+                            is com.attract.attendance.core.model.CommandResult.Failure -> {
+                                showMessage(restoreResult.error.toUserMessage())
+                            }
+                        }
+                    }
+                } else {
+                    val errorMsg = downloadResult.exceptionOrNull()?.message ?: "Failed to download backup"
+                    showMessage("Drive download failed: $errorMsg")
+                }
+            } catch (t: Throwable) {
+                showMessage("Restore failed: ${t.localizedMessage ?: "Unknown error"}")
+            } finally {
+                _uiState.update { it.copy(isWorking = false) }
+            }
+        }
+    }
+
+    fun continueSession(session: SessionSummary) {
+        viewModelScope.launch {
+            when (val result = repository.resumeFaceSession(session.id)) {
+                is com.attract.attendance.core.model.CommandResult.Success -> {
+                    val activeSession = result.value
+                    if (_uiState.value.workspace?.summary?.id != activeSession.classId) {
+                        loadWorkspace(activeSession.classId)
+                    }
+                    _uiState.update {
+                        it.copy(screen = AppScreen.FaceAttendance(activeSession.classId, activeSession.sessionDate))
+                    }
+                }
+                is com.attract.attendance.core.model.CommandResult.Failure -> {
+                    showMessage(result.error.toUserMessage())
+                }
             }
         }
     }
@@ -576,7 +665,7 @@ class AttractViewModel(
         }
     }
 
-    private fun showMessage(message: String) = _uiState.update { it.copy(message = message) }
+    fun showMessage(message: String) = _uiState.update { it.copy(message = message) }
 
     private fun AppError.toUserMessage(): String = when (this) {
         is AppError.Validation -> message

@@ -42,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,6 +84,7 @@ fun ClassWorkspaceScreen(
     onAddStudentSubmit: (name: String, rollNumber: String, serialNumber: String?, (com.attract.attendance.core.model.CommandResult<Long>) -> Unit) -> Unit = { _, _, _, _ -> },
     onExportReport: () -> Unit,
     onImportOcrStudents: (List<RosterStudent>) -> Unit = { },
+    onContinueSession: (SessionSummary) -> Unit = { },
     modifier: Modifier = Modifier
 ) {
     var lastValidWorkspace by remember { mutableStateOf(workspace) }
@@ -91,7 +93,7 @@ fun ClassWorkspaceScreen(
     }
     val currentWorkspace = workspace ?: lastValidWorkspace ?: return
 
-    var activeTab by remember(initialTab) { mutableIntStateOf(initialTab) }
+    var activeTab by rememberSaveable(initialTab) { mutableIntStateOf(initialTab) }
     var showAddStudentSheet by remember { mutableStateOf(false) }
     var duplicateRollError by remember { mutableStateOf<String?>(null) }
     var showImportChoiceSheet by remember { mutableStateOf(false) }
@@ -204,25 +206,26 @@ fun ClassWorkspaceScreen(
             AnimatedContent(
                 targetState = activeTab,
                 transitionSpec = {
+                    val navSpec = com.attract.attendance.ui.theme.AttractMotion.navTween<androidx.compose.ui.unit.IntOffset>()
                     if (targetState > initialState) {
-                        (slideInHorizontally(
-                            animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
-                            initialOffsetX = { fullWidth -> fullWidth }
-                        ) + fadeIn(animationSpec = tween(300))).togetherWith(
+                        slideInHorizontally(
+                            animationSpec = navSpec,
+                            initialOffsetX = { fullWidth -> fullWidth / 3 }
+                        ).togetherWith(
                             slideOutHorizontally(
-                                animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
-                                targetOffsetX = { fullWidth -> -fullWidth }
-                            ) + fadeOut(animationSpec = tween(300))
+                                animationSpec = navSpec,
+                                targetOffsetX = { fullWidth -> -fullWidth / 3 }
+                            )
                         )
                     } else {
-                        (slideInHorizontally(
-                            animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
-                            initialOffsetX = { fullWidth -> -fullWidth }
-                        ) + fadeIn(animationSpec = tween(300))).togetherWith(
+                        slideInHorizontally(
+                            animationSpec = navSpec,
+                            initialOffsetX = { fullWidth -> -fullWidth / 3 }
+                        ).togetherWith(
                             slideOutHorizontally(
-                                animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
-                                targetOffsetX = { fullWidth -> fullWidth }
-                            ) + fadeOut(animationSpec = tween(300))
+                                animationSpec = navSpec,
+                                targetOffsetX = { fullWidth -> fullWidth / 3 }
+                            )
                         )
                     }
                 },
@@ -250,7 +253,8 @@ fun ClassWorkspaceScreen(
                                 onSelectDate = calendarViewModel::selectDate,
                                 onViewSessionDetails = onSessionOpen,
                                 onFaceAttendance = onFaceAttendance,
-                                onManualAttendance = onManualAttendance
+                                onManualAttendance = onManualAttendance,
+                                onContinueSession = onContinueSession
                             )
                         }
                     }
@@ -263,7 +267,8 @@ fun ClassWorkspaceScreen(
                     2 -> WorkspaceHistoryTab(
                         sessions = currentWorkspace.sessions,
                         onSessionOpen = onSessionOpen,
-                        onExportReport = onExportReport
+                        onExportReport = onExportReport,
+                        onContinueSession = onContinueSession
                     )
                 }
             }
@@ -314,6 +319,9 @@ private fun WorkspaceStudentsTab(
         }
     }
 
+    val enrolledCount = remember(students) { students.count { it.enrollmentStatus == com.attract.attendance.core.model.EnrollmentStatus.ENROLLED } }
+    val reenrollCount = remember(students) { students.count { it.enrollmentStatus == com.attract.attendance.core.model.EnrollmentStatus.REENROLL_REQUIRED } }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(Dimens.ScreenPadding),
@@ -334,11 +342,21 @@ private fun WorkspaceStudentsTab(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "${filteredStudents.size} Students Enrolled",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
+                Column {
+                    Text(
+                        text = "${filteredStudents.size} Students",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = buildString {
+                            append("$enrolledCount enrolled")
+                            if (reenrollCount > 0) append(" · $reenrollCount need re-enroll")
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 AttractTextButton(onClick = onImportRoster) {
                     Icon(Icons.Default.Download, contentDescription = null)
                     Spacer(Modifier.width(4.dp))
@@ -372,7 +390,8 @@ private fun WorkspaceStudentsTab(
 private fun WorkspaceHistoryTab(
     sessions: List<SessionSummary>,
     onSessionOpen: (SessionSummary) -> Unit,
-    onExportReport: () -> Unit
+    onExportReport: () -> Unit,
+    onContinueSession: ((SessionSummary) -> Unit)? = null
 ) {
     var filterState by remember { mutableStateOf(com.attract.attendance.ui.components.HistoryFilterState()) }
     var showFilterSheet by remember { mutableStateOf(false) }
@@ -439,7 +458,8 @@ private fun WorkspaceHistoryTab(
             items(filteredSessions, key = { it.id }) { session ->
                 SessionCard(
                     session = session,
-                    onClick = { onSessionOpen(session) }
+                    onClick = { onSessionOpen(session) },
+                    onContinue = if (session.isResumable && onContinueSession != null) { { onContinueSession(session) } } else null
                 )
             }
         }

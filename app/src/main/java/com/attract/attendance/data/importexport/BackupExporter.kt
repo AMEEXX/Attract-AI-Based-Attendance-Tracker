@@ -30,6 +30,15 @@ class BackupExporter(
         }
     }
 
+    suspend fun import(uri: Uri): Result<BackupSnapshot> = withContext(Dispatchers.IO) {
+        runCatching {
+            val resolver = contentResolver ?: error("The storage provider is unavailable.")
+            val input = resolver.openInputStream(uri) ?: error("The backup file could not be opened.")
+            val json = input.use { it.bufferedReader(Charsets.UTF_8).readText() }
+            fromJson(json)
+        }
+    }
+
     fun toJson(snapshot: BackupSnapshot): String = buildString {
         append("{")
         field("format", "attract-backup-v1")
@@ -152,5 +161,140 @@ class BackupExporter(
                 else -> append(char)
             }
         }
+    }
+
+    fun fromJson(json: String): BackupSnapshot {
+        val root = org.json.JSONObject(json)
+        val generatedAt = root.optLong("generatedAt", System.currentTimeMillis())
+
+        val teachersJson = root.optJSONArray("teachers") ?: org.json.JSONArray()
+        val teachers = mutableListOf<TeacherEntity>()
+        for (i in 0 until teachersJson.length()) {
+            val obj = teachersJson.getJSONObject(i)
+            teachers.add(
+                TeacherEntity(
+                    id = obj.getLong("id"),
+                    displayName = obj.getString("displayName"),
+                    pinHash = obj.getString("pinHash"),
+                    createdAt = obj.getLong("createdAt"),
+                    updatedAt = obj.getLong("updatedAt"),
+                )
+            )
+        }
+
+        val classesJson = root.optJSONArray("classes") ?: org.json.JSONArray()
+        val classes = mutableListOf<ClassSectionEntity>()
+        for (i in 0 until classesJson.length()) {
+            val obj = classesJson.getJSONObject(i)
+            classes.add(
+                ClassSectionEntity(
+                    id = obj.getLong("id"),
+                    teacherId = obj.getLong("teacherId"),
+                    name = obj.getString("name"),
+                    subject = obj.getString("subject"),
+                    section = obj.getString("section"),
+                    semesterBatch = obj.getString("semesterBatch"),
+                    requiredAttendancePercent = obj.getInt("requiredAttendancePercent"),
+                    archived = obj.optBoolean("archived", false),
+                    createdAt = obj.getLong("createdAt"),
+                    updatedAt = obj.getLong("updatedAt"),
+                )
+            )
+        }
+
+        val studentsJson = root.optJSONArray("students") ?: org.json.JSONArray()
+        val students = mutableListOf<StudentEntity>()
+        for (i in 0 until studentsJson.length()) {
+            val obj = studentsJson.getJSONObject(i)
+            val statusStr = obj.optString("enrollmentStatus", "NOT_ENROLLED")
+            val status = runCatching {
+                com.attract.attendance.core.model.EnrollmentStatus.valueOf(statusStr)
+            }.getOrDefault(com.attract.attendance.core.model.EnrollmentStatus.NOT_ENROLLED)
+
+            students.add(
+                StudentEntity(
+                    id = obj.getLong("id"),
+                    classId = obj.getLong("classId"),
+                    name = obj.getString("name"),
+                    rollNumber = obj.getString("rollNumber"),
+                    serialNumber = if (obj.isNull("serialNumber")) null else obj.optString("serialNumber"),
+                    enrollmentStatus = status,
+                    enrolledAt = if (obj.isNull("enrolledAt")) null else obj.optLong("enrolledAt"),
+                    eligibleFromSessionId = if (obj.isNull("eligibleFromSessionId")) null else obj.optLong("eligibleFromSessionId"),
+                    archived = obj.optBoolean("archived", false),
+                    createdAt = obj.getLong("createdAt"),
+                    updatedAt = obj.getLong("updatedAt"),
+                )
+            )
+        }
+
+        val sessionsJson = root.optJSONArray("sessions") ?: org.json.JSONArray()
+        val sessions = mutableListOf<AttendanceSessionEntity>()
+        for (i in 0 until sessionsJson.length()) {
+            val obj = sessionsJson.getJSONObject(i)
+            val sessionStatusStr = obj.optString("status", "ENDED")
+            val sessionStatus = runCatching {
+                com.attract.attendance.core.model.SessionStatus.valueOf(sessionStatusStr)
+            }.getOrDefault(com.attract.attendance.core.model.SessionStatus.ENDED)
+
+            val sessionModeStr = obj.optString("mode", "FACE")
+            val sessionMode = runCatching {
+                com.attract.attendance.core.model.SessionMode.valueOf(sessionModeStr)
+            }.getOrDefault(com.attract.attendance.core.model.SessionMode.FACE)
+
+            sessions.add(
+                AttendanceSessionEntity(
+                    id = obj.getLong("id"),
+                    classId = obj.getLong("classId"),
+                    sessionDate = obj.getString("sessionDate"),
+                    timeZoneId = obj.getString("timeZoneId"),
+                    startedAt = obj.getLong("startedAt"),
+                    endedAt = if (obj.isNull("endedAt")) null else obj.optLong("endedAt"),
+                    status = sessionStatus,
+                    mode = sessionMode,
+                    createdAt = obj.getLong("createdAt"),
+                    updatedAt = obj.getLong("updatedAt"),
+                )
+            )
+        }
+
+        val recordsJson = root.optJSONArray("records") ?: org.json.JSONArray()
+        val records = mutableListOf<AttendanceRecordEntity>()
+        for (i in 0 until recordsJson.length()) {
+            val obj = recordsJson.getJSONObject(i)
+            val attStatusStr = obj.optString("status", "PRESENT")
+            val attStatus = runCatching {
+                com.attract.attendance.core.model.AttendanceStatus.valueOf(attStatusStr)
+            }.getOrDefault(com.attract.attendance.core.model.AttendanceStatus.PRESENT)
+
+            val attMethodStr = obj.optString("attendanceMethod", "AI_RECOGNITION")
+            val attMethod = runCatching {
+                com.attract.attendance.core.model.AttendanceSource.valueOf(attMethodStr)
+            }.getOrDefault(com.attract.attendance.core.model.AttendanceSource.AI_RECOGNITION)
+
+            records.add(
+                AttendanceRecordEntity(
+                    id = obj.getLong("id"),
+                    sessionId = obj.getLong("sessionId"),
+                    studentId = obj.getLong("studentId"),
+                    status = attStatus,
+                    checkInTime = if (obj.isNull("checkInTime")) null else obj.optLong("checkInTime"),
+                    attendanceMethod = attMethod,
+                    matchConfidence = if (obj.isNull("matchConfidence")) null else obj.optDouble("matchConfidence").toFloat(),
+                    recognitionMetadata = if (obj.isNull("recognitionMetadata")) null else obj.optString("recognitionMetadata"),
+                    createdAt = obj.getLong("createdAt"),
+                    updatedAt = obj.getLong("updatedAt"),
+                )
+            )
+        }
+
+        return BackupSnapshot(
+            generatedAt = generatedAt,
+            teachers = teachers,
+            classes = classes,
+            students = students,
+            sessions = sessions,
+            records = records,
+        )
     }
 }

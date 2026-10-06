@@ -101,6 +101,7 @@ private class FakeTeacherDao(private val firstTeacher: TeacherEntity?) : Teacher
     override fun observeFirst(): Flow<TeacherEntity?> = flowOf(firstTeacher)
     override suspend fun first(): TeacherEntity? = firstTeacher
     override suspend fun insert(teacher: TeacherEntity): Long = 1
+    override suspend fun insertAll(values: List<TeacherEntity>) {}
     override suspend fun all(): List<TeacherEntity> = listOfNotNull(firstTeacher)
 }
 
@@ -113,6 +114,9 @@ private class FakeSessionDao(private val activeSession: AttendanceSessionEntity?
     override suspend fun find(sessionId: Long): AttendanceSessionEntity? = activeSession
     override suspend fun latestIdForClass(classId: Long): Long? = activeSession?.id
     override suspend fun insert(value: AttendanceSessionEntity): Long = value.id
+    override suspend fun insertAll(values: List<AttendanceSessionEntity>) {}
+    override suspend fun reactivate(sessionId: Long, updatedAt: Long): Int = 1
+    override suspend fun findStaleActiveSessions(cutoffMillis: Long): List<AttendanceSessionEntity> = emptyList()
     override suspend fun finish(sessionId: Long, status: SessionStatus, endedAt: Long, updatedAt: Long): Int = 1
     override fun observeEndedForClass(classId: Long): Flow<List<com.attract.attendance.data.local.SessionRow>> = flowOf(emptyList())
     override suspend fun deleteEnded(sessionId: Long): Int = 0

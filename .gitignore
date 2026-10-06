@@ -31,6 +31,10 @@ zip_contents_preview/
 attract_large_face_dataset_pack/
 # Local credentials & agent configs
 opencode.json
+client_secret*.json
+
+# APK binaries
+*.apk
 
 # Biometric eval datasets (downloaded on demand)
 .datasets/

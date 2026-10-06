@@ -37,12 +37,8 @@ class AttractApplication : Application() {
         }
 
         try {
-            val account = com.google.android.gms.auth.api.signin.GoogleSignIn.getLastSignedInAccount(this)
-            if (account != null && com.google.android.gms.auth.api.signin.GoogleSignIn.hasPermissions(
-                    account,
-                    com.google.android.gms.common.api.Scope(com.google.api.services.drive.DriveScopes.DRIVE_APPDATA)
-                )
-            ) {
+            val prefs = com.attract.attendance.data.drive.DriveBackupPreferences(this)
+            if (!prefs.accountEmail.isNullOrBlank() && prefs.isAutoSyncEnabled) {
                 com.attract.attendance.data.drive.BackupScheduler.schedulePeriodicBackup(this)
             }
         } catch (t: Throwable) {

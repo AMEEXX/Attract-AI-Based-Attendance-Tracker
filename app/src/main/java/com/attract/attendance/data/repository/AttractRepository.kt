@@ -585,6 +585,13 @@ class AttractRepository(
             // source (AI_RECOGNITION / MANUAL) â€” never duplicated, never overwritten.
             val existingRows = records.forSession(sessionId)
             val existingByStudent = existingRows.associateBy { it.studentId }
+            // Reconcile students who were marked absent in an auto-saved/interrupted session but are now marked present
+            for (studentId in presentStudentIds) {
+                val existing = existingByStudent[studentId]
+                if (existing != null && existing.status != AttendanceStatus.PRESENT) {
+                    records.updateStatus(sessionId, studentId, AttendanceStatus.PRESENT, now, now)
+                }
+            }
             val missing = eligible.filter { it.id !in existingByStudent }
             records.insertAll(
                 missing.map { student ->
@@ -1419,7 +1426,7 @@ class AttractRepository(
     }
 
     fun observeEndedSessions(classId: Long): Flow<List<SessionSummary>> = sessions.observeEndedForClass(classId).map { rows ->
-        rows.map { SessionSummary(it.id, it.classId, it.sessionDate, it.status, it.mode, it.presentCount, it.absentCount) }
+        rows.map { SessionSummary(it.id, it.classId, it.sessionDate, it.status, it.mode, it.presentCount, it.absentCount, it.startedAt, it.endedAt) }
     }
 
     fun observeSessionDaysForMonth(classId: Long, yearMonthPrefix: String): Flow<Set<Int>> =
@@ -1427,8 +1434,64 @@ class AttractRepository(
 
     fun observeSessionsForDate(classId: Long, dateString: String): Flow<List<SessionSummary>> =
         sessions.observeSessionsForDate(classId, dateString).map { rows ->
-            rows.map { SessionSummary(it.id, it.classId, it.sessionDate, it.status, it.mode, it.presentCount, it.absentCount) }
+            rows.map { SessionSummary(it.id, it.classId, it.sessionDate, it.status, it.mode, it.presentCount, it.absentCount, it.startedAt, it.endedAt) }
         }
+
+    suspend fun resumeFaceSession(sessionId: Long): CommandResult<AttendanceSessionEntity> = try {
+        database.withTransaction {
+            val session = sessions.find(sessionId)
+                ?: return@withTransaction CommandResult.Failure(AppError.NotFound)
+
+            val otherActive = sessions.activeFaceSession()
+            if (otherActive != null && otherActive.id != sessionId) {
+                return@withTransaction CommandResult.Failure(AppError.AnotherSessionActive)
+            }
+
+            val now = nowMillis()
+            val cutoff = now - (24 * 60 * 60 * 1000L)
+            val sessionTime = session.endedAt ?: session.startedAt
+            if (sessionTime > 0 && sessionTime < cutoff) {
+                return@withTransaction CommandResult.Failure(AppError.Validation("session", "This session has expired (older than 24 hours)."))
+            }
+
+            if (session.status != SessionStatus.ACTIVE) {
+                sessions.reactivate(sessionId, now)
+            }
+            CommandResult.Success(session.copy(status = SessionStatus.ACTIVE, endedAt = null, updatedAt = now))
+        }
+    } catch (e: Throwable) {
+        CommandResult.Failure(AppError.Storage(e))
+    }
+
+    suspend fun finalizeStaleSessions() {
+        val now = nowMillis()
+        val cutoff = now - (24 * 60 * 60 * 1000L)
+        val stale = sessions.findStaleActiveSessions(cutoff)
+        for (session in stale) {
+            runCatching {
+                val eligible = students.activeForClass(session.classId)
+                val existingRows = records.forSession(session.id)
+                val existingIds = existingRows.map { it.studentId }.toSet()
+                val missing = eligible.filter { it.id !in existingIds }
+                if (missing.isNotEmpty()) {
+                    records.insertAll(
+                        missing.map { student ->
+                            AttendanceRecordEntity(
+                                sessionId = session.id,
+                                studentId = student.id,
+                                status = AttendanceStatus.ABSENT,
+                                checkInTime = null,
+                                attendanceMethod = AttendanceSource.MANUAL,
+                                createdAt = now,
+                                updatedAt = now,
+                            )
+                        }
+                    )
+                }
+                sessions.finish(session.id, SessionStatus.ENDED, now, now)
+            }
+        }
+    }
 
     suspend fun classReportRows(classId: Long): List<ClassReportStudentRow> =
         records.classReport(classId).sortedWith { a, b -> RollNumberComparator.compare(a.rollNumber, b.rollNumber) }
@@ -1444,6 +1507,19 @@ class AttractRepository(
             sessions = sessions.all(),
             records = records.all(),
         )
+    }
+
+    suspend fun restoreBackup(snapshot: BackupSnapshot): CommandResult<Unit> = try {
+        database.withTransaction {
+            if (snapshot.teachers.isNotEmpty()) teachers.insertAll(snapshot.teachers)
+            if (snapshot.classes.isNotEmpty()) classes.insertAll(snapshot.classes)
+            if (snapshot.students.isNotEmpty()) students.insertAll(snapshot.students)
+            if (snapshot.sessions.isNotEmpty()) sessions.insertAll(snapshot.sessions)
+            if (snapshot.records.isNotEmpty()) records.replaceAll(snapshot.records)
+            CommandResult.Success(Unit)
+        }
+    } catch (e: Throwable) {
+        CommandResult.Failure(AppError.Storage(e))
     }
 
     fun observeSessionStudents(classId: Long, sessionId: Long): Flow<List<Pair<StudentSummary, AttendanceStatus?>>> =

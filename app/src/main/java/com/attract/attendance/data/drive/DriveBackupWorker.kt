@@ -18,11 +18,10 @@ class DriveBackupWorker(
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val prefs = DriveBackupPreferences(applicationContext)
-        val authManager = DriveAuthManager(applicationContext)
-        val account = authManager.getLastSignedInAccount()
+        val accountEmail = prefs.accountEmail
 
-        if (account == null) {
-            // Not connected to Google Drive or missing permissions, finish safely
+        if (accountEmail.isNullOrBlank()) {
+            // Not connected to Google Drive or account missing, finish safely
             return@withContext Result.success()
         }
 
@@ -36,7 +35,7 @@ class DriveBackupWorker(
             val jsonString = backupExporter.toJson(snapshot)
 
             val driveHelper = DriveServiceHelper(applicationContext)
-            val uploadResult = driveHelper.uploadBackupJson(account, jsonString)
+            val uploadResult = driveHelper.uploadBackupJson(accountEmail, jsonString)
 
             if (uploadResult.isSuccess) {
                 val timestamp = uploadResult.getOrThrow()

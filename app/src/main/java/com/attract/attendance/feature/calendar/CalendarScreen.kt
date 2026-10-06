@@ -17,11 +17,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.border
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Card
@@ -29,6 +31,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -65,6 +68,7 @@ fun CalendarScreen(
     onViewSessionDetails: (SessionSummary) -> Unit,
     onFaceAttendance: (String) -> Unit,
     onManualAttendance: (String) -> Unit,
+    onContinueSession: ((SessionSummary) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
@@ -160,7 +164,10 @@ fun CalendarScreen(
                 state.sessionsForDate.forEach { session ->
                     SessionCard(
                         session = session,
-                        onViewDetails = { onViewSessionDetails(session) }
+                        onViewDetails = { onViewSessionDetails(session) },
+                        onContinue = if (onContinueSession != null && session.isResumable) {
+                            { onContinueSession(session) }
+                        } else null
                     )
                 }
             }
@@ -288,6 +295,11 @@ private fun CalendarDayCell(
             .aspectRatio(1f)
             .padding(2.dp)
             .clip(CircleShape)
+            .then(
+                if (isToday && !isSelected) {
+                    Modifier.border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                } else Modifier
+            )
             .background(
                 if (isSelected) MaterialTheme.colorScheme.primary
                 else Color.Transparent
@@ -313,7 +325,7 @@ private fun CalendarDayCell(
             if (hasSessions) {
                 Box(
                     modifier = Modifier
-                        .size(4.dp)
+                        .size(5.dp)
                         .clip(CircleShape)
                         .background(
                             if (isSelected) MaterialTheme.colorScheme.onPrimary
@@ -328,38 +340,134 @@ private fun CalendarDayCell(
 @Composable
 private fun SessionCard(
     session: SessionSummary,
-    onViewDetails: () -> Unit
+    onViewDetails: () -> Unit,
+    onContinue: (() -> Unit)? = null
 ) {
     Card(
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
         ),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Column {
-                Text(
-                    text = "${session.mode.name} Session",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Present ${session.presentCount} • Absent ${session.absentCount}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    val (modeIcon, modeColor) = if (session.mode == com.attract.attendance.core.model.SessionMode.FACE) {
+                        Icons.Default.CameraAlt to com.attract.attendance.ui.theme.AttractBlue
+                    } else {
+                        Icons.Default.Edit to MaterialTheme.colorScheme.primary
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(modeColor.copy(alpha = 0.12f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = modeIcon,
+                            contentDescription = null,
+                            tint = modeColor,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    Column {
+                        Text(
+                            text = if (session.mode == com.attract.attendance.core.model.SessionMode.FACE) "AI Face Attendance" else "Manual Attendance",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = "Session #${session.id} • ${session.sessionDate}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
 
-            AttractTextButton(onClick = onViewDetails) {
-                Text("VIEW DETAILS")
+            // Stats row
+            val total = session.presentCount + session.absentCount
+            val progress = if (total > 0) session.presentCount.toFloat() / total.toFloat() else 0f
+
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Present: ${session.presentCount}  •  Absent: ${session.absentCount}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (total > 0) {
+                        Text(
+                            text = "${(progress * 100).toInt()}%",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = com.attract.attendance.ui.theme.SuccessGreen
+                        )
+                    }
+                }
+
+                if (total > 0) {
+                    androidx.compose.material3.LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp)),
+                        color = com.attract.attendance.ui.theme.SuccessGreen,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                }
+            }
+
+            // Action Buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AttractTextButton(onClick = onViewDetails) {
+                    Text("VIEW DETAILS", fontWeight = FontWeight.SemiBold)
+                }
+
+                if (onContinue != null && session.isResumable) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    androidx.compose.material3.FilledTonalButton(
+                        onClick = onContinue,
+                        colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                            containerColor = com.attract.attendance.ui.theme.SuccessGreen.copy(alpha = 0.18f),
+                            contentColor = com.attract.attendance.ui.theme.SuccessGreen
+                        ),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("CONTINUE", fontWeight = FontWeight.Bold)
+                    }
+                }
             }
         }
     }
