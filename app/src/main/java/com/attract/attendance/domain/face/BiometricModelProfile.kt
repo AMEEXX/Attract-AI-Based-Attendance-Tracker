@@ -36,6 +36,7 @@ data class BiometricModelProfile(
     val confirmBelow: Float = 0.60f,
     val duplicateThreshold: Float = 0.50f,
     val continuityThreshold: Float = 0.30f,
+    /** Scores strictly below this ceiling on the first usable frame fail-fast to Unknown (LLD-16 S6). */
     val notFoundCeiling: Float = 0.35f,
     val calibrationId: String = "calib_20261004_bgr_512d"
 ) {
