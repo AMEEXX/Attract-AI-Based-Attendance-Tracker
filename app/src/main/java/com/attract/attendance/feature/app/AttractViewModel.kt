@@ -41,7 +41,7 @@ sealed interface AppScreen {
     data class StandaloneEnrollment(val classId: Long, val studentId: Long) : AppScreen
     data class ManualAttendance(val classId: Long, val sessionDate: String) : AppScreen
     data class FaceAttendance(val classId: Long, val sessionDate: String) : AppScreen
-    data class SessionHistory(val classId: Long, val sessionId: Long) : AppScreen
+    data class SessionHistory(val classId: Long, val sessionId: Long, val originTab: Int = 2) : AppScreen
     data object Settings : AppScreen
 }
 
@@ -118,21 +118,12 @@ class AttractViewModel(
         }
 
         viewModelScope.launch(startupExceptionHandler) {
-            val activeSession = runCatching { repository.activeFaceSession() }.getOrNull()
             repository.observeTeacher().collect { teacher ->
                 _uiState.update { state ->
                     val chosen = themeRepository?.hasChosenTheme?.value ?: state.hasChosenTheme
                     val nextScreen = when {
                         !chosen -> AppScreen.ThemeSelection
                         teacher == null -> AppScreen.Onboarding
-                        activeSession != null -> {
-                            // Session recovery (LLD-07): the FaceAttendance route needs the
-                            // class workspace loaded or the screen dead-ends on Loading.
-                            if (state.workspace?.summary?.id != activeSession.classId) {
-                                loadWorkspace(activeSession.classId)
-                            }
-                            AppScreen.FaceAttendance(activeSession.classId, activeSession.sessionDate)
-                        }
                         state.screen == AppScreen.Loading || state.screen == AppScreen.ThemeSelection || state.screen == AppScreen.Onboarding -> AppScreen.Dashboard
                         else -> state.screen
                     }
@@ -401,10 +392,10 @@ class AttractViewModel(
         }
     }
 
-    fun openSessionHistory(session: SessionSummary) {
+    fun openSessionHistory(session: SessionSummary, originTab: Int = 2) {
         val classId = session.classId
         historyJob?.cancel()
-        _uiState.update { it.copy(screen = AppScreen.SessionHistory(classId, session.id)) }
+        _uiState.update { it.copy(screen = AppScreen.SessionHistory(classId, session.id, originTab)) }
         historyJob = viewModelScope.launch {
             repository.observeSessionStudents(classId, session.id).collect { rows ->
                 _uiState.update { it.copy(sessionHistory = SessionHistory(session, rows)) }
@@ -417,10 +408,11 @@ class AttractViewModel(
         onSuccess = { showMessage("Attendance corrected.") },
     )
 
-    fun deleteSession(sessionId: Long, classId: Long) = runCommand(
+    fun deleteSession(sessionId: Long, classId: Long, originTab: Int = 2) = runCommand(
         work = { repository.deleteEndedSession(sessionId) },
         onSuccess = {
-            _uiState.update { it.copy(screen = AppScreen.ClassWorkspace(classId), sessionHistory = null) }
+            historyJob?.cancel()
+            _uiState.update { it.copy(screen = AppScreen.ClassWorkspace(classId, initialTab = originTab), sessionHistory = null) }
             showMessage("Attendance session deleted.")
         },
     )
@@ -527,15 +519,24 @@ class AttractViewModel(
                     }
                     showMessage("Google Drive backup completed successfully.")
                 } else {
-                    val errorMsg = result.exceptionOrNull()?.message ?: "Sync failed"
+                    val errorMsg = formatDriveError(result.exceptionOrNull())
                     _uiState.update { it.copy(driveSyncStatus = com.attract.attendance.data.drive.DriveSyncStatus.Error(errorMsg)) }
                     showMessage("Backup error: $errorMsg")
                 }
             } catch (t: Throwable) {
-                val errorMsg = t.message ?: "Sync failed"
+                val errorMsg = formatDriveError(t)
                 _uiState.update { it.copy(driveSyncStatus = com.attract.attendance.data.drive.DriveSyncStatus.Error(errorMsg)) }
                 showMessage("Backup error: $errorMsg")
             }
+        }
+    }
+
+    private fun formatDriveError(error: Throwable?): String {
+        val msg = error?.message.orEmpty()
+        return if (error is java.net.UnknownHostException || msg.contains("unable to resolve host", ignoreCase = true) || msg.contains("no such host", ignoreCase = true)) {
+            "Internet connection required: Unable to reach Google Drive servers. Please check your network connection and try again."
+        } else {
+            error?.localizedMessage ?: "Network or Drive error. Please try again."
         }
     }
 
@@ -569,11 +570,11 @@ class AttractViewModel(
                         }
                     }
                 } else {
-                    val errorMsg = downloadResult.exceptionOrNull()?.message ?: "Failed to download backup"
+                    val errorMsg = formatDriveError(downloadResult.exceptionOrNull())
                     showMessage("Drive download failed: $errorMsg")
                 }
             } catch (t: Throwable) {
-                showMessage("Restore failed: ${t.localizedMessage ?: "Unknown error"}")
+                showMessage("Restore failed: ${formatDriveError(t)}")
             } finally {
                 _uiState.update { it.copy(isWorking = false) }
             }
@@ -621,7 +622,7 @@ class AttractViewModel(
             is AppScreen.ManualAttendance -> _uiState.update { it.copy(screen = AppScreen.ClassWorkspace(screen.classId)) }
             is AppScreen.FaceAttendance -> _uiState.update { it.copy(screen = AppScreen.ClassWorkspace(screen.classId)) }
             is AppScreen.StandaloneEnrollment -> _uiState.update { it.copy(screen = AppScreen.StudentDetail(screen.classId, screen.studentId)) }
-            is AppScreen.SessionHistory -> _uiState.update { it.copy(screen = AppScreen.ClassWorkspace(screen.classId), sessionHistory = null) }
+            is AppScreen.SessionHistory -> _uiState.update { it.copy(screen = AppScreen.ClassWorkspace(screen.classId, initialTab = screen.originTab), sessionHistory = null) }
             else -> Unit
         }
     }

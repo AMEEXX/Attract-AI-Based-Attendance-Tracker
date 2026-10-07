@@ -1511,14 +1511,25 @@ class AttractRepository(
 
     suspend fun restoreBackup(snapshot: BackupSnapshot): CommandResult<Unit> = try {
         database.withTransaction {
+            val db = database.openHelper.writableDatabase
+            // Delete in reverse-dependency (leaf-to-root) order to prevent foreign key constraint violations
+            db.execSQL("DELETE FROM attendance_records")
+            db.execSQL("DELETE FROM face_templates")
+            db.execSQL("DELETE FROM attendance_sessions")
+            db.execSQL("DELETE FROM students")
+            db.execSQL("DELETE FROM class_sections")
+            db.execSQL("DELETE FROM teachers")
+
+            // Insert in dependency (root-to-leaf) order
             if (snapshot.teachers.isNotEmpty()) teachers.insertAll(snapshot.teachers)
             if (snapshot.classes.isNotEmpty()) classes.insertAll(snapshot.classes)
             if (snapshot.students.isNotEmpty()) students.insertAll(snapshot.students)
             if (snapshot.sessions.isNotEmpty()) sessions.insertAll(snapshot.sessions)
-            if (snapshot.records.isNotEmpty()) records.replaceAll(snapshot.records)
+            if (snapshot.records.isNotEmpty()) records.insertAll(snapshot.records)
             CommandResult.Success(Unit)
         }
     } catch (e: Throwable) {
+        android.util.Log.e("AttractRepository", "Restore failed", e)
         CommandResult.Failure(AppError.Storage(e))
     }
 

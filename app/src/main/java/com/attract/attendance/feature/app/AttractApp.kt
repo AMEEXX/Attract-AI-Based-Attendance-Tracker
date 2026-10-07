@@ -211,14 +211,17 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
                             (initialState is AppScreen.StandaloneEnrollment && targetState is AppScreen.StudentDetail) ||
                             (initialState is AppScreen.SessionHistory && targetState is AppScreen.ClassWorkspace)
 
-                        val slideSpec = com.attract.attendance.ui.theme.AttractMotion.navTween<androidx.compose.ui.unit.IntOffset>()
+                        val duration = 240
+                        val easing = androidx.compose.animation.core.FastOutSlowInEasing
+                        val slideSpec = androidx.compose.animation.core.tween<androidx.compose.ui.unit.IntOffset>(duration, easing = easing)
+                        val fadeSpec = androidx.compose.animation.core.tween<Float>(duration, easing = easing)
 
                         if (isBack) {
-                            slideInHorizontally(animationSpec = slideSpec) { width -> -width / 3 }
-                                .togetherWith(slideOutHorizontally(animationSpec = slideSpec) { width -> width / 3 })
+                            (slideInHorizontally(animationSpec = slideSpec) { width -> -width } + fadeIn(fadeSpec))
+                                .togetherWith(slideOutHorizontally(animationSpec = slideSpec) { width -> width } + fadeOut(fadeSpec))
                         } else {
-                            slideInHorizontally(animationSpec = slideSpec) { width -> width / 3 }
-                                .togetherWith(slideOutHorizontally(animationSpec = slideSpec) { width -> -width / 3 })
+                            (slideInHorizontally(animationSpec = slideSpec) { width -> width } + fadeIn(fadeSpec))
+                                .togetherWith(slideOutHorizontally(animationSpec = slideSpec) { width -> -width } + fadeOut(fadeSpec))
                         }
                     },
                     label = "TeacherNavHost"
@@ -317,7 +320,7 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
                         onImportOcrStudents = { students -> viewModel.importRosterDirectly(screen.classId, students) },
                         onManualAttendance = viewModel::openManualAttendance,
                         onFaceAttendance = viewModel::openFaceAttendance,
-                        onSessionOpen = viewModel::openSessionHistory,
+                        onSessionOpen = { session, originTab -> viewModel.openSessionHistory(session, originTab) },
                         onAddStudentSubmit = { name, roll, serial, callback ->
                             viewModel.addStudent(
                                 com.attract.attendance.data.repository.CreateStudentCommand(
@@ -377,7 +380,7 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
                         working = state.isWorking,
                         onBack = viewModel::navigateBack,
                         onCorrect = viewModel::correctAttendance,
-                        onDelete = { viewModel.deleteSession(screen.sessionId, screen.classId) },
+                        onDelete = { viewModel.deleteSession(screen.sessionId, screen.classId, screen.originTab) },
                     )
                 }
             }
