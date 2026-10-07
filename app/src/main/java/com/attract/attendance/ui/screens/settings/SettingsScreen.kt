@@ -193,7 +193,7 @@ fun SettingsScreen(
                 AttractCard {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text("Attract — Face Based Attendance Tracker", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        Text("Version 4.0 (2026 Edition)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Version ${com.attract.attendance.BuildConfig.VERSION_NAME} (Build ${com.attract.attendance.BuildConfig.VERSION_CODE})", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                         Text("Offline-first biometrics & attendance tracking", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }

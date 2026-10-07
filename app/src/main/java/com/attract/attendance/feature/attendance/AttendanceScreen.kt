@@ -143,7 +143,9 @@ fun AttendanceScreen(
     val biometricManager = remember { runCatching { BiometricManager.from(context) }.getOrNull() }
     val canUseBiometric = remember(biometricManager, fragmentActivity) {
         fragmentActivity != null &&
-        biometricManager?.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
+        runCatching {
+            biometricManager?.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
+        }.getOrDefault(false)
     }
     val scope = rememberCoroutineScope()
 
@@ -355,8 +357,8 @@ fun AttendanceScreen(
             while (true) {
                 delay(1000L)
                 if (state == SessionScreenState.AUTO_ENDED || isAutoEnding) break
-                val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
-                val currentMode = am?.lockTaskModeState ?: ActivityManager.LOCK_TASK_MODE_NONE
+                val am = runCatching { context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager }.getOrNull()
+                val currentMode = runCatching { am?.lockTaskModeState }.getOrNull() ?: ActivityManager.LOCK_TASK_MODE_NONE
                 if (currentMode == ActivityManager.LOCK_TASK_MODE_NONE) {
                     Log.w(TAG, "Screen pinning lost (mode is NONE). Triggering auto-save.")
                     handleAutoInterrupt()
