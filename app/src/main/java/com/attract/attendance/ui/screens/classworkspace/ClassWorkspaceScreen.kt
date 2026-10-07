@@ -80,7 +80,7 @@ fun ClassWorkspaceScreen(
     onImportRoster: () -> Unit,
     onManualAttendance: (String) -> Unit,
     onFaceAttendance: (String) -> Unit,
-    onSessionOpen: (SessionSummary) -> Unit,
+    onSessionOpen: (SessionSummary, Int) -> Unit,
     onAddStudentSubmit: (name: String, rollNumber: String, serialNumber: String?, (com.attract.attendance.core.model.CommandResult<Long>) -> Unit) -> Unit = { _, _, _, _ -> },
     onExportReport: () -> Unit,
     onImportOcrStudents: (List<RosterStudent>) -> Unit = { },
@@ -94,6 +94,9 @@ fun ClassWorkspaceScreen(
     val currentWorkspace = workspace ?: lastValidWorkspace ?: return
 
     var activeTab by rememberSaveable(initialTab) { mutableIntStateOf(initialTab) }
+    androidx.compose.runtime.LaunchedEffect(initialTab) {
+        activeTab = initialTab
+    }
     var showAddStudentSheet by remember { mutableStateOf(false) }
     var duplicateRollError by remember { mutableStateOf<String?>(null) }
     var showImportChoiceSheet by remember { mutableStateOf(false) }
@@ -206,27 +209,16 @@ fun ClassWorkspaceScreen(
             AnimatedContent(
                 targetState = activeTab,
                 transitionSpec = {
-                    val navSpec = com.attract.attendance.ui.theme.AttractMotion.navTween<androidx.compose.ui.unit.IntOffset>()
+                    val duration = 240
+                    val easing = FastOutSlowInEasing
+                    val offsetSpec = tween<androidx.compose.ui.unit.IntOffset>(duration, easing = easing)
+                    val fadeSpec = tween<Float>(duration, easing = easing)
                     if (targetState > initialState) {
-                        slideInHorizontally(
-                            animationSpec = navSpec,
-                            initialOffsetX = { fullWidth -> fullWidth / 3 }
-                        ).togetherWith(
-                            slideOutHorizontally(
-                                animationSpec = navSpec,
-                                targetOffsetX = { fullWidth -> -fullWidth / 3 }
-                            )
-                        )
+                        (slideInHorizontally(offsetSpec) { fullWidth -> fullWidth } + fadeIn(fadeSpec))
+                            .togetherWith(slideOutHorizontally(offsetSpec) { fullWidth -> -fullWidth } + fadeOut(fadeSpec))
                     } else {
-                        slideInHorizontally(
-                            animationSpec = navSpec,
-                            initialOffsetX = { fullWidth -> -fullWidth / 3 }
-                        ).togetherWith(
-                            slideOutHorizontally(
-                                animationSpec = navSpec,
-                                targetOffsetX = { fullWidth -> fullWidth / 3 }
-                            )
-                        )
+                        (slideInHorizontally(offsetSpec) { fullWidth -> -fullWidth } + fadeIn(fadeSpec))
+                            .togetherWith(slideOutHorizontally(offsetSpec) { fullWidth -> fullWidth } + fadeOut(fadeSpec))
                     }
                 },
                 modifier = Modifier
@@ -251,7 +243,7 @@ fun ClassWorkspaceScreen(
                                 onPreviousMonth = calendarViewModel::previousMonth,
                                 onNextMonth = calendarViewModel::nextMonth,
                                 onSelectDate = calendarViewModel::selectDate,
-                                onViewSessionDetails = onSessionOpen,
+                                onViewSessionDetails = { session -> onSessionOpen(session, 0) },
                                 onFaceAttendance = onFaceAttendance,
                                 onManualAttendance = onManualAttendance,
                                 onContinueSession = onContinueSession
@@ -266,7 +258,7 @@ fun ClassWorkspaceScreen(
                     )
                     2 -> WorkspaceHistoryTab(
                         sessions = currentWorkspace.sessions,
-                        onSessionOpen = onSessionOpen,
+                        onSessionOpen = { session -> onSessionOpen(session, 2) },
                         onExportReport = onExportReport,
                         onContinueSession = onContinueSession
                     )

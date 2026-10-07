@@ -106,7 +106,25 @@ class DriveAuthManager(private val context: Context) {
     fun signOut(onComplete: () -> Unit) {
         prefs.accountEmail = null
         prefs.lastSyncError = null
-        onComplete()
+        prefs.lastSyncMillis = 0L
+        try {
+            Identity.getSignInClient(context).signOut()
+                .addOnCompleteListener {
+                    try {
+                        val gso = com.google.android.gms.auth.api.signin.GoogleSignInOptions.Builder(
+                            com.google.android.gms.auth.api.signin.GoogleSignInOptions.DEFAULT_SIGN_IN
+                        ).requestEmail().build()
+                        GoogleSignIn.getClient(context, gso).signOut()
+                            .addOnCompleteListener {
+                                onComplete()
+                            }
+                    } catch (e: Exception) {
+                        onComplete()
+                    }
+                }
+        } catch (e: Exception) {
+            onComplete()
+        }
     }
 
     fun mapError(throwable: Throwable): String {

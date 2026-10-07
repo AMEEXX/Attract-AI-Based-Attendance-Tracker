@@ -329,7 +329,16 @@ fun AttendanceScreen(
             }
         }
         val filter = android.content.IntentFilter(android.content.Intent.ACTION_SCREEN_OFF)
-        context.registerReceiver(receiver, filter)
+        try {
+            androidx.core.content.ContextCompat.registerReceiver(
+                context,
+                receiver,
+                filter,
+                androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to register screen-off broadcast receiver", e)
+        }
         onDispose {
             try {
                 context.unregisterReceiver(receiver)
@@ -339,6 +348,8 @@ fun AttendanceScreen(
 
     LaunchedEffect(isScreenPinned, activeSessionId, isAutoEnding) {
         if (isScreenPinned && activeSessionId != null && !isAutoEnding) {
+            // Grace period: allow Android 3 seconds to settle into lock task mode
+            delay(3000L)
             while (true) {
                 delay(1000L)
                 if (state == SessionScreenState.AUTO_ENDED || isAutoEnding) break
