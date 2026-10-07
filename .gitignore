@@ -40,3 +40,7 @@ client_secret*.json
 .datasets/
 scratch/
 
+# Graphify local cache and machine-specific config
+graphify-out/cache/
+graphify-out/.*
+
