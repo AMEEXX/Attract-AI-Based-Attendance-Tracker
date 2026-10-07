@@ -140,10 +140,10 @@ fun AttendanceScreen(
     val context = LocalContext.current
     val activity = context as? Activity
     val fragmentActivity = context as? FragmentActivity
-    val biometricManager = remember { BiometricManager.from(context) }
+    val biometricManager = remember { runCatching { BiometricManager.from(context) }.getOrNull() }
     val canUseBiometric = remember(biometricManager, fragmentActivity) {
         fragmentActivity != null &&
-        biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
+        biometricManager?.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
     }
     val scope = rememberCoroutineScope()
 
@@ -159,15 +159,17 @@ fun AttendanceScreen(
         hasCameraPermission = granted
     }
 
-    // --- Screen Pinning (LLD-13 / SDD Â§7) ---
-    // Lock Task starts AUTOMATICALLY when the attendance screen appears  —  no teacher action needed.
-    // The SDD flow is: Session Created  ->  startLockTask()  ->  Pinned Attendance World
-    // Per LLD-13: "LLD-06 creates a recoverable ACTIVE session  ->  root swaps to attendance graph
-    //  ->  startLockTask() is invoked  ->  lock-task state is observed/timeout checked  ->  camera enabled"
+    // --- Screen Pinning (LLD-13 / SDD §7) ---
+    // Lock Task starts AUTOMATICALLY when the attendance screen appears — no teacher action needed.
+    // The SDD flow is: Session Created -> startLockTask() -> Pinned Attendance World
+    // Per LLD-13: "LLD-06 creates a recoverable ACTIVE session -> root swaps to attendance graph
+    //  -> startLockTask() is invoked -> lock-task state is observed/timeout checked -> camera enabled"
     var isScreenPinned by remember { mutableStateOf(false) }
     var screenPinningFailed by remember { mutableStateOf(false) }
     val lockTaskController = remember(activity) {
-        if (activity != null && !isStandaloneMode) LockTaskControllerImpl(activity) else null
+        if (activity != null && !isStandaloneMode) {
+            runCatching { LockTaskControllerImpl(activity) }.getOrNull()
+        } else null
     }
 
     // --- Model availability check ---

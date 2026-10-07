@@ -57,190 +57,200 @@ fun CameraPreview(
     }
 
     DisposableEffect(lifecycleOwner, cameraSelector) {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-        val mainExecutor = ContextCompat.getMainExecutor(context)
-        val analysisExecutor = Executors.newSingleThreadExecutor()
+        var activeCameraProvider: ProcessCameraProvider? = null
+        try {
+            val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+            val mainExecutor = ContextCompat.getMainExecutor(context)
+            val analysisExecutor = Executors.newSingleThreadExecutor()
 
-        var lastAnalyzedTimestampMs = 0L
+            var lastAnalyzedTimestampMs = 0L
 
-        val imageAnalysis = ImageAnalysis.Builder()
-            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-            .build()
+            val imageAnalysis = ImageAnalysis.Builder()
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .build()
 
-        imageAnalysis.setAnalyzer(analysisExecutor) { imageProxy ->
-            val now = System.currentTimeMillis()
-            if (now - lastAnalyzedTimestampMs < 150L) {
-                imageProxy.close()
-                return@setAnalyzer
-            }
-            lastAnalyzedTimestampMs = now
-
-            val frameBitmap = toBitmap(imageProxy)
-            val nowNanos = System.nanoTime()
-            val frameId = System.currentTimeMillis()
-
-            if (frameBitmap == null) {
-                val errorBundle = FrameBundle(
-                    frameId = frameId,
-                    timestampNanos = nowNanos,
-                    error = "Frame bitmap conversion failed"
-                )
-                mainExecutor.execute {
-                    onFrameBundleAnalyzed?.invoke(errorBundle)
+            imageAnalysis.setAnalyzer(analysisExecutor) { imageProxy ->
+                val now = System.currentTimeMillis()
+                if (now - lastAnalyzedTimestampMs < 150L) {
+                    imageProxy.close()
+                    return@setAnalyzer
                 }
-                imageProxy.close()
-                return@setAnalyzer
-            }
+                lastAnalyzedTimestampMs = now
 
-            try {
-                val detections = YoloFaceDetector.detect(context, frameBitmap)
-                val faceCount = detections.size
+                val frameBitmap = toBitmap(imageProxy)
+                val nowNanos = System.nanoTime()
+                val frameId = System.currentTimeMillis()
 
-                if (faceCount == 0) {
-                    val emptySignals = FaceQualitySignals(
-                        faceCount = 0,
-                        yawDegrees = 0f,
-                        pitchDegrees = 0f,
-                        rollDegrees = 0f,
-                        leftEyeOpenProbability = null,
-                        rightEyeOpenProbability = null,
-                        faceRatio = 0f,
-                        centerX = 0.5f,
-                        centerY = 0.5f,
-                        blurVariance = 0f,
-                        brightness = 0f
-                    )
-                    val bundle = FrameBundle(
+                if (frameBitmap == null) {
+                    val errorBundle = FrameBundle(
                         frameId = frameId,
                         timestampNanos = nowNanos,
-                        detections = emptyList(),
-                        qualitySignals = emptySignals,
-                        alignedCrop = null
+                        error = "Frame bitmap conversion failed"
                     )
                     mainExecutor.execute {
-                        onFrameBundleAnalyzed?.invoke(bundle)
-                        onFrameAnalyzed?.invoke(emptySignals, null)
+                        onFrameBundleAnalyzed?.invoke(errorBundle)
                     }
+                    imageProxy.close()
                     return@setAnalyzer
                 }
 
-                // Multiple faces: signal but pass null crop — quality engine will reject
-                if (faceCount > 1) {
-                    val multipleSignals = FaceQualitySignals(
-                        faceCount = faceCount,
-                        yawDegrees = 0f,
-                        pitchDegrees = 0f,
-                        rollDegrees = 0f,
-                        leftEyeOpenProbability = null,
+                try {
+                    val detections = YoloFaceDetector.detect(context, frameBitmap)
+                    val faceCount = detections.size
+
+                    if (faceCount == 0) {
+                        val emptySignals = FaceQualitySignals(
+                            faceCount = 0,
+                            yawDegrees = 0f,
+                            pitchDegrees = 0f,
+                            rollDegrees = 0f,
+                            leftEyeOpenProbability = null,
+                            rightEyeOpenProbability = null,
+                            faceRatio = 0f,
+                            centerX = 0.5f,
+                            centerY = 0.5f,
+                            blurVariance = 0f,
+                            brightness = 0f
+                        )
+                        val bundle = FrameBundle(
+                            frameId = frameId,
+                            timestampNanos = nowNanos,
+                            detections = emptyList(),
+                            qualitySignals = emptySignals,
+                            alignedCrop = null
+                        )
+                        mainExecutor.execute {
+                            onFrameBundleAnalyzed?.invoke(bundle)
+                            onFrameAnalyzed?.invoke(emptySignals, null)
+                        }
+                        return@setAnalyzer
+                    }
+
+                    // Multiple faces: signal but pass null crop — quality engine will reject
+                    if (faceCount > 1) {
+                        val multipleSignals = FaceQualitySignals(
+                            faceCount = faceCount,
+                            yawDegrees = 0f,
+                            pitchDegrees = 0f,
+                            rollDegrees = 0f,
+                            leftEyeOpenProbability = null,
+                            rightEyeOpenProbability = null,
+                            faceRatio = 0f,
+                            centerX = 0.5f,
+                            centerY = 0.5f,
+                            blurVariance = 0f,
+                            brightness = 0f
+                        )
+                        val bundle = FrameBundle(
+                            frameId = frameId,
+                            timestampNanos = nowNanos,
+                            detections = detections,
+                            qualitySignals = multipleSignals,
+                            alignedCrop = null
+                        )
+                        mainExecutor.execute {
+                            onFrameBundleAnalyzed?.invoke(bundle)
+                            onFrameAnalyzed?.invoke(multipleSignals, null)
+                        }
+                        return@setAnalyzer
+                    }
+
+                    val primaryFace = detections[0]
+                    val box = primaryFace.boundingBox
+
+                    // Quality signals computed on full frame with bounding-box region
+                    val brightness = computeBitmapBrightness(frameBitmap, box)
+                    val blurVariance = computeBitmapLaplacianVariance(frameBitmap, box)
+
+                    val liveSignals = FaceQualitySignals(
+                        faceCount = 1,
+                        yawDegrees = primaryFace.estimatedYaw,
+                        pitchDegrees = primaryFace.estimatedPitch,
+                        rollDegrees = primaryFace.estimatedRoll,
+                        leftEyeOpenProbability = null, // R13: Leave null (unavailable), do not fabricate 1.0f
                         rightEyeOpenProbability = null,
-                        faceRatio = 0f,
-                        centerX = 0.5f,
-                        centerY = 0.5f,
-                        blurVariance = 0f,
-                        brightness = 0f
+                        faceRatio = primaryFace.faceRatio,
+                        centerX = primaryFace.centerX,
+                        centerY = primaryFace.centerY,
+                        blurVariance = blurVariance,
+                        brightness = brightness
                     )
+
+                    // FaceAligner produces 112x112 canonical ArcFace aligned face bitmap
+                    val alignedFace = FaceAligner.align(frameBitmap, primaryFace.landmarks)
+
                     val bundle = FrameBundle(
                         frameId = frameId,
                         timestampNanos = nowNanos,
                         detections = detections,
-                        qualitySignals = multipleSignals,
-                        alignedCrop = null
+                        qualitySignals = liveSignals,
+                        alignedCrop = alignedFace
                     )
+
                     mainExecutor.execute {
                         onFrameBundleAnalyzed?.invoke(bundle)
-                        onFrameAnalyzed?.invoke(multipleSignals, null)
+                        onFrameAnalyzed?.invoke(liveSignals, alignedFace)
                     }
-                    return@setAnalyzer
+                } catch (e: Exception) {
+                    android.util.Log.e("CameraPreview", "YOLO frame analysis error: ${e.message}", e)
+                    val errorBundle = FrameBundle(
+                        frameId = frameId,
+                        timestampNanos = nowNanos,
+                        error = "YOLO detector error: ${e.message}"
+                    )
+                    mainExecutor.execute {
+                        onFrameBundleAnalyzed?.invoke(errorBundle)
+                    }
+                } finally {
+                    imageProxy.close()
                 }
-
-                val primaryFace = detections[0]
-                val box = primaryFace.boundingBox
-
-                // Quality signals computed on full frame with bounding-box region
-                val brightness = computeBitmapBrightness(frameBitmap, box)
-                val blurVariance = computeBitmapLaplacianVariance(frameBitmap, box)
-
-                val liveSignals = FaceQualitySignals(
-                    faceCount = 1,
-                    yawDegrees = primaryFace.estimatedYaw,
-                    pitchDegrees = primaryFace.estimatedPitch,
-                    rollDegrees = primaryFace.estimatedRoll,
-                    leftEyeOpenProbability = null, // R13: Leave null (unavailable), do not fabricate 1.0f
-                    rightEyeOpenProbability = null,
-                    faceRatio = primaryFace.faceRatio,
-                    centerX = primaryFace.centerX,
-                    centerY = primaryFace.centerY,
-                    blurVariance = blurVariance,
-                    brightness = brightness
-                )
-
-                // FaceAligner produces 112x112 canonical ArcFace aligned face bitmap
-                val alignedFace = FaceAligner.align(frameBitmap, primaryFace.landmarks)
-
-                val bundle = FrameBundle(
-                    frameId = frameId,
-                    timestampNanos = nowNanos,
-                    detections = detections,
-                    qualitySignals = liveSignals,
-                    alignedCrop = alignedFace
-                )
-
-                mainExecutor.execute {
-                    onFrameBundleAnalyzed?.invoke(bundle)
-                    onFrameAnalyzed?.invoke(liveSignals, alignedFace)
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("CameraPreview", "YOLO frame analysis error: ${e.message}", e)
-                val errorBundle = FrameBundle(
-                    frameId = frameId,
-                    timestampNanos = nowNanos,
-                    error = "YOLO detector error: ${e.message}"
-                )
-                mainExecutor.execute {
-                    onFrameBundleAnalyzed?.invoke(errorBundle)
-                }
-            } finally {
-                imageProxy.close()
             }
-        }
 
-        cameraProviderFuture.addListener({
-            try {
-                val cameraProvider = cameraProviderFuture.get()
-                onProviderInitialized?.invoke(cameraProvider)
-
-                val preview = Preview.Builder().build().also {
-                    it.surfaceProvider = previewView.surfaceProvider
-                }
-
-                cameraProvider.unbindAll()
+            cameraProviderFuture.addListener({
                 try {
-                    cameraProvider.bindToLifecycle(
-                        lifecycleOwner,
-                        cameraSelector,
-                        preview,
-                        imageAnalysis
-                    )
-                } catch (e: IllegalArgumentException) {
-                    // Preferred camera unavailable (emulator/edge device) — fall back to the other lens.
-                    android.util.Log.w("CameraPreview", "Preferred camera unavailable, trying fallback", e)
-                    val fallback = if (cameraSelector == CameraSelector.DEFAULT_FRONT_CAMERA)
-                        CameraSelector.DEFAULT_BACK_CAMERA else CameraSelector.DEFAULT_FRONT_CAMERA
-                    cameraProvider.bindToLifecycle(
-                        lifecycleOwner, fallback, preview, imageAnalysis
-                    )
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }, mainExecutor)
+                    val cameraProvider = cameraProviderFuture.get()
+                    activeCameraProvider = cameraProvider
+                    onProviderInitialized?.invoke(cameraProvider)
 
-        onDispose {
-            try {
-                analysisExecutor.shutdown()
-                val cameraProvider = cameraProviderFuture.get()
-                cameraProvider.unbindAll()
-            } catch (_: Exception) {}
+                    val preview = Preview.Builder().build().also {
+                        it.surfaceProvider = previewView.surfaceProvider
+                    }
+
+                    cameraProvider.unbindAll()
+                    try {
+                        cameraProvider.bindToLifecycle(
+                            lifecycleOwner,
+                            cameraSelector,
+                            preview,
+                            imageAnalysis
+                        )
+                    } catch (e: Exception) {
+                        // Preferred camera unavailable (emulator/edge device) — fall back to the other lens.
+                        android.util.Log.w("CameraPreview", "Preferred camera unavailable, trying fallback: ${e.message}")
+                        val fallback = if (cameraSelector == CameraSelector.DEFAULT_FRONT_CAMERA)
+                            CameraSelector.DEFAULT_BACK_CAMERA else CameraSelector.DEFAULT_FRONT_CAMERA
+                        try {
+                            cameraProvider.bindToLifecycle(
+                                lifecycleOwner, fallback, preview, imageAnalysis
+                            )
+                        } catch (e2: Exception) {
+                            android.util.Log.e("CameraPreview", "Fallback camera bind also failed: ${e2.message}")
+                        }
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("CameraPreview", "Camera initialization listener failed: ${e.message}", e)
+                }
+            }, mainExecutor)
+
+            onDispose {
+                try {
+                    analysisExecutor.shutdown()
+                    activeCameraProvider?.unbindAll()
+                } catch (_: Exception) {}
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("CameraPreview", "Failed to start camera provider: ${e.message}", e)
+            onDispose {}
         }
     }
 
