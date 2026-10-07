@@ -63,12 +63,16 @@ class LockTaskControllerImpl(
     }
 
     private fun currentLockState(): LockTaskState {
-        val am = activity.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
-            ?: return LockTaskState.Unlocked
-        return when (am.lockTaskModeState) {
-            ActivityManager.LOCK_TASK_MODE_PINNED,
-            ActivityManager.LOCK_TASK_MODE_LOCKED -> LockTaskState.Locked
-            else -> LockTaskState.Unlocked
+        return try {
+            val am = activity.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+                ?: return LockTaskState.Unlocked
+            when (am.lockTaskModeState) {
+                ActivityManager.LOCK_TASK_MODE_PINNED,
+                ActivityManager.LOCK_TASK_MODE_LOCKED -> LockTaskState.Locked
+                else -> LockTaskState.Unlocked
+            }
+        } catch (_: Throwable) {
+            LockTaskState.Unlocked
         }
     }
 
