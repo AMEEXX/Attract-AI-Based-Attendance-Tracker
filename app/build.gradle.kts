@@ -13,8 +13,8 @@ android {
         applicationId = "com.attract.attendance"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -115,9 +115,15 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
 
-tasks.register<Copy>("copyApkToWorkspace") {
-    from(layout.buildDirectory.dir("outputs/apk/debug"))
-    into(rootProject.file("app/build/outputs/apk/debug"))
+tasks.register("copyApkToWorkspace") {
+    doNotTrackState("Direct copy to root")
+    doLast {
+        val src = layout.buildDirectory.file("outputs/apk/debug/app-debug.apk").get().asFile
+        val dst = rootProject.file("app-debug.apk")
+        if (src.exists()) {
+            src.copyTo(dst, overwrite = true)
+        }
+    }
 }
 
 tasks.matching { it.name == "assembleDebug" }.configureEach {
