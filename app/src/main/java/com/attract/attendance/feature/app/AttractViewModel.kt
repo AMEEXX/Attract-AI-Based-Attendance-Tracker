@@ -135,6 +135,9 @@ class AttractViewModel(
             repository.finalizeStaleSessions()
         }
         viewModelScope.launch(startupExceptionHandler) {
+            repository.restoreAllEnrolledFaceTemplates()
+        }
+        viewModelScope.launch(startupExceptionHandler) {
             repository.observeClasses().collect { classes ->
                 _uiState.update { it.copy(classes = classes) }
             }

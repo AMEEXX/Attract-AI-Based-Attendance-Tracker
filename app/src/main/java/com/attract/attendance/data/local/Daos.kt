@@ -177,6 +177,16 @@ interface StudentDao {
 
     @Query("UPDATE students SET enrollment_status = 'NOT_ENROLLED', enrolled_at = NULL")
     suspend fun resetAllEnrollments(): Int
+
+    @Query(
+        """
+        UPDATE students 
+        SET enrollment_status = 'ENROLLED', updated_at = :now 
+        WHERE id IN (SELECT DISTINCT student_id FROM face_templates) 
+          AND archived = 0
+        """
+    )
+    suspend fun restoreEnrolledWithTemplates(now: Long): Int
 }
 
 @Dao
@@ -442,5 +452,11 @@ interface FaceTemplateDao {
         """
     )
     suspend fun enrolledStudentIdsNeedingReEnrollment(classId: Long, currentDim: Int): List<Long>
+
+    @Query("UPDATE face_templates SET active = 1")
+    suspend fun reactivateAll(): Int
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(templates: List<FaceTemplateEntity>)
 }
 

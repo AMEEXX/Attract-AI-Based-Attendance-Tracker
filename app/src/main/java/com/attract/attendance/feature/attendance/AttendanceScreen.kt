@@ -198,21 +198,6 @@ fun AttendanceScreen(
             isModelReady = modelOk
         }
 
-        // 2b. Biometric template migration sweep (LLD-10 amendment): deactivate templates
-        // stored by an incompatible earlier model (e.g. 32-D prototype) so they can never
-        // reach TemplateMatcher; affected students fall back to the re-enrollment flow.
-        withContext(Dispatchers.IO) {
-            val report = repository.retireIncompatibleTemplates(classId)
-            if (report.studentsNeedingReEnrollment.isNotEmpty()) {
-                Log.w(
-                    TAG,
-                    "Template migration: ${report.deactivatedTemplates} stale templates retired; " +
-                        "${report.studentsNeedingReEnrollment.size} student(s) need re-enrollment",
-                )
-            }
-        }
-
-
         // 3. Auto-start screen pinning (non-standalone mode only)
         // Per SDD Â§7: Teacher navigation must be inaccessible during an ACTIVE session.
         if (!isStandaloneMode && lockTaskController != null) {

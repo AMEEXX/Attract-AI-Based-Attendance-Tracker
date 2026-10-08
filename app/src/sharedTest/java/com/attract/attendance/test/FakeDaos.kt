@@ -75,6 +75,7 @@ class FakeStudentDao(initialStudents: List<StudentEntity> = emptyList()) : Stude
     }
     override suspend fun resetEnrollmentForClass(classId: Long): Int = 0
     override suspend fun resetAllEnrollments(): Int = 0
+    override suspend fun restoreEnrolledWithTemplates(now: Long): Int = 0
 }
 
 class FakeAttendanceRecordDao : AttendanceRecordDao {
