@@ -114,20 +114,27 @@ class ExportAndBackupFunctionalTest {
     }
 
     @Test
-    fun backupJson_excludesBiometricAndSecurityFields() {
+    fun backupJson_includesPortableFaceTemplatesAndExcludesRawHardwareKeys() {
         val snapshot = BackupSnapshot(
             generatedAt = 1700000000000L,
             teachers = emptyList(),
             classes = emptyList(),
             students = emptyList(),
             sessions = emptyList(),
-            records = emptyList()
+            records = emptyList(),
+            faceTemplates = listOf(
+                com.attract.attendance.data.importexport.BackupFaceTemplate(
+                    studentId = 1L,
+                    embeddingBase64 = "base64==",
+                    capturedAt = 1700000000000L
+                )
+            )
         )
 
         val json = backupExporter.toJson(snapshot)
 
-        assertFalse(json.contains("faceTemplate"))
-        assertFalse(json.contains("embeddingBytes"))
+        assertTrue(json.contains("\"faceTemplates\":["))
+        assertTrue(json.contains("base64=="))
         assertFalse(json.contains("cipherIv"))
     }
 

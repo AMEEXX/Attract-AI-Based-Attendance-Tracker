@@ -37,6 +37,7 @@ class BackupExporterTest {
         assertTrue(json.contains("\"students\":[]"))
         assertTrue(json.contains("\"sessions\":[]"))
         assertTrue(json.contains("\"records\":[]"))
+        assertTrue(json.contains("\"faceTemplates\":[]"))
     }
 
     @Test
@@ -102,13 +103,27 @@ class BackupExporterTest {
             updatedAt = 2500L
         )
 
+        val faceTemplate = BackupFaceTemplate(
+            id = 1L,
+            studentId = 100L,
+            modelVersion = "v1",
+            embeddingDim = 512,
+            poseBucket = "FRONTAL",
+            qualityScore = 0.99f,
+            embeddingBase64 = "AQIDBA==",
+            capturedAt = 1500L,
+            source = "enrollment",
+            active = true,
+        )
+
         val snapshot = BackupSnapshot(
             generatedAt = 1700000000000L,
             teachers = listOf(teacher),
             classes = listOf(classItem),
             students = listOf(student),
             sessions = listOf(session),
-            records = listOf(record)
+            records = listOf(record),
+            faceTemplates = listOf(faceTemplate),
         )
 
         val json = exporter.toJson(snapshot)
@@ -120,5 +135,71 @@ class BackupExporterTest {
         assertTrue(json.contains("\"status\":\"ENDED\""))
         assertTrue(json.contains("\"attendanceMethod\":\"AI_RECOGNITION\""))
         assertTrue(json.contains("\"matchConfidence\":0.98"))
+        assertTrue(json.contains("\"embeddingBase64\":\"AQIDBA==\""))
+        assertTrue(json.contains("\"poseBucket\":\"FRONTAL\""))
+    }
+
+    @Test
+    fun roundTrip_faceTemplates_preservedAcrossExportAndImport() {
+        val templates = listOf(
+            BackupFaceTemplate(
+                id = 10L,
+                studentId = 100L,
+                modelVersion = "facenet_mobile_v1",
+                embeddingDim = 512,
+                poseBucket = "FRONTAL",
+                qualityScore = 0.97f,
+                embeddingBase64 = "base64frontal==",
+                capturedAt = 5000L,
+                source = "enrollment_frame_1",
+                active = true,
+            ),
+            BackupFaceTemplate(
+                id = 11L,
+                studentId = 100L,
+                modelVersion = "facenet_mobile_v1",
+                embeddingDim = 512,
+                poseBucket = "YAW_LEFT",
+                qualityScore = 0.95f,
+                embeddingBase64 = "base64left==",
+                capturedAt = 5001L,
+                source = "enrollment_frame_2",
+                active = true,
+            ),
+            BackupFaceTemplate(
+                id = 12L,
+                studentId = 100L,
+                modelVersion = "facenet_mobile_v1",
+                embeddingDim = 512,
+                poseBucket = "YAW_RIGHT",
+                qualityScore = 0.94f,
+                embeddingBase64 = "base64right==",
+                capturedAt = 5002L,
+                source = "enrollment_frame_3",
+                active = true,
+            ),
+        )
+
+        val originalSnapshot = BackupSnapshot(
+            generatedAt = 1700000000000L,
+            teachers = emptyList(),
+            classes = emptyList(),
+            students = emptyList(),
+            sessions = emptyList(),
+            records = emptyList(),
+            faceTemplates = templates,
+        )
+
+        val json = exporter.toJson(originalSnapshot)
+        val restored = exporter.fromJson(json)
+
+        org.junit.Assert.assertEquals(3, restored.faceTemplates.size)
+        org.junit.Assert.assertEquals("FRONTAL", restored.faceTemplates[0].poseBucket)
+        org.junit.Assert.assertEquals("base64frontal==", restored.faceTemplates[0].embeddingBase64)
+        org.junit.Assert.assertEquals("YAW_LEFT", restored.faceTemplates[1].poseBucket)
+        org.junit.Assert.assertEquals("base64left==", restored.faceTemplates[1].embeddingBase64)
+        org.junit.Assert.assertEquals("YAW_RIGHT", restored.faceTemplates[2].poseBucket)
+        org.junit.Assert.assertEquals("base64right==", restored.faceTemplates[2].embeddingBase64)
+        org.junit.Assert.assertEquals(100L, restored.faceTemplates[0].studentId)
     }
 }

@@ -26,6 +26,7 @@ import com.attract.attendance.data.local.SessionStudentRow
 import com.attract.attendance.data.local.StudentEntity
 import com.attract.attendance.data.local.TeacherEntity
 import com.attract.attendance.data.local.FaceTemplateEntity
+import com.attract.attendance.data.importexport.BackupFaceTemplate
 import com.attract.attendance.data.importexport.BackupSnapshot
 import com.attract.attendance.data.security.PinHasher
 import com.attract.attendance.domain.AttendanceRules
@@ -1511,6 +1512,39 @@ class AttractRepository(
     suspend fun sessionExportRows(classId: Long): List<SessionExportRow> = records.sessionExportRows(classId)
 
     suspend fun backupSnapshot(): BackupSnapshot = database.withTransaction {
+        val allTemplates = templates.all()
+        val backupTemplates = mutableListOf<BackupFaceTemplate>()
+        for (tmpl in allTemplates) {
+            val floats = try {
+                com.attract.attendance.data.security.TemplateEnvelopeCodec.decode(
+                    cipher = embeddingCipher,
+                    studentId = tmpl.studentId,
+                    modelVersion = tmpl.modelVersion,
+                    stored = tmpl.encryptedEmbedding,
+                    cryptoVersion = tmpl.cryptoVersion,
+                )
+            } catch (e: Throwable) {
+                null
+            }
+            if (floats != null) {
+                val bytes = with(com.attract.attendance.domain.face.TemplateMatcher) { floats.toByteArray() }
+                val base64 = java.util.Base64.getEncoder().encodeToString(bytes)
+                backupTemplates.add(
+                    BackupFaceTemplate(
+                        id = tmpl.id,
+                        studentId = tmpl.studentId,
+                        modelVersion = tmpl.modelVersion,
+                        embeddingDim = if (tmpl.embeddingDim > 0) tmpl.embeddingDim else floats.size,
+                        poseBucket = tmpl.poseBucket,
+                        qualityScore = tmpl.qualityScore,
+                        embeddingBase64 = base64,
+                        capturedAt = tmpl.capturedAt,
+                        source = tmpl.source,
+                        active = tmpl.active,
+                    )
+                )
+            }
+        }
         BackupSnapshot(
             generatedAt = nowMillis(),
             teachers = teachers.all(),
@@ -1518,6 +1552,7 @@ class AttractRepository(
             students = students.all(),
             sessions = sessions.all(),
             records = records.all(),
+            faceTemplates = backupTemplates,
         )
     }
 
@@ -1525,8 +1560,8 @@ class AttractRepository(
         database.withTransaction {
             val db = database.openHelper.writableDatabase
             // Delete in reverse-dependency (leaf-to-root) order to prevent foreign key constraint violations
-            // NEVER delete face_templates: on-device biometric registrations must be preserved
             db.execSQL("DELETE FROM attendance_records")
+            db.execSQL("DELETE FROM face_templates")
             db.execSQL("DELETE FROM attendance_sessions")
             db.execSQL("DELETE FROM students")
             db.execSQL("DELETE FROM class_sections")
@@ -1539,7 +1574,45 @@ class AttractRepository(
             if (snapshot.sessions.isNotEmpty()) sessions.insertAll(snapshot.sessions)
             if (snapshot.records.isNotEmpty()) records.insertAll(snapshot.records)
 
-            // Re-reconcile enrollment status: any restored student with existing biometric templates remains ENROLLED
+            if (snapshot.faceTemplates.isNotEmpty()) {
+                val restoredTemplates = mutableListOf<FaceTemplateEntity>()
+                for (item in snapshot.faceTemplates) {
+                    val floats = try {
+                        val bytes = java.util.Base64.getDecoder().decode(item.embeddingBase64)
+                        with(com.attract.attendance.domain.face.TemplateMatcher) { bytes.toFloatArray() }
+                    } catch (e: Throwable) {
+                        null
+                    }
+                    if (floats != null) {
+                        val (encryptedBlob, cryptoVersion) = com.attract.attendance.data.security.TemplateEnvelopeCodec.encode(
+                            cipher = embeddingCipher,
+                            studentId = item.studentId,
+                            modelVersion = item.modelVersion,
+                            plaintextFloats = floats,
+                        )
+                        restoredTemplates.add(
+                            FaceTemplateEntity(
+                                id = 0,
+                                studentId = item.studentId,
+                                encryptedEmbedding = encryptedBlob,
+                                cryptoVersion = cryptoVersion,
+                                modelVersion = item.modelVersion,
+                                embeddingDim = if (item.embeddingDim > 0) item.embeddingDim else floats.size,
+                                poseBucket = item.poseBucket,
+                                qualityScore = item.qualityScore,
+                                capturedAt = item.capturedAt,
+                                source = item.source,
+                                active = item.active,
+                            )
+                        )
+                    }
+                }
+                if (restoredTemplates.isNotEmpty()) {
+                    templates.insertAll(restoredTemplates)
+                }
+            }
+
+            // Re-reconcile enrollment status: any restored student with existing or restored biometric templates remains ENROLLED
             val now = nowMillis()
             students.restoreEnrolledWithTemplates(now)
             templates.reactivateAll()
