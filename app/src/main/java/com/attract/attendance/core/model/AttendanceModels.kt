@@ -41,6 +41,8 @@ data class RosterStudent(
     val name: String,
     val rollNumber: String,
     val serialNumber: String?,
+    val needsReview: Boolean = false,
+    val reviewNote: String = "",
 )
 
 data class SessionSummary(

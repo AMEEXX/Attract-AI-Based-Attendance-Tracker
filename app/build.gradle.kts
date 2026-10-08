@@ -102,6 +102,9 @@ dependencies {
     implementation("com.google.api-client:google-api-client-android:2.7.0")
     implementation("com.google.apis:google-api-services-drive:v3-rev20241027-2.0.0")
     implementation("com.google.http-client:google-http-client-gson:1.45.1")
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
+    implementation(platform("com.google.firebase:firebase-bom:35.0.0"))
+    implementation("com.google.firebase:firebase-ai")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
