@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "478051267847",
+    "project_id": "attract-5bdb3",
+    "storage_bucket": "attract-5bdb3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:478051267847:android:b0db42c06603c6b68c41a2",
+        "android_client_info": {
+          "package_name": "com.attract.attendance"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAPRyHbMSuZ60bkHoq5gH4B8Qzz3_Y0SsI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
