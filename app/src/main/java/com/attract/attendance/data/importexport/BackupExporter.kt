@@ -10,6 +10,19 @@ import com.attract.attendance.data.local.TeacherEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+data class BackupFaceTemplate(
+    val id: Long = 0,
+    val studentId: Long,
+    val modelVersion: String = "v1",
+    val embeddingDim: Int = 0,
+    val poseBucket: String = "FRONTAL",
+    val qualityScore: Float = 1.0f,
+    val embeddingBase64: String,
+    val capturedAt: Long = 0L,
+    val source: String = "enrollment",
+    val active: Boolean = true,
+)
+
 data class BackupSnapshot(
     val generatedAt: Long,
     val teachers: List<TeacherEntity>,
@@ -17,7 +30,9 @@ data class BackupSnapshot(
     val students: List<StudentEntity>,
     val sessions: List<AttendanceSessionEntity>,
     val records: List<AttendanceRecordEntity>,
+    val faceTemplates: List<BackupFaceTemplate> = emptyList(),
 )
+
 
 class BackupExporter(
     private val contentResolver: ContentResolver? = null,
@@ -113,6 +128,21 @@ class BackupExporter(
                 field("recognitionMetadata", item.recognitionMetadata); comma()
                 field("createdAt", item.createdAt); comma()
                 field("updatedAt", item.updatedAt)
+            }
+        }
+        comma()
+        array("faceTemplates", snapshot.faceTemplates) { item ->
+            obj {
+                field("id", item.id); comma()
+                field("studentId", item.studentId); comma()
+                field("modelVersion", item.modelVersion); comma()
+                field("embeddingDim", item.embeddingDim); comma()
+                field("poseBucket", item.poseBucket); comma()
+                field("qualityScore", item.qualityScore); comma()
+                field("embeddingBase64", item.embeddingBase64); comma()
+                field("capturedAt", item.capturedAt); comma()
+                field("source", item.source); comma()
+                field("active", item.active)
             }
         }
         append("}")
@@ -288,6 +318,26 @@ class BackupExporter(
             )
         }
 
+        val templatesJson = root.optJSONArray("faceTemplates") ?: org.json.JSONArray()
+        val faceTemplates = mutableListOf<BackupFaceTemplate>()
+        for (i in 0 until templatesJson.length()) {
+            val obj = templatesJson.getJSONObject(i)
+            faceTemplates.add(
+                BackupFaceTemplate(
+                    id = obj.optLong("id", 0L),
+                    studentId = obj.getLong("studentId"),
+                    modelVersion = obj.optString("modelVersion", "v1"),
+                    embeddingDim = obj.optInt("embeddingDim", 0),
+                    poseBucket = obj.optString("poseBucket", "FRONTAL"),
+                    qualityScore = obj.optDouble("qualityScore", 1.0).toFloat(),
+                    embeddingBase64 = obj.getString("embeddingBase64"),
+                    capturedAt = obj.optLong("capturedAt", generatedAt),
+                    source = obj.optString("source", "enrollment"),
+                    active = obj.optBoolean("active", true),
+                )
+            )
+        }
+
         return BackupSnapshot(
             generatedAt = generatedAt,
             teachers = teachers,
@@ -295,6 +345,7 @@ class BackupExporter(
             students = students,
             sessions = sessions,
             records = records,
+            faceTemplates = faceTemplates,
         )
     }
 }
