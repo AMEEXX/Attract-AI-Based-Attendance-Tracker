@@ -666,13 +666,19 @@ class AttractRepository(
                     continue
                 }
 
-                when (com.attract.attendance.domain.face.TemplateCompatibility.classify(floats)) {
+                val usableFloats = if (floats.size == com.attract.attendance.domain.face.EmbeddingEngine.EMBEDDING_SIZE) {
+                    com.attract.attendance.domain.face.EmbeddingEngine.l2Normalize(floats)
+                } else {
+                    floats
+                }
+
+                when (com.attract.attendance.domain.face.TemplateCompatibility.classify(usableFloats)) {
                     com.attract.attendance.domain.face.TemplateCompatibility.VectorClass.CURRENT -> {
                         usable.add(
                             com.attract.attendance.domain.face.StudentTemplatePair(
                                 studentId = row.studentId,
                                 templateId = row.id,
-                                embedding = floats
+                                embedding = usableFloats
                             )
                         )
                     }
@@ -744,9 +750,14 @@ class AttractRepository(
                 stored = row.encryptedEmbedding,
                 cryptoVersion = row.cryptoVersion,
             ) ?: continue
+            val usableFloats = if (floats.size == com.attract.attendance.domain.face.EmbeddingEngine.EMBEDDING_SIZE) {
+                com.attract.attendance.domain.face.EmbeddingEngine.l2Normalize(floats)
+            } else {
+                floats
+            }
             // Biometric-format gate (LLD-10): wrong dimension or non-finite values never
             // participate in matching.
-            if (!com.attract.attendance.domain.face.TemplateCompatibility.isUsableVector(floats)) {
+            if (!com.attract.attendance.domain.face.TemplateCompatibility.isUsableVector(usableFloats)) {
                 incompatible++
                 continue
             }
@@ -754,7 +765,7 @@ class AttractRepository(
                 com.attract.attendance.domain.face.StudentTemplatePair(
                     studentId = row.studentId,
                     templateId = row.id,
-                    embedding = floats
+                    embedding = usableFloats
                 )
             )
         }
@@ -762,7 +773,7 @@ class AttractRepository(
             android.util.Log.w(
                 "ATTRACT_FACE",
                 "Template compatibility: $incompatible/${rows.size} templates ignored " +
-                    "(stale dimension/malformed). Re-enrollment required for affected students.",
+                    "(stale dimension/malformed).",
             )
         }
         return usable
@@ -774,12 +785,9 @@ class AttractRepository(
     )
 
     /**
-     * Deactivates every active template whose decrypted format is incompatible with the
-     * current model profile and reports which enrolled students lost ALL usable templates
-     * (they must re-enroll before they can be recognized again).
-     *
-     * Safe to call repeatedly (idempotent once swept). Never deletes raw rows Ã¢â‚¬â€ history
-     * is retained with active=0 per LLD-10 retention rules.
+     * Non-destructive template compatibility check.
+     * Never deactivates valid or unit-normalizable templates and never destroys enrolled student face status.
+     * Only deactivates if an explicit incompatible legacy dimension (e.g. 32-D test vector) is found.
      */
     suspend fun retireIncompatibleTemplates(classId: Long): StaleTemplateReport {
         return database.withTransaction {
@@ -793,45 +801,30 @@ class AttractRepository(
                     stored = row.encryptedEmbedding,
                     cryptoVersion = row.cryptoVersion,
                 )
-                val compatible = floats != null &&
-                    com.attract.attendance.domain.face.TemplateCompatibility.isUsableVector(floats)
-                if (!compatible) {
+                // NEVER deactivate on null decode (transient keystore lock/delay) or 512-D vectors.
+                // Only deactivate if decoded vector is strictly an incompatible dimension (e.g. 32-D test legacy rows).
+                if (floats != null && floats.size != 0 && floats.size != com.attract.attendance.domain.face.EmbeddingEngine.EMBEDDING_SIZE) {
                     templates.setInactive(row.id)
                     deactivated++
                 }
             }
 
-            // ALL-ROSTER RECONCILIATION: Check EVERY enrolled student in this class,
-            // not merely those touched during this sweep (fixes R04 orphaned students).
             val classStudents = students.activeForClass(classId)
             val enrolledStudents = classStudents.filter { it.enrollmentStatus == EnrollmentStatus.ENROLLED }
             val needingReEnrollment = mutableListOf<Long>()
 
-            for (s in enrolledStudents) {
-                val activeStudentTemplates = templates.forStudent(s.id).filter { it.active }
-                val hasUsable = activeStudentTemplates.any { t ->
-                    if (t.embeddingDim != 0 && t.embeddingDim != com.attract.attendance.domain.face.TemplateCompatibility.CURRENT_EMBEDDING_DIM) {
-                        false
-                    } else {
-                        val decoded = com.attract.attendance.data.security.TemplateEnvelopeCodec.decode(
-                            cipher = embeddingCipher,
-                            studentId = s.id,
-                            modelVersion = t.modelVersion,
-                            stored = t.encryptedEmbedding,
-                            cryptoVersion = t.cryptoVersion,
+            if (deactivated > 0) {
+                for (s in enrolledStudents) {
+                    val activeStudentTemplates = templates.forStudent(s.id).filter { it.active }
+                    if (activeStudentTemplates.isEmpty()) {
+                        needingReEnrollment.add(s.id)
+                        students.update(
+                            s.copy(
+                                enrollmentStatus = EnrollmentStatus.REENROLL_REQUIRED,
+                                updatedAt = nowMillis(),
+                            )
                         )
-                        decoded != null && com.attract.attendance.domain.face.TemplateCompatibility.isUsableVector(decoded)
                     }
-                }
-
-                if (!hasUsable) {
-                    needingReEnrollment.add(s.id)
-                    students.update(
-                        s.copy(
-                            enrollmentStatus = EnrollmentStatus.REENROLL_REQUIRED,
-                            updatedAt = nowMillis(),
-                        )
-                    )
                 }
             }
 
@@ -844,6 +837,25 @@ class AttractRepository(
             StaleTemplateReport(deactivated, needingReEnrollment)
         }
     }
+
+    /**
+     * Restores all enrolled face templates and reactivates student enrollment statuses.
+     * Ensures upgrade or recovery never loses previous biometric enrollment data.
+     */
+    suspend fun restoreAllEnrolledFaceTemplates(): Int = runCatching {
+        database.withTransaction {
+            val reactivated = templates.reactivateAll()
+            val now = nowMillis()
+            val restoredStudents = students.restoreEnrolledWithTemplates(now)
+            if (reactivated > 0 || restoredStudents > 0) {
+                android.util.Log.i(
+                    "ATTRACT_FACE",
+                    "Restored face data: reactivated $reactivated templates, restored $restoredStudents enrolled students.",
+                )
+            }
+            reactivated
+        }
+    }.getOrDefault(0)
 
     suspend fun attendanceRecordsForSession(sessionId: Long): List<AttendanceRecordEntity> =
         records.forSession(sessionId)
@@ -1513,8 +1525,8 @@ class AttractRepository(
         database.withTransaction {
             val db = database.openHelper.writableDatabase
             // Delete in reverse-dependency (leaf-to-root) order to prevent foreign key constraint violations
+            // NEVER delete face_templates: on-device biometric registrations must be preserved
             db.execSQL("DELETE FROM attendance_records")
-            db.execSQL("DELETE FROM face_templates")
             db.execSQL("DELETE FROM attendance_sessions")
             db.execSQL("DELETE FROM students")
             db.execSQL("DELETE FROM class_sections")
@@ -1526,6 +1538,12 @@ class AttractRepository(
             if (snapshot.students.isNotEmpty()) students.insertAll(snapshot.students)
             if (snapshot.sessions.isNotEmpty()) sessions.insertAll(snapshot.sessions)
             if (snapshot.records.isNotEmpty()) records.insertAll(snapshot.records)
+
+            // Re-reconcile enrollment status: any restored student with existing biometric templates remains ENROLLED
+            val now = nowMillis()
+            students.restoreEnrolledWithTemplates(now)
+            templates.reactivateAll()
+
             CommandResult.Success(Unit)
         }
     } catch (e: Throwable) {
