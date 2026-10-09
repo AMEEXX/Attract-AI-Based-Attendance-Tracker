@@ -202,21 +202,26 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
                 AnimatedContent(
                     targetState = state.screen,
                     transitionSpec = {
-                        val isBack = targetState == AppScreen.Dashboard ||
+                        val isFromSession = initialState is AppScreen.SessionHistory
+                        val isBack = isFromSession ||
+                            targetState == AppScreen.Dashboard ||
                             (initialState is AppScreen.StudentDetail && targetState is AppScreen.ClassWorkspace) ||
                             (initialState is AppScreen.CreateClass && targetState == AppScreen.Dashboard) ||
                             (initialState is AppScreen.Settings && targetState == AppScreen.Dashboard) ||
                             (initialState is AppScreen.ManualAttendance && targetState is AppScreen.ClassWorkspace) ||
                             (initialState is AppScreen.FaceAttendance && targetState is AppScreen.ClassWorkspace) ||
-                            (initialState is AppScreen.StandaloneEnrollment && targetState is AppScreen.StudentDetail) ||
-                            (initialState is AppScreen.SessionHistory && targetState is AppScreen.ClassWorkspace)
+                            (initialState is AppScreen.StandaloneEnrollment && targetState is AppScreen.StudentDetail)
 
-                        val duration = 240
+                        val duration = 280
                         val easing = androidx.compose.animation.core.FastOutSlowInEasing
                         val slideSpec = androidx.compose.animation.core.tween<androidx.compose.ui.unit.IntOffset>(duration, easing = easing)
                         val fadeSpec = androidx.compose.animation.core.tween<Float>(duration, easing = easing)
 
-                        if (isBack) {
+                        if (isFromSession) {
+                            (slideInHorizontally(animationSpec = slideSpec) { width -> -width / 3 } + fadeIn(fadeSpec))
+                                .togetherWith(slideOutHorizontally(animationSpec = slideSpec) { width -> width })
+                                .apply { targetContentZIndex = -1f }
+                        } else if (isBack) {
                             (slideInHorizontally(animationSpec = slideSpec) { width -> -width } + fadeIn(fadeSpec))
                                 .togetherWith(slideOutHorizontally(animationSpec = slideSpec) { width -> width } + fadeOut(fadeSpec))
                         } else {
