@@ -37,6 +37,10 @@ class OcrRosterParser(
     var lastEngine: Engine = Engine.NONE
         private set
 
+    @Volatile
+    var lastCloudError: String? = null
+        private set
+
     private val recognizer by lazy { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
 
     private class Run {
@@ -85,7 +89,9 @@ class OcrRosterParser(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Log.w(TAG, "Cloud read failed, using on-device OCR: ${e.message}")
+                val errorDetails = "${e.javaClass.simpleName}: ${e.message}"
+                Log.e(TAG, "Cloud read failed, using on-device OCR fallback: $errorDetails", e)
+                lastCloudError = errorDetails
                 run.cloudUsable = false   // don't wait for a timeout on every remaining page
             }
         }
