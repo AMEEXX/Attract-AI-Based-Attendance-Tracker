@@ -119,7 +119,7 @@ abstract class AttractDatabase : RoomDatabase() {
                         )
                     }
                 } catch (e: Throwable) {
-                    android.util.Log.w("AttractDatabase", "MIGRATION_5_6 failed to inspect/add column", e)
+                    com.attract.attendance.util.AppLog.w("AttractDatabase", "MIGRATION_5_6 failed to inspect/add column", e)
                     try {
                         db.execSQL(
                             "ALTER TABLE class_sections ADD COLUMN total_planned_sessions INTEGER NOT NULL DEFAULT 30"
@@ -154,7 +154,7 @@ abstract class AttractDatabase : RoomDatabase() {
                     val backupDir = File(context.filesDir, "backups").apply { mkdirs() }
                     val backupFile = File(backupDir, "attract-pre-v$currentVersion-${System.currentTimeMillis()}.db")
                     dbFile.copyTo(backupFile, overwrite = true)
-                    android.util.Log.i("AttractDatabase", "Created pre-migration snapshot: ${backupFile.name} (v$currentVersion -> v$targetVersion)")
+                    com.attract.attendance.util.AppLog.i("AttractDatabase", "Created pre-migration snapshot: v$currentVersion -> v$targetVersion")
 
                     // Prune snapshots older than the last 3
                     val allSnapshots = backupDir.listFiles { _, name ->
@@ -165,7 +165,7 @@ abstract class AttractDatabase : RoomDatabase() {
                     }
                 }
             } catch (t: Throwable) {
-                android.util.Log.w("AttractDatabase", "Could not take pre-migration snapshot", t)
+                com.attract.attendance.util.AppLog.w("AttractDatabase", "Could not take pre-migration snapshot", t)
             }
         }
 
@@ -183,10 +183,10 @@ abstract class AttractDatabase : RoomDatabase() {
                 latest.copyTo(dbFile, overwrite = true)
                 File(dbFile.path + "-wal").delete()
                 File(dbFile.path + "-shm").delete()
-                android.util.Log.i("AttractDatabase", "Restored latest snapshot from ${latest.name}")
+                com.attract.attendance.util.AppLog.i("AttractDatabase", "Restored latest snapshot successfully")
                 true
             } catch (t: Throwable) {
-                android.util.Log.e("AttractDatabase", "Failed to restore database snapshot", t)
+                com.attract.attendance.util.AppLog.e("AttractDatabase", "Failed to restore database snapshot", t)
                 false
             }
         }
@@ -214,13 +214,13 @@ abstract class AttractDatabase : RoomDatabase() {
                 if (cursor.moveToFirst()) {
                     val result = cursor.getString(0)
                     ok = result.equals("ok", ignoreCase = true)
-                    android.util.Log.i("AttractDatabase", "PRAGMA integrity_check result: $result")
+                    com.attract.attendance.util.AppLog.i("AttractDatabase", "PRAGMA integrity_check completed: $ok")
                 }
                 cursor.close()
                 db.close()
                 ok
             } catch (t: Throwable) {
-                android.util.Log.e("AttractDatabase", "Integrity check failed with error", t)
+                com.attract.attendance.util.AppLog.e("AttractDatabase", "Integrity check failed with error", t)
                 false
             }
         }

@@ -9,6 +9,7 @@ captures/
 .cxx/
 *.keystore
 *.jks
+keystore.properties
 *.bak
 *.docx
 

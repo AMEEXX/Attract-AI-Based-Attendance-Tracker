@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -5,6 +7,15 @@ plugins {
     id("com.google.devtools.ksp")
     id("com.google.gms.google-services")
 }
+
+val ciVersionCode: Int = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 2
+val ciVersionName: String = System.getenv("GIT_TAG")
+    ?: runCatching {
+        val process = ProcessBuilder("git", "describe", "--tags", "--always").redirectErrorStream(true).start()
+        val tag = process.inputStream.bufferedReader().readLine()?.trim()
+        process.waitFor()
+        if (!tag.isNullOrEmpty() && !tag.contains("fatal")) tag else null
+    }.getOrNull() ?: "0.2.0"
 
 android {
     namespace = "com.attract.attendance"
@@ -14,20 +25,68 @@ android {
         applicationId = "com.attract.attendance"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = ciVersionCode
+        versionName = ciVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }
 
+    signingConfigs {
+        create("release") {
+            val keystorePropertiesFile = rootProject.file("keystore.properties")
+            val keystoreProperties = Properties()
+            if (keystorePropertiesFile.exists()) {
+                keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
+            }
+
+            val storeFilePath = System.getenv("KEYSTORE_FILE")
+                ?: keystoreProperties.getProperty("storeFile")
+            val storePass = System.getenv("KEYSTORE_PASSWORD")
+                ?: keystoreProperties.getProperty("storePassword")
+            val kAlias = System.getenv("KEY_ALIAS")
+                ?: keystoreProperties.getProperty("keyAlias")
+            val kPass = System.getenv("KEY_PASSWORD")
+                ?: keystoreProperties.getProperty("keyPassword")
+
+            if (!storeFilePath.isNullOrEmpty() && file(storeFilePath).exists()) {
+                storeFile = file(storeFilePath)
+                storePassword = storePass
+                keyAlias = kAlias
+                keyPassword = kPass
+            }
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            val releaseSigning = signingConfigs.getByName("release")
+            signingConfig = if (releaseSigning.storeFile != null) {
+                releaseSigning
+            } else {
+                signingConfigs.getByName("debug")
+            }
+        }
+        debug {
+            // debug settings
+        }
+    }
+
+    bundle {
+        density {
+            enableSplit = true
+        }
+        abi {
+            enableSplit = true
+        }
+        language {
+            enableSplit = false
         }
     }
 
@@ -108,7 +167,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:35.0.0"))
     implementation("com.google.firebase:firebase-ai")
     implementation("com.google.firebase:firebase-appcheck-playintegrity")
-    implementation("com.google.firebase:firebase-appcheck-debug")
+    debugImplementation("com.google.firebase:firebase-appcheck-debug")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")

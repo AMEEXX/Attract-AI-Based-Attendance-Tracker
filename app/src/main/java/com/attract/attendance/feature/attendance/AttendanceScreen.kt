@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.util.Log
 import com.attract.attendance.BuildConfig
+import com.attract.attendance.util.AppLog
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -539,7 +540,7 @@ fun AttendanceScreen(
         state = SessionScreenState.CAPTURING
         statusMessage = "Enrolling ${selected.name}"
         statusSubtitle = AttendanceStrings.ENROLL_STEP1_SUBTITLE
-        Log.i("ATTRACT_ATTENDANCE_FALLBACK", "Inline enrollment started for studentId=${selected.id} name=${selected.name}")
+        AppLog.i("ATTRACT_ATTENDANCE_FALLBACK", "Inline registration started for studentId=${selected.id}")
     }
 
     /** Marks an already-enrolled student as present via authenticated TEACHER_ASSISTED fallback (fixes R02). */
@@ -559,7 +560,7 @@ fun AttendanceScreen(
                     resetToReady(resetAttempts = true)
                 }
                 is com.attract.attendance.data.repository.AttractRepository.FallbackMarkResult.AlreadyPresent -> {
-                    Log.i("ATTRACT_ATTENDANCE_FALLBACK", "[ALREADY_PRESENT] student=${result.studentName}")
+                    AppLog.i("ATTRACT_ATTENDANCE_FALLBACK", "[ALREADY_PRESENT] studentId=${selected.id}")
                     state = SessionScreenState.ALREADY_PRESENT
                     statusMessage = "Already Checked In: ${result.studentName}"
                     delay(2000)
@@ -594,7 +595,7 @@ fun AttendanceScreen(
 
     fun completeStandaloneEnrollment() {
         val target = targetStudentForStandalone ?: selectedStudentForEnroll ?: return
-        Log.i("ATTRACT_ATTENDANCE_STANDALONE", "[STANDALONE_ENROLLMENT] completing for studentId=${target.id} name=${target.name}")
+        AppLog.i("ATTRACT_ATTENDANCE_STANDALONE", "[STANDALONE_REGISTRATION] completing for studentId=${target.id}")
 
         state = SessionScreenState.PROCESSING
         statusMessage = "Saving ${target.name}'s face profile..."
@@ -683,7 +684,7 @@ fun AttendanceScreen(
     /** Completes inline enrollment: validates batch, checks duplicates, self-enrolls, marks PRESENT (D-007, WP-D). */
     fun completeInlineEnrollment() {
         val target = inlineEnrollmentTarget ?: return
-        Log.i("ATTRACT_ATTENDANCE_FALLBACK", "[INLINE_ENROLLMENT] completing for studentId=${target.id} name=${target.name} frames=${capturedPoseBitmaps.size}")
+        AppLog.i("ATTRACT_ATTENDANCE_FALLBACK", "[INLINE_REGISTRATION] completing for studentId=${target.id} frames=${capturedPoseBitmaps.size}")
 
         if (capturedPoseBitmaps.size < 3 && enrollmentSlotEmbeddings.size < 3) {
             statusMessage = "Need all 3 poses. Retake missing ones."
@@ -755,7 +756,7 @@ fun AttendanceScreen(
 
             when (enrollResult) {
                 is com.attract.attendance.domain.face.EnrollmentResult.Committed -> {
-                    Log.i("ATTRACT_ATTENDANCE_FALLBACK", "[INLINE_ENROLLMENT] enrollment succeeded for ${target.id}")
+                    AppLog.i("ATTRACT_ATTENDANCE_FALLBACK", "[INLINE_REGISTRATION] succeeded for studentId=${target.id}")
                     if (enrollResult.attendanceRecordId != null) {
                         presentIds = presentIds + target.id
                     }
@@ -1152,7 +1153,7 @@ fun AttendanceScreen(
                 isValidatingFrame = false
             } else {
                 // All 3 frames captured → enroll + mark present
-                Log.i("ATTRACT_ATTENDANCE_FALLBACK", "[INLINE_ENROLLMENT] all 3 frames captured for ${target.name}")
+                AppLog.i("ATTRACT_ATTENDANCE_FALLBACK", "[INLINE_REGISTRATION] all 3 frames captured for studentId=${target.id}")
                 completeInlineEnrollment()
             }
             return
@@ -1227,7 +1228,7 @@ fun AttendanceScreen(
                     }
                 }
             }.onFailure { error ->
-                Log.e(TAG, "Adaptive verification error: ${error::class.simpleName}  —  ${error.message}", error)
+                AppLog.e(TAG, "Adaptive verification error: ${error.message}", error)
                 isValidatingFrame = false // never leave the capture button dead-locked
                 state = SessionScreenState.ERROR
                 statusMessage = unavailableMessage(error)
@@ -1334,7 +1335,7 @@ fun AttendanceScreen(
             }.onFailure { error ->
                 // Per LLD-11: TFLite interpreter fault  ->  Unavailable state, never PRESENT.
                 // Log the real cause for debugging; show safe message to student.
-                Log.e(TAG, "Face verification error: ${error::class.simpleName}  —  ${error.message}", error)
+                AppLog.e(TAG, "Face verification error: ${error.message}", error)
                 state = SessionScreenState.ERROR
                 statusMessage = unavailableMessage(error)
                 delay(2000)

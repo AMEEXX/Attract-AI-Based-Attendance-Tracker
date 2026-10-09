@@ -1,6 +1,7 @@
 package com.attract.attendance.data.repository
 
 import android.database.sqlite.SQLiteConstraintException
+import com.attract.attendance.util.AppLog
 import androidx.room.withTransaction
 import com.attract.attendance.core.model.AppError
 import com.attract.attendance.core.model.ActiveSessionSummary
@@ -886,7 +887,7 @@ class AttractRepository(
         }
         CommandResult.Success(Unit)
     } catch (e: Exception) {
-        android.util.Log.e("ATTRACT_FACE", "resetBiometricData failed", e)
+        AppLog.e("ATTRACT_FACE", "resetBiometricData failed", e)
         CommandResult.Failure(AppError.Storage(e))
     }
 
@@ -1023,7 +1024,7 @@ class AttractRepository(
                     )
                 }
             } catch (e: Exception) {
-                android.util.Log.e("ATTRACT_FACE", "selfEnrollAndCheckIn failed", e)
+                AppLog.e("ATTRACT_FACE", "selfRegistration failed", e)
                 com.attract.attendance.domain.face.EnrollmentResult.Failed(e.message ?: "Database transaction error")
             }
         }
@@ -1149,7 +1150,7 @@ class AttractRepository(
                 )
             }
         } catch (e: Exception) {
-            android.util.Log.e("ATTRACT_FACE", "reEnrollStudentFace failed", e)
+            AppLog.e("ATTRACT_FACE", "reRegistration failed", e)
             com.attract.attendance.domain.face.EnrollmentResult.Failed(e.message ?: "Database transaction error")
         }
     }
@@ -1167,7 +1168,7 @@ class AttractRepository(
         }
         when (val check = com.attract.attendance.domain.face.TemplateCompatibility.validateEnrollment(floatsList)) {
             is com.attract.attendance.domain.face.TemplateCompatibility.EnrollmentValidation.Rejected -> {
-                android.util.Log.e("ATTRACT_FACE", "Enrollment rejected: ${check.reason}")
+                AppLog.e("ATTRACT_FACE", "Template check rejected: ${check.reason}")
                 return CommandResult.Failure(AppError.Validation("embedding", check.reason))
             }
             is com.attract.attendance.domain.face.TemplateCompatibility.EnrollmentValidation.Ok -> Unit
