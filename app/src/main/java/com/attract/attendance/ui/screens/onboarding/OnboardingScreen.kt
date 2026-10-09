@@ -447,16 +447,31 @@ fun OnboardingScreen(
                                 .clip(CircleShape)
                                 .background(
                                     if (isDriveConnected) SuccessGreen.copy(alpha = 0.15f)
-                                    else MaterialTheme.colorScheme.primaryContainer
+                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                imageVector = if (isDriveConnected) Icons.Default.CheckCircle else Icons.Default.Cloud,
-                                contentDescription = null,
-                                tint = if (isDriveConnected) SuccessGreen else MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(40.dp)
-                            )
+                            if (isDriveConnected) {
+                                Box(contentAlignment = Alignment.BottomEnd) {
+                                    Image(
+                                        painter = painterResource(id = com.attract.attendance.R.drawable.ic_google_drive),
+                                        contentDescription = "Google Drive",
+                                        modifier = Modifier.size(42.dp)
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Default.CheckCircle,
+                                        contentDescription = null,
+                                        tint = SuccessGreen,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            } else {
+                                Image(
+                                    painter = painterResource(id = com.attract.attendance.R.drawable.ic_google_drive),
+                                    contentDescription = "Google Drive",
+                                    modifier = Modifier.size(42.dp)
+                                )
+                            }
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
@@ -474,7 +489,11 @@ fun OnboardingScreen(
                             onClick = { onConnectDrive?.invoke() },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Icon(Icons.Default.Cloud, contentDescription = null)
+                            Image(
+                                painter = painterResource(id = com.attract.attendance.R.drawable.ic_google_drive),
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
                             Spacer(modifier = Modifier.size(8.dp))
                             Text("Connect Google Drive")
                         }
