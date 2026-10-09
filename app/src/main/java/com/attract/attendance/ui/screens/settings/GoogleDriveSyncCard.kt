@@ -1,6 +1,7 @@
 package com.attract.attendance.ui.screens.settings
 
 import android.text.format.DateUtils
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.attract.attendance.data.drive.DriveSyncStatus
@@ -73,15 +75,14 @@ fun GoogleDriveSyncCard(
             ) {
                 Surface(
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer,
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
                     modifier = Modifier.size(44.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = if (accountEmail != null) Icons.Default.CloudDone else Icons.Default.Cloud,
-                            contentDescription = "Cloud Backup",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
+                        Image(
+                            painter = painterResource(id = com.attract.attendance.R.drawable.ic_google_drive),
+                            contentDescription = "Google Drive",
+                            modifier = Modifier.size(28.dp)
                         )
                     }
                 }
@@ -112,8 +113,8 @@ fun GoogleDriveSyncCard(
                     onClick = onConnectClick,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.AccountCircle,
+                    Image(
+                        painter = painterResource(id = com.attract.attendance.R.drawable.ic_google_drive),
                         contentDescription = null,
                         modifier = Modifier.size(20.dp)
                     )
@@ -323,6 +324,13 @@ fun GoogleDriveSyncCard(
     if (showRestoreConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showRestoreConfirmDialog = false },
+            icon = {
+                Image(
+                    painter = painterResource(id = com.attract.attendance.R.drawable.ic_google_drive),
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp)
+                )
+            },
             title = { Text("Restore from Google Drive?", fontWeight = FontWeight.Bold) },
             text = { Text("This will download the latest backup from Google Drive and restore all classes, students, and attendance records. Current records will be merged or replaced.") },
             confirmButton = {
