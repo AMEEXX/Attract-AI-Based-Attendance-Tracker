@@ -1,12 +1,14 @@
 package com.attract.attendance.data.local
 
 import android.content.Context
+import android.database.sqlite.SQLiteDatabase
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import java.io.File
 
 @Database(
     entities = [
@@ -127,22 +129,132 @@ abstract class AttractDatabase : RoomDatabase() {
             }
         }
 
-        fun create(context: Context): AttractDatabase = Room.databaseBuilder(
-            context.applicationContext,
-            AttractDatabase::class.java,
-            "attract.db",
-        )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
-            .fallbackToDestructiveMigration(true)
-            .fallbackToDestructiveMigrationOnDowngrade(true)
-            .addCallback(object : Callback() {
-                override fun onOpen(db: SupportSQLiteDatabase) {
-                    super.onOpen(db)
-                    db.execSQL(
-                        "CREATE UNIQUE INDEX IF NOT EXISTS index_one_active_face_session " +
-                            "ON attendance_sessions(status) WHERE status = 'ACTIVE' AND mode = 'FACE'",
-                    )
+        const val DB_NAME = "attract.db"
+        const val CURRENT_VERSION = 6
+
+        /**
+         * Before any migration runs, take an automatic snapshot of the existing database file.
+         * Keeps the last 3 snapshots in files/backups/ (PR-01 data safety).
+         */
+        fun takePreMigrationSnapshotIfNeeded(context: Context, targetVersion: Int = CURRENT_VERSION) {
+            try {
+                val dbFile = context.getDatabasePath(DB_NAME)
+                if (!dbFile.exists() || dbFile.length() == 0L) return
+
+                val currentVersion = try {
+                    val db = SQLiteDatabase.openDatabase(dbFile.path, null, SQLiteDatabase.OPEN_READONLY)
+                    val v = db.version
+                    db.close()
+                    v
+                } catch (_: Throwable) {
+                    0
                 }
-            }).build()
+
+                if (currentVersion in 1 until targetVersion) {
+                    val backupDir = File(context.filesDir, "backups").apply { mkdirs() }
+                    val backupFile = File(backupDir, "attract-pre-v$currentVersion-${System.currentTimeMillis()}.db")
+                    dbFile.copyTo(backupFile, overwrite = true)
+                    android.util.Log.i("AttractDatabase", "Created pre-migration snapshot: ${backupFile.name} (v$currentVersion -> v$targetVersion)")
+
+                    // Prune snapshots older than the last 3
+                    val allSnapshots = backupDir.listFiles { _, name ->
+                        name.startsWith("attract-pre-v") && name.endsWith(".db")
+                    }?.sortedBy { it.lastModified() }
+                    if (allSnapshots != null && allSnapshots.size > 3) {
+                        allSnapshots.take(allSnapshots.size - 3).forEach { it.delete() }
+                    }
+                }
+            } catch (t: Throwable) {
+                android.util.Log.w("AttractDatabase", "Could not take pre-migration snapshot", t)
+            }
+        }
+
+        /**
+         * Restore the latest pre-migration snapshot into attract.db (PR-01 recovery).
+         */
+        fun restoreLatestSnapshot(context: Context): Boolean {
+            return try {
+                val backupDir = File(context.filesDir, "backups")
+                val latest = backupDir.listFiles { _, name ->
+                    name.startsWith("attract-pre-v") && name.endsWith(".db")
+                }?.maxByOrNull { it.lastModified() } ?: return false
+
+                val dbFile = context.getDatabasePath(DB_NAME)
+                latest.copyTo(dbFile, overwrite = true)
+                File(dbFile.path + "-wal").delete()
+                File(dbFile.path + "-shm").delete()
+                android.util.Log.i("AttractDatabase", "Restored latest snapshot from ${latest.name}")
+                true
+            } catch (t: Throwable) {
+                android.util.Log.e("AttractDatabase", "Failed to restore database snapshot", t)
+                false
+            }
+        }
+
+        /**
+         * List all available pre-migration database snapshots.
+         */
+        fun getAvailableSnapshots(context: Context): List<File> {
+            val backupDir = File(context.filesDir, "backups")
+            return backupDir.listFiles { _, name ->
+                name.startsWith("attract-pre-v") && name.endsWith(".db")
+            }?.sortedByDescending { it.lastModified() } ?: emptyList()
+        }
+
+        /**
+         * Run PRAGMA integrity_check on the local database (PR-01).
+         */
+        fun checkDatabaseIntegrity(context: Context): Boolean {
+            return try {
+                val dbFile = context.getDatabasePath(DB_NAME)
+                if (!dbFile.exists()) return true
+                val db = SQLiteDatabase.openDatabase(dbFile.path, null, SQLiteDatabase.OPEN_READONLY)
+                val cursor = db.rawQuery("PRAGMA integrity_check", null)
+                var ok = false
+                if (cursor.moveToFirst()) {
+                    val result = cursor.getString(0)
+                    ok = result.equals("ok", ignoreCase = true)
+                    android.util.Log.i("AttractDatabase", "PRAGMA integrity_check result: $result")
+                }
+                cursor.close()
+                db.close()
+                ok
+            } catch (t: Throwable) {
+                android.util.Log.e("AttractDatabase", "Integrity check failed with error", t)
+                false
+            }
+        }
+
+        val ALL_MIGRATIONS = arrayOf(
+            MIGRATION_1_2,
+            MIGRATION_2_3,
+            MIGRATION_3_4,
+            MIGRATION_4_5,
+            MIGRATION_5_6,
+        )
+
+        fun create(context: Context): AttractDatabase {
+            val appContext = context.applicationContext
+            // Pre-migration safety snapshot: copy attract.db to files/backups/ before Room applies migrations
+            takePreMigrationSnapshotIfNeeded(appContext, CURRENT_VERSION)
+
+            return Room.databaseBuilder(
+                appContext,
+                AttractDatabase::class.java,
+                DB_NAME,
+            )
+                .addMigrations(*ALL_MIGRATIONS)
+                // PR-01: Remove destructive migration fallback. Missing migrations must fail tests/builds, never wipe user data.
+                .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
+                .addCallback(object : Callback() {
+                    override fun onOpen(db: SupportSQLiteDatabase) {
+                        super.onOpen(db)
+                        db.execSQL(
+                            "CREATE UNIQUE INDEX IF NOT EXISTS index_one_active_face_session " +
+                                "ON attendance_sessions(status) WHERE status = 'ACTIVE' AND mode = 'FACE'",
+                        )
+                    }
+                }).build()
+        }
     }
 }

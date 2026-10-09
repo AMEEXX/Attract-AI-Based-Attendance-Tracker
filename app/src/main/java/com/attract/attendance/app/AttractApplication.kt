@@ -7,6 +7,9 @@ import com.attract.attendance.data.importexport.CsvRosterImporter
 import com.attract.attendance.data.local.AttractDatabase
 import com.attract.attendance.data.repository.AttractRepository
 import com.attract.attendance.data.security.PinHasher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class AttractApplication : Application() {
     var container: AppContainer? = null
@@ -20,13 +23,29 @@ class AttractApplication : Application() {
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             android.util.Log.e("AttractCrash", "Fatal crash on thread ${thread.name}", throwable)
             try {
-                val prefs = getSharedPreferences("attract_crash_log", MODE_PRIVATE)
-                prefs.edit()
-                    .putString("last_crash", android.util.Log.getStackTraceString(throwable))
-                    .putLong("crash_time", System.currentTimeMillis())
-                    .commit()
+                val now = System.currentTimeMillis()
+                val prefs = getSharedPreferences(PREFS_CRASH_LOG, MODE_PRIVATE)
+                val rawHistory = prefs.getString(KEY_CRASH_HISTORY, "") ?: ""
+                val recentTimes = (rawHistory.split(",").mapNotNull { it.toLongOrNull() } + now)
+                    .filter { now - it <= CRASH_WINDOW_MS }
+
+                val editor = prefs.edit()
+                    .putString(KEY_LAST_CRASH, android.util.Log.getStackTraceString(throwable))
+                    .putLong(KEY_LAST_CRASH_TIME, now)
+                    .putString(KEY_CRASH_HISTORY, recentTimes.joinToString(","))
+
+                // PR-01: 3 crashes within 60s triggers Safe Mode (never delete database)
+                if (recentTimes.size >= CRASH_THRESHOLD) {
+                    editor.putBoolean(KEY_SAFE_MODE, true)
+                }
+                editor.commit()
             } catch (_: Throwable) {}
             defaultHandler?.uncaughtException(thread, throwable)
+        }
+
+        // PR-01: Run PRAGMA integrity_check on startup in background thread
+        CoroutineScope(Dispatchers.IO).launch {
+            AttractDatabase.checkDatabaseIntegrity(this@AttractApplication)
         }
 
         try {
@@ -58,6 +77,26 @@ class AttractApplication : Application() {
             }
         } catch (t: Throwable) {
             android.util.Log.w("AttractApplication", "Could not check Drive account on startup", t)
+        }
+    }
+
+    companion object {
+        const val PREFS_CRASH_LOG = "attract_crash_log"
+        const val KEY_LAST_CRASH = "last_crash"
+        const val KEY_LAST_CRASH_TIME = "crash_time"
+        const val KEY_CRASH_HISTORY = "crash_history"
+        const val KEY_SAFE_MODE = "safe_mode"
+        const val CRASH_WINDOW_MS = 60_000L
+        const val CRASH_THRESHOLD = 3
+
+        fun isSafeModeActive(context: android.content.Context): Boolean {
+            val prefs = context.getSharedPreferences(PREFS_CRASH_LOG, MODE_PRIVATE)
+            return prefs.getBoolean(KEY_SAFE_MODE, false)
+        }
+
+        fun exitSafeMode(context: android.content.Context) {
+            val prefs = context.getSharedPreferences(PREFS_CRASH_LOG, MODE_PRIVATE)
+            prefs.edit().putBoolean(KEY_SAFE_MODE, false).remove(KEY_CRASH_HISTORY).apply()
         }
     }
 }

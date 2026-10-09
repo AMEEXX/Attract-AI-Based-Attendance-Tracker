@@ -56,6 +56,7 @@ android {
         }
         getByName("androidTest") {
             java.srcDirs("src/androidTest/java", "src/sharedTest/java")
+            assets.srcDirs("$projectDir/schemas")
         }
     }
 }

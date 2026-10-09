@@ -54,6 +54,7 @@ fun SettingsScreen(
     onExportBackup: () -> Unit,
     onImportBackup: () -> Unit,
     onResetBiometricData: ((pin: String, confirmText: String, onResult: (Boolean, String) -> Unit) -> Unit)? = null,
+    onFactoryResetDatabase: ((pin: String, confirmText: String, onResult: (Boolean, String) -> Unit) -> Unit)? = null,
     driveAccountEmail: String? = null,
     driveSyncStatus: com.attract.attendance.data.drive.DriveSyncStatus = com.attract.attendance.data.drive.DriveSyncStatus.Idle,
     driveLastSyncMillis: Long = 0L,
@@ -68,6 +69,11 @@ fun SettingsScreen(
     var resetPin by remember { mutableStateOf("") }
     var resetConfirmText by remember { mutableStateOf("") }
     var resetErrorMessage by remember { mutableStateOf<String?>(null) }
+
+    var showFactoryResetDialog by remember { mutableStateOf(false) }
+    var factoryResetPin by remember { mutableStateOf("") }
+    var factoryResetConfirmText by remember { mutableStateOf("") }
+    var factoryResetErrorMessage by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = {
@@ -160,6 +166,23 @@ fun SettingsScreen(
                             ) {
                                 Text(
                                     "Reset All Face Data (Biometrics)",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
+                        if (onFactoryResetDatabase != null) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .feedbackClickable { showFactoryResetDialog = true }
+                                    .padding(vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "Factory Reset Database",
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.error
@@ -283,6 +306,83 @@ fun SettingsScreen(
                         resetPin = ""
                         resetConfirmText = ""
                         resetErrorMessage = null
+                    }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        if (showFactoryResetDialog) {
+            AlertDialog(
+                onDismissRequest = {
+                    showFactoryResetDialog = false
+                    factoryResetPin = ""
+                    factoryResetConfirmText = ""
+                    factoryResetErrorMessage = null
+                },
+                title = { Text("Factory Reset Database?") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            "This will permanently delete ALL classes, students, and attendance records on this device. This cannot be undone.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        OutlinedTextField(
+                            value = factoryResetPin,
+                            onValueChange = { factoryResetPin = it },
+                            label = { Text("Teacher PIN") },
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = factoryResetConfirmText,
+                            onValueChange = { factoryResetConfirmText = it },
+                            label = { Text("Type DELETE to confirm") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        if (factoryResetErrorMessage != null) {
+                            Text(
+                                factoryResetErrorMessage.orEmpty(),
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    val factoryResetClick = rememberFeedbackClick {
+                        if (factoryResetConfirmText.trim() != "DELETE") {
+                            factoryResetErrorMessage = "Type DELETE in all caps to confirm"
+                            return@rememberFeedbackClick
+                        }
+                        onFactoryResetDatabase?.invoke(factoryResetPin, factoryResetConfirmText) { success, msg ->
+                            if (success) {
+                                showFactoryResetDialog = false
+                                factoryResetPin = ""
+                                factoryResetConfirmText = ""
+                                factoryResetErrorMessage = null
+                            } else {
+                                factoryResetErrorMessage = msg
+                            }
+                        }
+                    }
+                    Button(
+                        onClick = factoryResetClick,
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Delete Database")
+                    }
+                },
+                dismissButton = {
+                    AttractTextButton(onClick = {
+                        showFactoryResetDialog = false
+                        factoryResetPin = ""
+                        factoryResetConfirmText = ""
+                        factoryResetErrorMessage = null
                     }) {
                         Text("Cancel")
                     }

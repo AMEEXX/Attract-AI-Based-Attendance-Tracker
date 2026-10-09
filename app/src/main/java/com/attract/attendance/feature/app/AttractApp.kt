@@ -265,6 +265,14 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
                         onExportBackup = { exportBackupPicker.launch("attract-backup.json") },
                         onImportBackup = { importBackupPicker.launch(arrayOf("application/json", "*/*")) },
                         onResetBiometricData = viewModel::resetBiometricData,
+                        onFactoryResetDatabase = { pin, confirmText, callback ->
+                            viewModel.factoryResetDatabase(pin, confirmText, context) { success, msg ->
+                                callback(success, msg)
+                                if (success) {
+                                    (context as? android.app.Activity)?.recreate()
+                                }
+                            }
+                        },
                         driveAccountEmail = state.driveAccountEmail,
                         driveSyncStatus = state.driveSyncStatus,
                         driveLastSyncMillis = state.driveLastSyncMillis,

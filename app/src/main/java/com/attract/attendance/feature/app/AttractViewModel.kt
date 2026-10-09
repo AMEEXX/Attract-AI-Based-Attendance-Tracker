@@ -82,6 +82,7 @@ data class AttractUiState(
     val driveSyncStatus: com.attract.attendance.data.drive.DriveSyncStatus = com.attract.attendance.data.drive.DriveSyncStatus.Idle,
     val driveLastSyncMillis: Long = 0L,
     val isWorking: Boolean = false,
+    val isSafeMode: Boolean = false,
     val message: String? = null,
 )
 
@@ -91,8 +92,9 @@ class AttractViewModel(
     private val attendanceExporter: AttendanceExporter,
     private val backupExporter: BackupExporter,
     private val themeRepository: com.attract.attendance.data.theme.ThemeRepository? = null,
+    val isSafeMode: Boolean = false,
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(AttractUiState())
+    private val _uiState = MutableStateFlow(AttractUiState(isSafeMode = isSafeMode))
     val uiState: StateFlow<AttractUiState> = _uiState.asStateFlow()
 
     private var workspaceJob: Job? = null
@@ -241,6 +243,10 @@ class AttractViewModel(
     fun cancelRosterImport() = _uiState.update { it.copy(pendingRosterImport = null) }
 
     fun openStandaloneEnrollment(classId: Long, studentId: Long) {
+        if (isSafeMode) {
+            showMessage("Camera is disabled in Safe Mode.")
+            return
+        }
         _uiState.update { it.copy(screen = AppScreen.StandaloneEnrollment(classId, studentId)) }
     }
 
@@ -263,6 +269,10 @@ class AttractViewModel(
     )
 
     fun openFaceAttendance(sessionDate: String) {
+        if (isSafeMode) {
+            showMessage("Camera is disabled in Safe Mode. Exit Safe Mode to use face attendance.")
+            return
+        }
         val workspace = _uiState.value.workspace ?: return
         val totalStudents = workspace.students.size
 
@@ -653,6 +663,34 @@ class AttractViewModel(
                     showMessage(msg)
                     onComplete(false, msg)
                 }
+            }
+        }
+    }
+
+    /**
+     * PR-01: Destructive database reset moved to Settings behind PIN + typed DELETE.
+     * Never accessible on unauthenticated crash screens.
+     */
+    fun factoryResetDatabase(pin: String, confirmationText: String, context: Context, onComplete: (Boolean, String) -> Unit) {
+        if (confirmationText.trim() != "DELETE") {
+            onComplete(false, "Type DELETE in all caps to confirm")
+            return
+        }
+        viewModelScope.launch {
+            val authenticated = repository.authenticate(pin.toCharArray())
+            if (!authenticated) {
+                onComplete(false, "Invalid teacher PIN")
+                return@launch
+            }
+            try {
+                context.deleteDatabase("attract.db")
+                java.io.File(context.filesDir, "backups").deleteRecursively()
+                showMessage("Database successfully reset.")
+                onComplete(true, "Database successfully reset.")
+            } catch (t: Throwable) {
+                val msg = t.message ?: "Failed to reset database"
+                showMessage(msg)
+                onComplete(false, msg)
             }
         }
     }
