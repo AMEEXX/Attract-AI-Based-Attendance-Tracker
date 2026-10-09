@@ -30,6 +30,21 @@ class AttractApplication : Application() {
         }
 
         try {
+            val firebaseAppCheck = com.google.firebase.appcheck.FirebaseAppCheck.getInstance()
+            if (com.attract.attendance.BuildConfig.DEBUG) {
+                firebaseAppCheck.installAppCheckProviderFactory(
+                    com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory.getInstance()
+                )
+            } else {
+                firebaseAppCheck.installAppCheckProviderFactory(
+                    com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory.getInstance()
+                )
+            }
+        } catch (t: Throwable) {
+            android.util.Log.w("AttractApplication", "Firebase App Check init failed: ${t.message}")
+        }
+
+        try {
             container = AppContainer(this)
         } catch (t: Throwable) {
             android.util.Log.e("AttractApplication", "Failed to create AppContainer", t)

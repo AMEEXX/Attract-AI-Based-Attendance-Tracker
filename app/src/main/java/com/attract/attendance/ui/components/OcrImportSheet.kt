@@ -266,8 +266,19 @@ fun OcrImportSheet(
                                 val students = parser.parseFromUris(context, capturedUris.toList())
                                 isProcessing = false
                                 if (students.isEmpty()) {
-                                    errorMessage = "Could not detect student names or roll numbers. Ensure photos are sharp, well lit, and in focus, then try again."
+                                    errorMessage = if (parser.lastCloudError != null) {
+                                        "Could not extract students. Cloud AI error: ${parser.lastCloudError}. Please check Google Cloud API restrictions."
+                                    } else {
+                                        "Could not detect student names or roll numbers. Ensure photos are sharp, well lit, and in focus, then try again."
+                                    }
                                 } else {
+                                    if (parser.lastEngine == OcrRosterParser.Engine.ON_DEVICE && parser.lastCloudError != null) {
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            "Cloud AI unavailable (${parser.lastCloudError}). Processed with on-device OCR.",
+                                            android.widget.Toast.LENGTH_LONG
+                                        ).show()
+                                    }
                                     onDismissRequest()
                                     onStudentsExtracted(students)
                                 }

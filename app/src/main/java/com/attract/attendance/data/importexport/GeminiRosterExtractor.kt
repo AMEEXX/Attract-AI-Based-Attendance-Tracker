@@ -42,9 +42,9 @@ class GeminiRosterExtractor(private val modelName: String = DEFAULT_MODEL) {
         )
     )
 
-    private val model by lazy {
+    private fun getModel(targetModel: String) =
         Firebase.ai(backend = GenerativeBackend.googleAI()).generativeModel(
-            modelName = modelName,
+            modelName = targetModel,
             generationConfig = generationConfig {
                 responseMimeType = "application/json"
                 responseSchema = schema
@@ -52,16 +52,33 @@ class GeminiRosterExtractor(private val modelName: String = DEFAULT_MODEL) {
             },
             systemInstruction = content { text(SYSTEM_PROMPT) }
         )
-    }
 
     suspend fun extract(page: Bitmap): List<RawRosterRow> {
-        val response = model.generateContent(
-            content {
-                image(page)
-                text("Extract every student row from this attendance sheet.")
+        val modelsToTry = (listOf(modelName) + FALLBACK_MODELS).distinct()
+        var lastError: Exception? = null
+
+        for (targetModel in modelsToTry) {
+            try {
+                val currentModel = getModel(targetModel)
+                val response = currentModel.generateContent(
+                    content {
+                        image(page)
+                        text("Extract every student row from this attendance sheet.")
+                    }
+                )
+                val rows = parse(response.text.orEmpty())
+                if (rows.isNotEmpty()) {
+                    return rows
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                lastError = e
+                android.util.Log.w("GeminiRosterExtractor", "Model '$targetModel' attempt failed: ${e.message}")
             }
-        )
-        return parse(response.text.orEmpty())
+        }
+        if (lastError != null) throw lastError
+        return emptyList()
     }
 
     internal fun parse(json: String): List<RawRosterRow> {
@@ -82,8 +99,8 @@ class GeminiRosterExtractor(private val modelName: String = DEFAULT_MODEL) {
     }
 
     companion object {
-        // Check the current model list for Firebase AI Logic before shipping; keep it in one place.
-        const val DEFAULT_MODEL = "gemini-3.5-flash"
+        const val DEFAULT_MODEL = "gemini-2.5-flash"
+        val FALLBACK_MODELS = listOf("gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash")
 
         private val SYSTEM_PROMPT = """
             You read photographed class attendance sheets and rosters. Return one entry per student row, top to
