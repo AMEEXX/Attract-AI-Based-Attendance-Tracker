@@ -66,7 +66,11 @@ fun SessionHistoryScreen(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if (history == null) return
+    var lastValidHistory by remember { mutableStateOf(history) }
+    if (history != null) {
+        lastValidHistory = history
+    }
+    val history = history ?: lastValidHistory ?: return
 
     var showDeleteConfirm by remember { mutableStateOf(false) }
     val sortedRows = remember(history.rows) {
