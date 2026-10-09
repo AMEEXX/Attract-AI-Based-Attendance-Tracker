@@ -99,8 +99,8 @@ class GeminiRosterExtractor(private val modelName: String = DEFAULT_MODEL) {
     }
 
     companion object {
-        const val DEFAULT_MODEL = "gemini-2.5-flash"
-        val FALLBACK_MODELS = listOf("gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash")
+        const val DEFAULT_MODEL = "gemini-3.8-flash"
+        val FALLBACK_MODELS = listOf("gemini-3.8-flash", "gemini-3.5-flash", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash")
 
         private val SYSTEM_PROMPT = """
             You read photographed class attendance sheets and rosters. Return one entry per student row, top to
