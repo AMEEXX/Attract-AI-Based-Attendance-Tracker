@@ -30,7 +30,7 @@ class BackupExporterTest {
 
         val json = exporter.toJson(snapshot)
 
-        assertTrue(json.contains("\"format\":\"attract-backup-v1\""))
+        assertTrue(json.contains("\"format\":\"attract-backup-v2\""))
         assertTrue(json.contains("\"generatedAt\":1700000000000"))
         assertTrue(json.contains("\"teachers\":[]"))
         assertTrue(json.contains("\"classes\":[]"))
@@ -135,12 +135,12 @@ class BackupExporterTest {
         assertTrue(json.contains("\"status\":\"ENDED\""))
         assertTrue(json.contains("\"attendanceMethod\":\"AI_RECOGNITION\""))
         assertTrue(json.contains("\"matchConfidence\":0.98"))
-        assertTrue(json.contains("\"embeddingBase64\":\"AQIDBA==\""))
-        assertTrue(json.contains("\"poseBucket\":\"FRONTAL\""))
+        // PR-03 / SDD §66: Biometric face templates are excluded from backup exports
+        assertTrue(json.contains("\"faceTemplates\":[]"))
     }
 
     @Test
-    fun roundTrip_faceTemplates_preservedAcrossExportAndImport() {
+    fun faceTemplates_excludedFromExportPerSdd66() {
         val templates = listOf(
             BackupFaceTemplate(
                 id = 10L,
@@ -152,30 +152,6 @@ class BackupExporterTest {
                 embeddingBase64 = "base64frontal==",
                 capturedAt = 5000L,
                 source = "enrollment_frame_1",
-                active = true,
-            ),
-            BackupFaceTemplate(
-                id = 11L,
-                studentId = 100L,
-                modelVersion = "facenet_mobile_v1",
-                embeddingDim = 512,
-                poseBucket = "YAW_LEFT",
-                qualityScore = 0.95f,
-                embeddingBase64 = "base64left==",
-                capturedAt = 5001L,
-                source = "enrollment_frame_2",
-                active = true,
-            ),
-            BackupFaceTemplate(
-                id = 12L,
-                studentId = 100L,
-                modelVersion = "facenet_mobile_v1",
-                embeddingDim = 512,
-                poseBucket = "YAW_RIGHT",
-                qualityScore = 0.94f,
-                embeddingBase64 = "base64right==",
-                capturedAt = 5002L,
-                source = "enrollment_frame_3",
                 active = true,
             ),
         )
@@ -193,13 +169,55 @@ class BackupExporterTest {
         val json = exporter.toJson(originalSnapshot)
         val restored = exporter.fromJson(json)
 
-        org.junit.Assert.assertEquals(3, restored.faceTemplates.size)
-        org.junit.Assert.assertEquals("FRONTAL", restored.faceTemplates[0].poseBucket)
-        org.junit.Assert.assertEquals("base64frontal==", restored.faceTemplates[0].embeddingBase64)
-        org.junit.Assert.assertEquals("YAW_LEFT", restored.faceTemplates[1].poseBucket)
-        org.junit.Assert.assertEquals("base64left==", restored.faceTemplates[1].embeddingBase64)
-        org.junit.Assert.assertEquals("YAW_RIGHT", restored.faceTemplates[2].poseBucket)
-        org.junit.Assert.assertEquals("base64right==", restored.faceTemplates[2].embeddingBase64)
-        org.junit.Assert.assertEquals(100L, restored.faceTemplates[0].studentId)
+        // Face templates must be stripped on export
+        org.junit.Assert.assertTrue(restored.faceTemplates.isEmpty())
+    }
+
+    @Test
+    fun encryptedBackup_roundTripWithPin_succeedsAndIsUnreadableAsPlaintext() {
+        val teacher = TeacherEntity(
+            id = 1L,
+            displayName = "Dr. Alan Turing",
+            pinHash = "hash123",
+            createdAt = 1000L,
+            updatedAt = 1000L
+        )
+        val snapshot = BackupSnapshot(
+            generatedAt = 1700000000000L,
+            teachers = listOf(teacher),
+            classes = emptyList(),
+            students = emptyList(),
+            sessions = emptyList(),
+            records = emptyList(),
+        )
+
+        val pin = "1234".toCharArray()
+        val plaintextJson = exporter.toJson(snapshot)
+        val encryptedEnvelope = BackupCrypto.encrypt(plaintextJson, pin)
+
+        // Must be unreadable in text editor (no cleartext names or PII)
+        org.junit.Assert.assertFalse(encryptedEnvelope.contains("Dr. Alan Turing"))
+        org.junit.Assert.assertTrue(encryptedEnvelope.contains(BackupCrypto.FORMAT_ENCRYPTED_V2))
+
+        // Decrypt with correct PIN
+        val decryptedJson = BackupCrypto.decrypt(encryptedEnvelope, "1234".toCharArray())
+        val restoredSnapshot = exporter.fromJson(decryptedJson)
+
+        org.junit.Assert.assertEquals(1, restoredSnapshot.teachers.size)
+        org.junit.Assert.assertEquals("Dr. Alan Turing", restoredSnapshot.teachers[0].displayName)
+    }
+
+    @Test(expected = Exception::class)
+    fun encryptedBackup_wrongPin_failsDecryption() {
+        val snapshot = BackupSnapshot(
+            generatedAt = 1700000000000L,
+            teachers = emptyList(),
+            classes = emptyList(),
+            students = emptyList(),
+            sessions = emptyList(),
+            records = emptyList(),
+        )
+        val encryptedEnvelope = BackupCrypto.encrypt(exporter.toJson(snapshot), "1234".toCharArray())
+        BackupCrypto.decrypt(encryptedEnvelope, "9999".toCharArray())
     }
 }

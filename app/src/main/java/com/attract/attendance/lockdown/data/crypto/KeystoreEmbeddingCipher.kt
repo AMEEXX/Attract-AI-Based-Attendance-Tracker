@@ -1,6 +1,8 @@
 package com.attract.attendance.lockdown.data.crypto
 
+import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
 import com.attract.attendance.util.AppLog
 import com.attract.attendance.lockdown.domain.EncryptedEmbedding
@@ -11,6 +13,11 @@ import java.security.UnrecoverableKeyException
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
+
+open class TemplateUnavailableException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
+
+class KeyPermanentlyInvalidatedBiometricException(message: String, cause: Throwable) :
+    TemplateUnavailableException(message, cause)
 
 class KeystoreEmbeddingCipher(
     private val alias: String,
@@ -45,17 +52,30 @@ class KeystoreEmbeddingCipher(
     }
 
     private fun createKey() {
-        val spec = KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+        val builder = KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
             .setBlockModes(BLOCK_MODE)
             .setEncryptionPaddings(PADDING)
             .setKeySize(256)
             .setDigests(KeyProperties.DIGEST_NONE)
             .setUserAuthenticationRequired(false)
             .setRandomizedEncryptionRequired(false)
-            .build()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            builder.setUnlockedDeviceRequired(true)
+            try {
+                builder.setIsStrongBoxBacked(true)
+                val keygen = KeyGenerator.getInstance(KEY_ALGORITHM, ANDROID_KEYSTORE)
+                keygen.init(builder.build())
+                keygen.generateKey()
+                return
+            } catch (t: Throwable) {
+                AppLog.w("KeystoreCipher", "StrongBox unavailable on device, falling back to standard TEE: ${t.message}")
+                builder.setIsStrongBoxBacked(false)
+            }
+        }
 
         val keygen = KeyGenerator.getInstance(KEY_ALGORITHM, ANDROID_KEYSTORE)
-        keygen.init(spec)
+        keygen.init(builder.build())
         keygen.generateKey()
     }
 
@@ -85,7 +105,14 @@ class KeystoreEmbeddingCipher(
         val cipher = javax.crypto.Cipher.getInstance("$KEY_ALGORITHM/$BLOCK_MODE/$PADDING")
         val iv = generateIv()
         val spec = GCMParameterSpec(TAG_SIZE_BITS, iv)
-        cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, key, spec)
+        try {
+            cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, key, spec)
+        } catch (e: Exception) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && e is KeyPermanentlyInvalidatedException) {
+                throw KeyPermanentlyInvalidatedBiometricException("Keystore key permanently invalidated", e)
+            }
+            throw e
+        }
         cipher.updateAAD(buildAad(studentId, templateId, modelVersion))
         val ciphertext = cipher.doFinal(plaintext)
 
@@ -106,7 +133,14 @@ class KeystoreEmbeddingCipher(
 
         val cipher = javax.crypto.Cipher.getInstance("$KEY_ALGORITHM/$BLOCK_MODE/$PADDING")
         val spec = GCMParameterSpec(TAG_SIZE_BITS, encrypted.iv)
-        cipher.init(javax.crypto.Cipher.DECRYPT_MODE, key, spec)
+        try {
+            cipher.init(javax.crypto.Cipher.DECRYPT_MODE, key, spec)
+        } catch (e: Exception) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && e is KeyPermanentlyInvalidatedException) {
+                throw KeyPermanentlyInvalidatedBiometricException("Keystore key permanently invalidated", e)
+            }
+            throw TemplateUnavailableException("Cipher initialization failed", e)
+        }
         cipher.updateAAD(buildAad(studentId, templateId, modelVersion))
 
         try {
@@ -135,4 +169,3 @@ class KeystoreEmbeddingCipher(
     }
 }
 
-class TemplateUnavailableException(message: String, cause: Throwable) : RuntimeException(message, cause)

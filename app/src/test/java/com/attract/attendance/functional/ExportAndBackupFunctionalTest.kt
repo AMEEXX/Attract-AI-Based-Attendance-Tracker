@@ -107,14 +107,14 @@ class ExportAndBackupFunctionalTest {
 
         val json = backupExporter.toJson(snapshot)
 
-        assertTrue(json.contains("\"format\":\"attract-backup-v1\""))
+        assertTrue(json.contains("\"format\":\"attract-backup-v2\""))
         assertTrue(json.contains("\"Teacher A\""))
         assertTrue(json.contains("\"Physics\""))
         assertTrue(json.contains("\"Student A\""))
     }
 
     @Test
-    fun backupJson_includesPortableFaceTemplatesAndExcludesRawHardwareKeys() {
+    fun backupJson_excludesBiometricFaceTemplatesPerSdd66() {
         val snapshot = BackupSnapshot(
             generatedAt = 1700000000000L,
             teachers = emptyList(),
@@ -133,9 +133,9 @@ class ExportAndBackupFunctionalTest {
 
         val json = backupExporter.toJson(snapshot)
 
-        assertTrue(json.contains("\"faceTemplates\":["))
-        assertTrue(json.contains("base64=="))
-        assertFalse(json.contains("cipherIv"))
+        // SDD §66 / PR-03: Biometric face templates are excluded from backups
+        assertTrue(json.contains("\"faceTemplates\":[]"))
+        assertFalse(json.contains("base64=="))
     }
 
     @Test

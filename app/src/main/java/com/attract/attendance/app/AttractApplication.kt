@@ -92,21 +92,29 @@ class AppContainer(application: Application) {
     val database by lazy { AttractDatabase.create(application) }
 
     // Keystore-backed AEAD cipher for face templates at rest (LLD-13).
-    // Safely fallback to null if Keystore is unavailable or throws on device.
-    private val embeddingCipher: com.attract.attendance.lockdown.domain.EmbeddingCipher? by lazy {
+    // PR-03: No plaintext fallback. If Keystore fails, face biometrics are disabled (fail closed).
+    val embeddingCipher: com.attract.attendance.lockdown.domain.EmbeddingCipher? by lazy {
         try {
             com.attract.attendance.lockdown.data.crypto.KeystoreEmbeddingCipher(
                 alias = "attract_face_template_key",
                 keyVersion = 1,
             )
         } catch (t: Throwable) {
-            com.attract.attendance.util.AppLog.w("AppContainer", "Keystore cipher unavailable, falling back to plaintext templates", t)
+            com.attract.attendance.util.AppLog.w("AppContainer", "Keystore cipher unavailable; face biometric features disabled", t)
             null
         }
     }
 
+    val isBiometricCryptoAvailable: Boolean get() = embeddingCipher != null
+
+    val pinLockoutManager by lazy {
+        com.attract.attendance.data.security.PinLockoutManager(
+            com.attract.attendance.data.security.PrefsPinLockoutStorage.fromContext(application)
+        )
+    }
+
     val repository: AttractRepository by lazy {
-        AttractRepository(database, PinHasher(), embeddingCipher = embeddingCipher)
+        AttractRepository(database, PinHasher(), embeddingCipher = embeddingCipher, pinLockoutManager = pinLockoutManager)
     }
     val csvRosterImporter by lazy { CsvRosterImporter(application.contentResolver) }
     val attendanceExporter by lazy { AttendanceExporter(application.contentResolver) }

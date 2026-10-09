@@ -43,9 +43,9 @@ class PinHasher(
         }
     }
 
-    private companion object {
+    companion object {
         const val FORMAT_VERSION = "v1"
-        const val ITERATIONS = 210_000
+        const val ITERATIONS = 310_000
         const val SALT_BYTES = 16
         const val KEY_BITS = 256
     }

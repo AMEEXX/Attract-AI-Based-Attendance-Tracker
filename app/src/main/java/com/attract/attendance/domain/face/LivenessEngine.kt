@@ -42,23 +42,22 @@ object LivenessEngine {
         val patOutcome = PresentationAttackDetector.analyze(presentationAttackSignals, signals.blurVariance)
         if (patOutcome is LivenessResult.Rejected) return patOutcome
 
-        // 3. Passive anti-spoofing check using brightness & blur variance ratio
-        // Photos of screens or printed cards have unnaturally high/low contrast or static glare
+        // 3. Image quality and illumination validation
         if (signals.blurVariance < 15.0f) {
             return LivenessResult.Rejected(
                 LivenessReason.PASSIVE_SPOOF_SUSPECTED,
-                "Liveness check failed — image appears static or low quality."
+                "Image quality too low — hold camera steady and avoid blur."
             )
         }
 
         if (signals.brightness < 45.0f) {
             return LivenessResult.Rejected(
                 LivenessReason.PASSIVE_SPOOF_SUSPECTED,
-                "Lighting too low for biometric liveness verification."
+                "Lighting too low for facial verification. Move to a well-lit area."
             )
         }
 
-        // 4. Eye open probability variance check across consecutive frames if REAL eye signals are available
+        // 4. Motion variance check across consecutive frames if eye signals are available
         if (previousSignals != null && leftEye != null && rightEye != null &&
             previousSignals.leftEyeOpenProbability != null && previousSignals.rightEyeOpenProbability != null) {
             val prevLeft = previousSignals.leftEyeOpenProbability
@@ -66,11 +65,11 @@ object LivenessEngine {
             val leftDiff = kotlin.math.abs(leftEye - prevLeft)
             val rightDiff = kotlin.math.abs(rightEye - prevRight)
 
-            // Extremely identical static values down to 4 decimals indicate static photo presentation
+            // Extremely identical static values indicate zero natural facial micro-movement
             if (leftDiff < 0.0001f && rightDiff < 0.0001f && kotlin.math.abs(signals.yawDegrees - previousSignals.yawDegrees) < 0.001f) {
                 return LivenessResult.Rejected(
                     LivenessReason.INSUFFICIENT_VARIANCE,
-                    "Spoofing detected — live natural movement required."
+                    "Motion check: Live natural movement required."
                 )
             }
         }

@@ -361,14 +361,14 @@ class AttractViewModel(
         }
     }
 
-    fun exportBackup(uri: Uri) {
+    fun exportBackup(uri: Uri, pin: CharArray? = null) {
         if (_uiState.value.isWorking) return
         viewModelScope.launch {
             _uiState.update { it.copy(isWorking = true) }
             try {
                 val snapshot = repository.backupSnapshot()
-                backupExporter.export(uri, snapshot)
-                    .onSuccess { showMessage("Backup exported.") }
+                backupExporter.export(uri, snapshot, pin)
+                    .onSuccess { showMessage("Backup exported successfully.") }
                     .onFailure { showMessage(it.message ?: "Backup failed. Please try again.") }
             } catch (error: Throwable) {
                 showMessage("Backup failed. Please try again.")
@@ -377,12 +377,12 @@ class AttractViewModel(
         }
     }
 
-    fun importBackup(uri: Uri) {
+    fun importBackup(uri: Uri, pin: CharArray? = null) {
         if (_uiState.value.isWorking) return
         viewModelScope.launch {
             _uiState.update { it.copy(isWorking = true) }
             try {
-                backupExporter.import(uri)
+                backupExporter.import(uri, pin)
                     .onSuccess { snapshot ->
                         when (val result = repository.restoreBackup(snapshot)) {
                             is com.attract.attendance.core.model.CommandResult.Success -> {
@@ -395,7 +395,7 @@ class AttractViewModel(
                         }
                     }
                     .onFailure {
-                        showMessage(it.message ?: "Could not read backup file.")
+                        showMessage(it.message ?: "Could not read or decrypt backup file.")
                     }
             } catch (e: Throwable) {
                 showMessage("Restore failed: ${e.message}")

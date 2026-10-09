@@ -27,19 +27,16 @@ object TemplateEnvelopeCodec {
     const val IV_SIZE_BYTES = 12
     const val TEMPLATE_BIND_ID = 0L
 
-    /** Returns (blob, cryptoVersion). Throws if the cipher fails — callers fail closed. */
+    /**
+     * Returns (blob, cryptoVersion). Throws if cipher fails — callers fail closed.
+     * PR-03: Plaintext fallback is strictly prohibited. Keystore cipher required.
+     */
     fun encode(
-        cipher: EmbeddingCipher?,
+        cipher: EmbeddingCipher,
         studentId: Long,
         modelVersion: String,
         plaintextFloats: FloatArray,
     ): Pair<ByteArray, Int> {
-        if (cipher == null) {
-            @Suppress("RedundantSuppression")
-            return with(com.attract.attendance.domain.face.TemplateMatcher) {
-                plaintextFloats.toByteArray()
-            } to CRYPTO_VERSION_PLAINTEXT
-        }
         val plaintext = with(com.attract.attendance.domain.face.TemplateMatcher) {
             plaintextFloats.toByteArray()
         }
@@ -64,7 +61,8 @@ object TemplateEnvelopeCodec {
         cryptoVersion: Int,
     ): FloatArray? {
         return runCatching {
-            if (cryptoVersion >= CRYPTO_VERSION_AEAD && cipher != null) {
+            if (cryptoVersion >= CRYPTO_VERSION_AEAD) {
+                if (cipher == null) return@runCatching null
                 if (stored.size <= KEY_VERSION_BYTES + IV_SIZE_BYTES) return@runCatching null
                 val keyVersion = stored[0].toInt() and 0xFF
                 val iv = stored.copyOfRange(KEY_VERSION_BYTES, KEY_VERSION_BYTES + IV_SIZE_BYTES)
@@ -82,7 +80,7 @@ object TemplateEnvelopeCodec {
                 )
                 with(com.attract.attendance.domain.face.TemplateMatcher) { plaintext.toFloatArray() }
             } else {
-                // Legacy plaintext row (cryptoVersion < 2) or cipher unavailable.
+                // Legacy plaintext row (cryptoVersion < 2)
                 with(com.attract.attendance.domain.face.TemplateMatcher) { stored.toFloatArray() }
             }
         }.getOrNull()

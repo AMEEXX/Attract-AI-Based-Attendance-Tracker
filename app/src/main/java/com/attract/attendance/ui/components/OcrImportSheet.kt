@@ -244,10 +244,17 @@ fun OcrImportSheet(
                     ) {
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         Text(
-                            text = "Reading attendance sheet with AI OCR...",
+                            text = "Reading attendance sheet with Gemini AI...",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "This may take 2-3 minutes to import data. Please keep the app open.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 16.dp)
                         )
                     }
                 }

@@ -37,26 +37,38 @@ data class BackupSnapshot(
 class BackupExporter(
     private val contentResolver: ContentResolver? = null,
 ) {
-    suspend fun export(uri: Uri, snapshot: BackupSnapshot): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun export(uri: Uri, snapshot: BackupSnapshot, pin: CharArray? = null): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
             val resolver = contentResolver ?: error("The destination is unavailable.")
             val output = resolver.openOutputStream(uri) ?: error("The destination is unavailable.")
-            output.use { it.write(toJson(snapshot).toByteArray(Charsets.UTF_8)) }
+            val plaintext = toJson(snapshot)
+            val outputBytes = if (pin != null) {
+                BackupCrypto.encrypt(plaintext, pin).toByteArray(Charsets.UTF_8)
+            } else {
+                plaintext.toByteArray(Charsets.UTF_8)
+            }
+            output.use { it.write(outputBytes) }
         }
     }
 
-    suspend fun import(uri: Uri): Result<BackupSnapshot> = withContext(Dispatchers.IO) {
+    suspend fun import(uri: Uri, pin: CharArray? = null): Result<BackupSnapshot> = withContext(Dispatchers.IO) {
         runCatching {
             val resolver = contentResolver ?: error("The storage provider is unavailable.")
             val input = resolver.openInputStream(uri) ?: error("The backup file could not be opened.")
-            val json = input.use { it.bufferedReader(Charsets.UTF_8).readText() }
+            val text = input.use { it.bufferedReader(Charsets.UTF_8).readText() }
+            val json = if (BackupCrypto.isEncryptedEnvelope(text)) {
+                requireNotNull(pin) { "This backup is encrypted. Teacher PIN is required to restore." }
+                BackupCrypto.decrypt(text, pin)
+            } else {
+                text
+            }
             fromJson(json)
         }
     }
 
     fun toJson(snapshot: BackupSnapshot): String = buildString {
         append("{")
-        field("format", "attract-backup-v1")
+        field("format", "attract-backup-v2")
         comma()
         field("generatedAt", snapshot.generatedAt)
         comma()
@@ -131,20 +143,8 @@ class BackupExporter(
             }
         }
         comma()
-        array("faceTemplates", snapshot.faceTemplates) { item ->
-            obj {
-                field("id", item.id); comma()
-                field("studentId", item.studentId); comma()
-                field("modelVersion", item.modelVersion); comma()
-                field("embeddingDim", item.embeddingDim); comma()
-                field("poseBucket", item.poseBucket); comma()
-                field("qualityScore", item.qualityScore); comma()
-                field("embeddingBase64", item.embeddingBase64); comma()
-                field("capturedAt", item.capturedAt); comma()
-                field("source", item.source); comma()
-                field("active", item.active)
-            }
-        }
+        // PR-03 / SDD §66: Face templates are hardware-bound biometric artifacts and excluded from backups
+        append("\"faceTemplates\":[]")
         append("}")
     }
 
@@ -195,6 +195,12 @@ class BackupExporter(
 
     fun fromJson(json: String): BackupSnapshot {
         val root = org.json.JSONObject(json)
+        val format = root.optString("format", "")
+        if (format.isNotBlank()) {
+            require(format == "attract-backup-v1" || format == "attract-backup-v2") {
+                "Unsupported backup format version: $format"
+            }
+        }
         val generatedAt = root.optLong("generatedAt", System.currentTimeMillis())
 
         val teachersJson = root.optJSONArray("teachers") ?: org.json.JSONArray()

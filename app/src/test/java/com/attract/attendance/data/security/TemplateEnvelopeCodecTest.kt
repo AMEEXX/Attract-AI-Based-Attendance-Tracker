@@ -98,13 +98,12 @@ class TemplateEnvelopeCodecTest {
     }
 
     @Test
-    fun encode_withoutCipher_legacyPlaintextPassthrough() {
+    fun decode_withoutCipher_returnsNullForEncryptedBlob() {
         val original = sampleFloats()
-        val (blob, version) = TemplateEnvelopeCodec.encode(null, 5L, "v1", original)
-        assertEquals(TemplateEnvelopeCodec.CRYPTO_VERSION_PLAINTEXT, version)
+        val (blob, version) = TemplateEnvelopeCodec.encode(XorCipher(), 5L, "v1", original)
+        assertEquals(TemplateEnvelopeCodec.CRYPTO_VERSION_AEAD, version)
         val decoded = TemplateEnvelopeCodec.decode(null, 5L, "v1", blob, version)
-        assertNotNull(decoded)
-        assertTrue(decoded!!.contentEquals(original))
+        assertNull(decoded)
     }
 
     @Test

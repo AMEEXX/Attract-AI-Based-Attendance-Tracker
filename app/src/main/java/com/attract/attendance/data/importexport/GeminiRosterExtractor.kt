@@ -60,12 +60,14 @@ class GeminiRosterExtractor(private val modelName: String = DEFAULT_MODEL) {
         for (targetModel in modelsToTry) {
             try {
                 val currentModel = getModel(targetModel)
-                val response = currentModel.generateContent(
-                    content {
-                        image(page)
-                        text("Extract every student row from this attendance sheet.")
-                    }
-                )
+                val response = kotlinx.coroutines.withTimeout(15_000L) {
+                    currentModel.generateContent(
+                        content {
+                            image(page)
+                            text("Extract every student row from this attendance sheet.")
+                        }
+                    )
+                }
                 val rows = parse(response.text.orEmpty())
                 if (rows.isNotEmpty()) {
                     return rows

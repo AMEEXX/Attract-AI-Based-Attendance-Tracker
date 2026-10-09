@@ -65,7 +65,10 @@ class AttractRepository(
     private val pinHasher: PinHasher,
     private val clock: Clock = Clock.systemDefaultZone(),
     private val embeddingCipher: com.attract.attendance.lockdown.domain.EmbeddingCipher? = null,
+    private val pinLockoutManager: com.attract.attendance.data.security.PinLockoutManager? = null,
 ) {
+    val isBiometricCryptoAvailable: Boolean get() = embeddingCipher != null
+
     private val teachers = database.teacherDao()
     private val classes = database.classDao()
     private val students = database.studentDao()
@@ -329,12 +332,34 @@ class AttractRepository(
         }
     }
 
-    suspend fun authenticate(pin: CharArray): Boolean = try {
-        val teacher = teachers.first() ?: return false
-        pinHasher.verify(pin, teacher.pinHash)
-    } finally {
-        pin.fill('\u0000')
+    suspend fun authenticate(pin: CharArray): Boolean {
+        return try {
+            if (pinLockoutManager?.isLockedOut() == true) {
+                false
+            } else {
+                val teacher = teachers.first()
+                if (teacher == null) {
+                    false
+                } else {
+                    val success = pinHasher.verify(pin, teacher.pinHash)
+                    if (pinLockoutManager != null) {
+                        if (success) {
+                            pinLockoutManager.recordSuccessfulAttempt()
+                        } else {
+                            pinLockoutManager.recordFailedAttempt()
+                        }
+                    }
+                    success
+                }
+            }
+        } finally {
+            pin.fill('\u0000')
+        }
     }
+
+    fun isPinLockedOut(): Boolean = pinLockoutManager?.isLockedOut() ?: false
+
+    fun getPinLockoutRemainingSeconds(): Long = pinLockoutManager?.getRemainingLockoutSeconds() ?: 0L
 
     fun observeClasses(): Flow<List<ClassSummary>> = classes.observeActiveSummaries().map { rows ->
         rows.map {
@@ -642,10 +667,18 @@ class AttractRepository(
                 return com.attract.attendance.domain.face.GalleryLoadResult.EmptyHealthy
             }
 
+            if (embeddingCipher == null && rows.isNotEmpty()) {
+                return com.attract.attendance.domain.face.GalleryLoadResult.Unavailable(
+                    errorCategory = "KEYSTORE_UNAVAILABLE",
+                    message = "Biometric hardware keystore unavailable — face biometric features disabled (manual attendance preserved)."
+                )
+            }
+
             val usable = mutableListOf<com.attract.attendance.domain.face.StudentTemplatePair>()
             var staleCount = 0
             var malformedCount = 0
             var cryptoErrorCount = 0
+            var keyPermanentlyInvalidated = false
             val affectedStudentIds = mutableSetOf<Long>()
 
             for (row in rows) {
@@ -657,7 +690,16 @@ class AttractRepository(
                         stored = row.encryptedEmbedding,
                         cryptoVersion = row.cryptoVersion,
                     )
+                } catch (e: com.attract.attendance.lockdown.data.crypto.KeyPermanentlyInvalidatedBiometricException) {
+                    keyPermanentlyInvalidated = true
+                    cryptoErrorCount++
+                    null
                 } catch (e: Exception) {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M &&
+                        (e is android.security.keystore.KeyPermanentlyInvalidatedException ||
+                         e.cause is android.security.keystore.KeyPermanentlyInvalidatedException)) {
+                        keyPermanentlyInvalidated = true
+                    }
                     cryptoErrorCount++
                     null
                 }
@@ -693,6 +735,21 @@ class AttractRepository(
                         affectedStudentIds.add(row.studentId)
                     }
                 }
+            }
+
+            // PR-03: Handle KeyPermanentlyInvalidatedException by marking templates REENROLL_REQUIRED, never crashing
+            if (keyPermanentlyInvalidated && affectedStudentIds.isNotEmpty()) {
+                val now = nowMillis()
+                for (sId in affectedStudentIds) {
+                    templates.deactivateForStudent(sId)
+                    students.find(sId)?.let { s ->
+                        students.update(s.copy(enrollmentStatus = EnrollmentStatus.REENROLL_REQUIRED, updatedAt = now))
+                    }
+                }
+                return com.attract.attendance.domain.face.GalleryLoadResult.Unavailable(
+                    errorCategory = "KEY_PERMANENTLY_INVALIDATED",
+                    message = "Biometric encryption key was permanently invalidated on this device. Affected students marked for re-enrollment."
+                )
             }
 
             // Check if crypto is completely unavailable or key invalidated
@@ -958,12 +1015,16 @@ class AttractRepository(
                         }
                     }
 
+                    val cipher = embeddingCipher
+                        ?: return@withTransaction com.attract.attendance.domain.face.EnrollmentResult.Failed(
+                            "Biometric hardware keystore unavailable — face enrollment disabled. Please use manual attendance."
+                        )
                     val now = nowMillis()
                     val templateIds = mutableListOf<Long>()
 
                     batch.samples.forEach { sample ->
                         val (blob, cryptoVersion) = com.attract.attendance.data.security.TemplateEnvelopeCodec.encode(
-                            cipher = embeddingCipher,
+                            cipher = cipher,
                             studentId = studentId,
                             modelVersion = batch.profileId,
                             plaintextFloats = sample.embedding,
@@ -1107,13 +1168,17 @@ class AttractRepository(
             database.withTransaction {
                 val student = students.find(studentId)
                     ?: return@withTransaction com.attract.attendance.domain.face.EnrollmentResult.Failed("Student not found")
+                val cipher = embeddingCipher
+                    ?: return@withTransaction com.attract.attendance.domain.face.EnrollmentResult.Failed(
+                        "Biometric hardware keystore unavailable — face re-enrollment disabled."
+                    )
                 val now = nowMillis()
                 templates.deactivateForStudent(studentId)
                 val templateIds = mutableListOf<Long>()
 
                 batch.samples.forEach { sample ->
                     val (blob, cryptoVersion) = com.attract.attendance.data.security.TemplateEnvelopeCodec.encode(
-                        cipher = embeddingCipher,
+                        cipher = cipher,
                         studentId = studentId,
                         modelVersion = batch.profileId,
                         plaintextFloats = sample.embedding,
@@ -1181,9 +1246,13 @@ class AttractRepository(
             // outdated embeddings never participate in future matches. This also replaces
             // stale-dimension (e.g. 32-D legacy) templates with current 192-D format.
             templates.deactivateForStudent(studentId)
+            val cipher = embeddingCipher
+                ?: return@withTransaction CommandResult.Failure(
+                    AppError.Validation("biometrics", "Biometric hardware keystore unavailable — face enrollment disabled.")
+                )
             floatsList.forEachIndexed { index, floats ->
                 val (blob, cryptoVersion) = com.attract.attendance.data.security.TemplateEnvelopeCodec.encode(
-                    cipher = embeddingCipher,
+                    cipher = cipher,
                     studentId = studentId,
                     modelVersion = com.attract.attendance.domain.face.TemplateCompatibility.CURRENT_MODEL_ID,
                     plaintextFloats = floats,
@@ -1513,39 +1582,7 @@ class AttractRepository(
     suspend fun sessionExportRows(classId: Long): List<SessionExportRow> = records.sessionExportRows(classId)
 
     suspend fun backupSnapshot(): BackupSnapshot = database.withTransaction {
-        val allTemplates = templates.all()
-        val backupTemplates = mutableListOf<BackupFaceTemplate>()
-        for (tmpl in allTemplates) {
-            val floats = try {
-                com.attract.attendance.data.security.TemplateEnvelopeCodec.decode(
-                    cipher = embeddingCipher,
-                    studentId = tmpl.studentId,
-                    modelVersion = tmpl.modelVersion,
-                    stored = tmpl.encryptedEmbedding,
-                    cryptoVersion = tmpl.cryptoVersion,
-                )
-            } catch (e: Throwable) {
-                null
-            }
-            if (floats != null) {
-                val bytes = with(com.attract.attendance.domain.face.TemplateMatcher) { floats.toByteArray() }
-                val base64 = java.util.Base64.getEncoder().encodeToString(bytes)
-                backupTemplates.add(
-                    BackupFaceTemplate(
-                        id = tmpl.id,
-                        studentId = tmpl.studentId,
-                        modelVersion = tmpl.modelVersion,
-                        embeddingDim = if (tmpl.embeddingDim > 0) tmpl.embeddingDim else floats.size,
-                        poseBucket = tmpl.poseBucket,
-                        qualityScore = tmpl.qualityScore,
-                        embeddingBase64 = base64,
-                        capturedAt = tmpl.capturedAt,
-                        source = tmpl.source,
-                        active = tmpl.active,
-                    )
-                )
-            }
-        }
+        // PR-03 / SDD §66: Exclude biometric face templates from backups
         BackupSnapshot(
             generatedAt = nowMillis(),
             teachers = teachers.all(),
@@ -1553,76 +1590,96 @@ class AttractRepository(
             students = students.all(),
             sessions = sessions.all(),
             records = records.all(),
-            faceTemplates = backupTemplates,
+            faceTemplates = emptyList(),
         )
     }
 
-    suspend fun restoreBackup(snapshot: BackupSnapshot): CommandResult<Unit> = try {
-        database.withTransaction {
-            val db = database.openHelper.writableDatabase
-            // Delete in reverse-dependency (leaf-to-root) order to prevent foreign key constraint violations
-            db.execSQL("DELETE FROM attendance_records")
-            db.execSQL("DELETE FROM face_templates")
-            db.execSQL("DELETE FROM attendance_sessions")
-            db.execSQL("DELETE FROM students")
-            db.execSQL("DELETE FROM class_sections")
-            db.execSQL("DELETE FROM teachers")
-
-            // Insert in dependency (root-to-leaf) order
-            if (snapshot.teachers.isNotEmpty()) teachers.insertAll(snapshot.teachers)
-            if (snapshot.classes.isNotEmpty()) classes.insertAll(snapshot.classes)
-            if (snapshot.students.isNotEmpty()) students.insertAll(snapshot.students)
-            if (snapshot.sessions.isNotEmpty()) sessions.insertAll(snapshot.sessions)
-            if (snapshot.records.isNotEmpty()) records.insertAll(snapshot.records)
-
-            if (snapshot.faceTemplates.isNotEmpty()) {
-                val restoredTemplates = mutableListOf<FaceTemplateEntity>()
-                for (item in snapshot.faceTemplates) {
-                    val floats = try {
-                        val bytes = java.util.Base64.getDecoder().decode(item.embeddingBase64)
-                        with(com.attract.attendance.domain.face.TemplateMatcher) { bytes.toFloatArray() }
-                    } catch (e: Throwable) {
-                        null
-                    }
-                    if (floats != null) {
-                        val (encryptedBlob, cryptoVersion) = com.attract.attendance.data.security.TemplateEnvelopeCodec.encode(
-                            cipher = embeddingCipher,
-                            studentId = item.studentId,
-                            modelVersion = item.modelVersion,
-                            plaintextFloats = floats,
-                        )
-                        restoredTemplates.add(
-                            FaceTemplateEntity(
-                                id = 0,
-                                studentId = item.studentId,
-                                encryptedEmbedding = encryptedBlob,
-                                cryptoVersion = cryptoVersion,
-                                modelVersion = item.modelVersion,
-                                embeddingDim = if (item.embeddingDim > 0) item.embeddingDim else floats.size,
-                                poseBucket = item.poseBucket,
-                                qualityScore = item.qualityScore,
-                                capturedAt = item.capturedAt,
-                                source = item.source,
-                                active = item.active,
-                            )
-                        )
-                    }
-                }
-                if (restoredTemplates.isNotEmpty()) {
-                    templates.insertAll(restoredTemplates)
-                }
-            }
-
-            // Re-reconcile enrollment status: any restored student with existing or restored biometric templates remains ENROLLED
-            val now = nowMillis()
-            students.restoreEnrolledWithTemplates(now)
-            templates.reactivateAll()
-
-            CommandResult.Success(Unit)
+    suspend fun restoreBackup(snapshot: BackupSnapshot): CommandResult<Unit> {
+        // PR-03: Validate schema and structural integrity BEFORE deleting any table
+        if (snapshot.generatedAt <= 0L) {
+            return CommandResult.Failure(AppError.Validation("backup", "Invalid backup generatedAt timestamp."))
         }
-    } catch (e: Throwable) {
-        android.util.Log.e("AttractRepository", "Restore failed", e)
-        CommandResult.Failure(AppError.Storage(e))
+        val teacherIds = snapshot.teachers.map { it.id }.toSet()
+        for (c in snapshot.classes) {
+            if (c.teacherId !in teacherIds && teacherIds.isNotEmpty()) {
+                return CommandResult.Failure(AppError.Validation("backup", "Corrupted backup: class references missing teacher."))
+            }
+        }
+        val classIds = snapshot.classes.map { it.id }.toSet()
+        for (s in snapshot.students) {
+            if (s.classId !in classIds && classIds.isNotEmpty()) {
+                return CommandResult.Failure(AppError.Validation("backup", "Corrupted backup: student references missing class."))
+            }
+        }
+
+        return try {
+            database.withTransaction {
+                val db = database.openHelper.writableDatabase
+                // Delete in reverse-dependency (leaf-to-root) order to prevent foreign key constraint violations
+                db.execSQL("DELETE FROM attendance_records")
+                db.execSQL("DELETE FROM face_templates")
+                db.execSQL("DELETE FROM attendance_sessions")
+                db.execSQL("DELETE FROM students")
+                db.execSQL("DELETE FROM class_sections")
+                db.execSQL("DELETE FROM teachers")
+
+                // Insert in dependency (root-to-leaf) order
+                if (snapshot.teachers.isNotEmpty()) teachers.insertAll(snapshot.teachers)
+                if (snapshot.classes.isNotEmpty()) classes.insertAll(snapshot.classes)
+                if (snapshot.students.isNotEmpty()) students.insertAll(snapshot.students)
+                if (snapshot.sessions.isNotEmpty()) sessions.insertAll(snapshot.sessions)
+                if (snapshot.records.isNotEmpty()) records.insertAll(snapshot.records)
+
+                val cipher = embeddingCipher
+                if (cipher != null && snapshot.faceTemplates.isNotEmpty()) {
+                    val restoredTemplates = mutableListOf<FaceTemplateEntity>()
+                    for (item in snapshot.faceTemplates) {
+                        val floats = try {
+                            val bytes = java.util.Base64.getDecoder().decode(item.embeddingBase64)
+                            with(com.attract.attendance.domain.face.TemplateMatcher) { bytes.toFloatArray() }
+                        } catch (e: Throwable) {
+                            null
+                        }
+                        if (floats != null) {
+                            val (encryptedBlob, cryptoVersion) = com.attract.attendance.data.security.TemplateEnvelopeCodec.encode(
+                                cipher = cipher,
+                                studentId = item.studentId,
+                                modelVersion = item.modelVersion,
+                                plaintextFloats = floats,
+                            )
+                            restoredTemplates.add(
+                                FaceTemplateEntity(
+                                    id = 0,
+                                    studentId = item.studentId,
+                                    encryptedEmbedding = encryptedBlob,
+                                    cryptoVersion = cryptoVersion,
+                                    modelVersion = item.modelVersion,
+                                    embeddingDim = if (item.embeddingDim > 0) item.embeddingDim else floats.size,
+                                    poseBucket = item.poseBucket,
+                                    qualityScore = item.qualityScore,
+                                    capturedAt = item.capturedAt,
+                                    source = item.source,
+                                    active = item.active,
+                                )
+                            )
+                        }
+                    }
+                    if (restoredTemplates.isNotEmpty()) {
+                        templates.insertAll(restoredTemplates)
+                    }
+                }
+
+                // Re-reconcile enrollment status: any restored student with existing or restored biometric templates remains ENROLLED
+                val now = nowMillis()
+                students.restoreEnrolledWithTemplates(now)
+                templates.reactivateAll()
+
+                CommandResult.Success(Unit)
+            }
+        } catch (e: Throwable) {
+            android.util.Log.e("AttractRepository", "Restore failed", e)
+            CommandResult.Failure(AppError.Storage(e))
+        }
     }
 
     fun observeSessionStudents(classId: Long, sessionId: Long): Flow<List<Pair<StudentSummary, AttendanceStatus?>>> =

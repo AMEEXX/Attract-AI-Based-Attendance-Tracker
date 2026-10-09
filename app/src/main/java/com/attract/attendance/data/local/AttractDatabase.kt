@@ -170,8 +170,28 @@ abstract class AttractDatabase : RoomDatabase() {
         }
 
         /**
-         * Restore the latest pre-migration snapshot into attract.db (PR-01 recovery).
+         * Before restoring any backup, take an automatic snapshot of the existing database (PR-01 §3 / PR-03 §5).
+         * Keeps the last 3 snapshots in files/backups/.
          */
+        fun takePreRestoreSnapshot(context: Context) {
+            try {
+                val dbFile = context.getDatabasePath(DB_NAME)
+                if (!dbFile.exists() || dbFile.length() == 0L) return
+                val backupDir = File(context.filesDir, "backups").apply { mkdirs() }
+                val backupFile = File(backupDir, "attract-pre-restore-${System.currentTimeMillis()}.db")
+                dbFile.copyTo(backupFile, overwrite = true)
+                com.attract.attendance.util.AppLog.i("AttractDatabase", "Created pre-restore snapshot: ${backupFile.name}")
+
+                val allSnapshots = backupDir.listFiles { _, name ->
+                    name.startsWith("attract-pre-restore-") && name.endsWith(".db")
+                }?.sortedBy { it.lastModified() }
+                if (allSnapshots != null && allSnapshots.size > 3) {
+                    allSnapshots.take(allSnapshots.size - 3).forEach { it.delete() }
+                }
+            } catch (t: Throwable) {
+                com.attract.attendance.util.AppLog.w("AttractDatabase", "Could not take pre-restore snapshot", t)
+            }
+        }
         fun restoreLatestSnapshot(context: Context): Boolean {
             return try {
                 val backupDir = File(context.filesDir, "backups")
