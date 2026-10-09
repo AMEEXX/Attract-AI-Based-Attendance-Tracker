@@ -1,6 +1,7 @@
 # Attract — Face-Based Attendance Tracker
 
 <p align="center">
+  <img src="docs/art/app_logo.png" alt="Attract App Logo" width="120" />
   <h3 align="center">Offline, Class-Scoped Biometric Attendance for Native Android</h3>
   <p align="center">
     High-assurance student self-check-in with on-device face recognition, progressive enrollment, hardware-pinned kiosk safety, and zero cloud dependency.

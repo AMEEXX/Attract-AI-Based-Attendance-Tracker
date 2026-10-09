@@ -8,8 +8,8 @@
     <application
         android:name=".app.AttractApplication"
         android:allowBackup="false"
-        android:icon="@drawable/ic_launcher"
-        android:roundIcon="@drawable/ic_launcher"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:label="Attract"
         android:supportsRtl="true"
         android:theme="@style/Theme.Attract">

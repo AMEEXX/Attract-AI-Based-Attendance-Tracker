@@ -1,5 +1,6 @@
 package com.attract.attendance.ui.screens.settings
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import com.attract.attendance.ui.components.feedbackClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -10,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -191,10 +194,21 @@ fun SettingsScreen(
                 )
                 Spacer(modifier = Modifier.height(Dimens.SmallGap))
                 AttractCard {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Attract — Face Based Attendance Tracker", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        Text("Version ${com.attract.attendance.BuildConfig.VERSION_NAME} (Build ${com.attract.attendance.BuildConfig.VERSION_CODE})", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
-                        Text("Offline-first biometrics & attendance tracking", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = com.attract.attendance.R.drawable.app_logo),
+                            contentDescription = "Attract Logo",
+                            modifier = Modifier.size(52.dp)
+                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("Attract — Face Based Attendance Tracker", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Text("Version ${com.attract.attendance.BuildConfig.VERSION_NAME} (Build ${com.attract.attendance.BuildConfig.VERSION_CODE})", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                            Text("Offline-first biometrics & attendance tracking", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 }
             }

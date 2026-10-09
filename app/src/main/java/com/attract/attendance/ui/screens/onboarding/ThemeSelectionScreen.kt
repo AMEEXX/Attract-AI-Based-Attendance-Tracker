@@ -2,9 +2,11 @@ package com.attract.attendance.ui.screens.onboarding
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.res.painterResource
 import com.attract.attendance.ui.components.feedbackClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -75,6 +77,12 @@ fun ThemeSelectionScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            Image(
+                painter = painterResource(id = com.attract.attendance.R.drawable.app_logo),
+                contentDescription = "Attract Logo",
+                modifier = Modifier.size(72.dp)
+            )
+            Spacer(modifier = Modifier.height(18.dp))
             Text(
                 text = "How should Attract look?",
                 style = MaterialTheme.typography.displayLarge,

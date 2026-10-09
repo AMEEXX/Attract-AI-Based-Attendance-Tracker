@@ -98,6 +98,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.attract.attendance.core.model.AttendanceStatus
@@ -412,7 +413,30 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
 
 @Composable
 private fun LoadingScreen() = Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        androidx.compose.foundation.Image(
+            painter = androidx.compose.ui.res.painterResource(id = com.attract.attendance.R.drawable.app_logo),
+            contentDescription = "Attract Logo",
+            modifier = Modifier.size(88.dp)
+        )
+        Spacer(Modifier.height(16.dp))
+        Text(
+            text = "ATTRACT",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+            letterSpacing = 2.sp
+        )
+        Spacer(Modifier.height(20.dp))
+        CircularProgressIndicator(
+            modifier = Modifier.size(28.dp),
+            strokeWidth = 3.dp,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
 }
 
 @Composable

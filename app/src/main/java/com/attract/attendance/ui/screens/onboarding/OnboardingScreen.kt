@@ -4,8 +4,10 @@ import android.content.Intent
 import android.provider.Settings
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -85,6 +87,12 @@ fun OnboardingScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        Image(
+            painter = painterResource(id = com.attract.attendance.R.drawable.app_logo),
+            contentDescription = "Attract Logo",
+            modifier = Modifier.size(76.dp)
+        )
+        Spacer(modifier = Modifier.height(12.dp))
         Text(
             text = "ATTRACT",
             style = MaterialTheme.typography.headlineMedium,
