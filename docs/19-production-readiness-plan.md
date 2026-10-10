@@ -56,10 +56,10 @@ Ten P0 blockers (**BL-01** to **BL-10**) gate any public release, and 19 work pa
 | **BL-04** | **P0** | Backups carry `pinHash` and PII in clear JSON; restore deletes tables before validating | `[P]` `BackupExporter` | WP-05, WP-13 | 🟡 **Partially done (PR-03)** |
 | **BL-05** | **P0** | Play: new apps and updates must target API 36; README says 35 | `[C]` Play policy (in force since 31 Aug 2026) | WP-02 | ⏳ Pending upgrade |
 | **BL-06** | **P0** | Play: updates without 16 KB page-size support blocked from 1 Feb 2027; legacy TFLite `.so` are 4 KB-aligned | `[C]` Android docs | WP-02 | ⏳ Pending LiteRT 1.4+ |
-| **BL-07** | **P0** | Licences: YOLOv8-Face weights (AGPL or GPL lineage), ArcFace weights (InsightFace is non-commercial), no root LICENSE file | `[C]` root listing, `[V]` weight sources | WP-03 | ⏳ Pending |
+| **BL-07** | **P0** | Licences: YOLOv8-Face weights (AGPL or GPL lineage), ArcFace weights (InsightFace is non-commercial), no root LICENSE file | `[C]` root listing, `[V]` weight sources | WP-03 | ✅ **COMPLETED (`dev`)** |
 | **BL-08** | **P0** | README promises zero cloud; app has Gemini roster OCR and Drive backup | `[C]` README, `[G]` `GeminiRosterExtractor`, `DriveBackupWorker` | WP-06 | 🟡 Consent added (PR-03) |
 | **BL-09** | **P0** | Students hold phone: PIN brute force; attempt counter previously lived in memory | `[P]` `PinBackedAuthenticator` | WP-05 | ✅ Persistent (`dev`) |
-| **BL-10** | **P0** | Public repo: secrets, keystores or real face images may sit in git history | `[V]` | WP-03 | ⏳ Pending gitleaks scan |
+| **BL-10** | **P0** | Public repo: secrets, keystores or real face images may sit in git history | `[V]` | WP-03 | ✅ **COMPLETED (`dev`)** |
 | **BL-11** | **P1** | `AttendanceScreen` is 2,073 lines with 46 `remember` vars, DB writes, timers, BroadcastReceiver and lock-task polling | `[P]` `AttendanceScreen.kt` | WP-07 | ⏳ Pending |
 | **BL-12** | **P1** | Interrupt handling: swipe-out or screen-off must save session as `PAUSED` and return to Calendar with CONTINUE | `[P]` | WP-07 | ⏳ Pending |
 | **BL-13** | **P1** | Camera loop allocates ~6 MB per frame; per-pixel `getPixel()` loops in brightness, Laplacian, PAD | `[P]` `YoloFaceDetector.kt:126`, `CameraPreview`, `PresentationAttackAnalyzer` | WP-08 | ⏳ Next Up |
@@ -110,6 +110,7 @@ Ten P0 blockers (**BL-01** to **BL-10**) gate any public release, and 19 work pa
 ### WP-03 (P0) — Licensing, secrets and repo hygiene
 **Fixes:** BL-07, BL-10  
 **Files:** `docs/MODELS.md` (new), `LICENSE` (new), `NOTICE` (new), `.gitignore`, `scripts/download_models.py`
+**Status on `dev`:** ✅ **COMPLETED (`dev`)**
 1. Commercial vs Private Distribution decision.
 2. `docs/MODELS.md`: catalog every `.tflite` model (file, source URL, SHA-256, license, training data).
 3. YOLOv8n-Face: verify license or plan swap to Apache-2.0 MediaPipe BlazeFace / ML Kit Face Detection.
