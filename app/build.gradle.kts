@@ -122,6 +122,10 @@ android {
             assets.srcDirs("$projectDir/schemas")
         }
     }
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 ksp {
