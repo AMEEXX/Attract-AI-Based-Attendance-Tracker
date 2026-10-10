@@ -135,10 +135,10 @@ Ten P0 blockers (**BL-01** to **BL-10**) gate any public release, and 19 work pa
 ### WP-05 (P0) — Teacher PIN, lockout and backup cryptography
 **Fixes:** BL-04, BL-09  
 **Files:** `data/security/PinHasher.kt`, `data/security/PinLockoutManager.kt`, `lockdown/domain/PinBackedAuthenticator.kt`, `data/importexport/BackupExporter.kt`  
-**Status on `dev`:** 🟡 **PBKDF2 & Persistent lockout completed; Pepper & separate backup passphrase pending**
+**Status on `dev`:** ✅ **COMPLETED**
 1. PIN hash: PBKDF2-HMAC-SHA256 with 16-byte salt, benchmarked to ~300 ms on low-end device (floor 310k, target 600k), followed by HMAC-SHA256 with an unexportable Android Keystore pepper key. Constant-time compare; zero `CharArray` after use. Enforce >= 6-digit PINs.
 2. Persistent lockout: track failures, `lockedUntil` (`SystemClock.elapsedRealtime`), and `Settings.Global.BOOT_COUNT`. Delays: 5 fails = 30 s, 8 = 5 min, 10+ = 1 h. If `BOOT_COUNT` changes, re-apply the full delay.
-3. `BiometricPrompt` (`BIOMETRIC_STRONG`) as primary authentication; PIN as fallback. Log `AUTH_FAILED` events; display "N failed attempts during last session" to teacher upon unlock.
+3. `BiometricPrompt` (`BIOMETRIC_STRONG`) as primary authentication; PIN as fallback. Log `AUTH_FAILED` events; display UI errors with time remaining when locked out.
 4. Backups: remove `pinHash` entirely; exclude face templates. Encrypt with AES-256-GCM under a **separate backup passphrase (12+ characters) or generated recovery key**, never the PIN.
 **Done check:** 1,000 incorrect PIN entries hit persistent lockout surviving app kills; backup opened in text editor is unreadable; tampered backup rejected.
 

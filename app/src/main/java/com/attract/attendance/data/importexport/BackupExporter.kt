@@ -76,7 +76,7 @@ class BackupExporter(
             obj {
                 field("id", teacher.id); comma()
                 field("displayName", teacher.displayName); comma()
-                field("pinHash", teacher.pinHash); comma()
+                // PR-03: pinHash removed. It uses Keystore pepper and cannot be migrated.
                 field("createdAt", teacher.createdAt); comma()
                 field("updatedAt", teacher.updatedAt)
             }
@@ -211,7 +211,7 @@ class BackupExporter(
                 TeacherEntity(
                     id = obj.getLong("id"),
                     displayName = obj.getString("displayName"),
-                    pinHash = obj.getString("pinHash"),
+                    pinHash = obj.optString("pinHash", ""), // Restored PIN requires reset
                     createdAt = obj.getLong("createdAt"),
                     updatedAt = obj.getLong("updatedAt"),
                 )

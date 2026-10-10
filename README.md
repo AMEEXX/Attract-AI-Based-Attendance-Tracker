@@ -1,248 +1,420 @@
-# Attract — Face-Based Attendance Tracker
+# Gitleaks
 
-<p align="center">
-  <img src="docs/art/app_logo.png" alt="Attract App Logo" width="120" />
-  <h3 align="center">Offline, Class-Scoped Biometric Attendance for Native Android</h3>
-  <p align="center">
-    High-assurance student self-check-in with on-device face recognition, progressive enrollment, hardware-pinned kiosk safety, and zero cloud dependency.
+```
+┌─○───┐
+│ │╲  │
+│ │ ○ │
+│ ○ ░ │
+└─░───┘
+```
+
+<p align="left">
+  <p align="left">
+	  <a href="https://github.com/zricethezav/gitleaks/actions/workflows/test.yml">
+		  <img alt="Github Test" src="https://github.com/zricethezav/gitleaks/actions/workflows/test.yml/badge.svg">
+	  </a>
+	  <a href="https://hub.docker.com/r/zricethezav/gitleaks">
+		  <img src="https://img.shields.io/docker/pulls/zricethezav/gitleaks.svg" />
+	  </a>
+	  <a href="https://github.com/zricethezav/gitleaks-action">
+        	<img alt="gitleaks badge" src="https://img.shields.io/badge/protected%20by-gitleaks-blue">
+    	 </a>
+	  <a href="https://twitter.com/intent/follow?screen_name=zricethezav">
+		  <img src="https://img.shields.io/twitter/follow/zricethezav?label=Follow%20zricethezav&style=social&color=blue" alt="Follow @zricethezav" />
+	  </a>
   </p>
 </p>
 
-<p align="center">
-  <!-- Core Platform -->
-  <img src="https://img.shields.io/badge/Android_15_(API_35)-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android 15" />
-  <img src="https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white" alt="Kotlin" />
-  <img src="https://img.shields.io/badge/Jetpack_Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white" alt="Jetpack Compose" />
-  <img src="https://img.shields.io/badge/Material_Design_3-757575?style=for-the-badge&logo=materialdesign&logoColor=white" alt="Material Design 3" />
-</p>
+### Join our Discord! [![Discord](https://img.shields.io/discord/1102689410522284044.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/8Hzbrnkr7E)
 
-<p align="center">
-  <!-- AI / ML & Vision -->
-  <img src="https://img.shields.io/badge/TensorFlow_Lite-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white" alt="TFLite" />
-  <img src="https://img.shields.io/badge/YOLOv8n--Face-00FFFF?style=for-the-badge&logo=target&logoColor=black" alt="YOLOv8" />
-  <img src="https://img.shields.io/badge/ArcFace_512--D-8A2BE2?style=for-the-badge&logo=thealgorithms&logoColor=white" alt="ArcFace" />
-  <img src="https://img.shields.io/badge/Umeyama_2D_Similarity-FF4081?style=for-the-badge&logo=opencv&logoColor=white" alt="Umeyama" />
-  <img src="https://img.shields.io/badge/CameraX_API-00C853?style=for-the-badge&logo=googlecamera&logoColor=white" alt="CameraX" />
-</p>
+Gitleaks is a SAST tool for **detecting** and **preventing** hardcoded secrets like passwords, api keys, and tokens in git repos. Gitleaks is an **easy-to-use, all-in-one solution** for detecting secrets, past or present, in your code.
 
-<p align="center">
-  <!-- Security & Storage -->
-  <img src="https://img.shields.io/badge/Room_v4_SQLite-00599C?style=for-the-badge&logo=sqlite&logoColor=white" alt="Room SQLite" />
-  <img src="https://img.shields.io/badge/Keystore_AES--256--GCM-D32F2F?style=for-the-badge&logo=securityscorecard&logoColor=white" alt="Keystore AES-GCM" />
-  <img src="https://img.shields.io/badge/Android_Screen_Pinning-E65100?style=for-the-badge&logo=pinboard&logoColor=white" alt="Screen Pinning" />
-  <img src="https://img.shields.io/badge/100%25_Offline_/_Zero_Cloud-004D40?style=for-the-badge&logo=shield&logoColor=white" alt="Offline First" />
-</p>
+```
+➜  ~/code(master) gitleaks detect --source . -v
 
----
+    ○
+    │╲
+    │ ○
+    ○ ░
+    ░    gitleaks
 
-## 1. Executive Summary
 
-**Attract** is a native Android attendance application built for a teacher’s personal smartphone. It is engineered from first principles to be **100% offline-first**, **class-scoped**, and **fail-closed**:
-
-- 🔒 **Zero Cloud & Zero Telemetry**: Face detection, facial landmark alignment, 512-D embedding extraction, cosine matching, and database persistence occur strictly on-device. No images, vectors, or student records ever leave the phone.
-- 📱 **Student Self Check-In with Pinned Kiosk Lockdown**: When taking attendance, the teacher's phone enters hardware-backed Android Screen Pinning (Lock Task Mode), restricting student interaction to the attendance UI.
-- 👥 **Progressive Multi-Angle Enrollment**: Students enroll directly during routine roll call without needing dedicated setup sessions.
-- 🛡️ **Hardware Keystore Cryptography**: Raw facial photos are never saved to disk. Face embeddings are encrypted using AES-256-GCM via the hardware-backed Android Keystore before storing in Room database.
-
-> [!NOTE]
-> For the canonical high-level design and engineering specifications, refer to the [Master Software Design Document (docs/00-main-sdd.md)](docs/00-main-sdd.md) and [Architecture Decision Records (docs/00-architecture-decisions.md)](docs/00-architecture-decisions.md).
-
----
-
-## 2. Technology Stack & Ecosystem
-
-Attract leverages modern Android architecture, high-performance edge machine learning, and hardware cryptography:
-
-| Domain | Technology / Library | Badge Tag | Role in Attract |
-|---|---|---|---|
-| **Core Platform** | Android 15 (API 35) | ![Android](https://img.shields.io/badge/Android_15-3DDC84?style=flat-square&logo=android&logoColor=white) | Primary target OS with Screen Pinning & CameraX support |
-| **Language** | Kotlin 2.0 | ![Kotlin](https://img.shields.io/badge/Kotlin_2.0-7F52FF?style=flat-square&logo=kotlin&logoColor=white) | Type-safe domain logic, coroutines, and sealed state machines |
-| **UI Framework** | Jetpack Compose | ![Compose](https://img.shields.io/badge/Jetpack_Compose-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white) | Declarative, modern reactive UI with custom biometric overlays |
-| **Design System** | Material Design 3 | ![Material 3](https://img.shields.io/badge/Material_3-757575?style=flat-square&logo=materialdesign&logoColor=white) | Unified typography, dark/light themes, and haptic feedback |
-| **Camera Feed** | CameraX | ![CameraX](https://img.shields.io/badge/CameraX_1.4-00C853?style=flat-square&logo=googlecamera&logoColor=white) | High-speed preview stream & non-blocking `ImageAnalysis` analyzer |
-| **Face Detection** | YOLOv8n-Face | ![YOLOv8](https://img.shields.io/badge/YOLOv8n--Face-00FFFF?style=flat-square&logo=target&logoColor=black) | On-device face detection & 5-point facial landmark regression |
-| **Alignment** | Umeyama 2D Transform | ![Umeyama](https://img.shields.io/badge/Umeyama_Similarity-FF4081?style=flat-square&logo=opencv&logoColor=white) | Least-squares similarity alignment to canonical 112×112 crop |
-| **Feature Extraction** | ArcFace MobileFaceNet | ![ArcFace](https://img.shields.io/badge/ArcFace_512--D-8A2BE2?style=flat-square&logo=thealgorithms&logoColor=white) | 512-dimensional L2-normalized deep facial identity embeddings |
-| **Runtime Engine** | LiteRT / TFLite | ![TFLite](https://img.shields.io/badge/TensorFlow_Lite-FF6F00?style=flat-square&logo=tensorflow&logoColor=white) | Low-latency CPU & GPU inference acceleration |
-| **Database** | Room v4 (SQLite) | ![Room](https://img.shields.io/badge/Room_v4-00599C?style=flat-square&logo=sqlite&logoColor=white) | Atomic transactions, foreign-key safety, and forward migrations |
-| **Encryption** | Android Keystore | ![Keystore](https://img.shields.io/badge/Keystore_AES--GCM-D32F2F?style=flat-square&logo=securityscorecard&logoColor=white) | Hardware-backed key generation & envelope template encryption |
-| **Kiosk Security** | Lock Task Mode | ![LockTask](https://img.shields.io/badge/Screen_Pinning-E65100?style=flat-square&logo=pinboard&logoColor=white) | Device lockdown during attendance sessions |
-| **Concurrency** | Coroutines & Flow | ![Coroutines](https://img.shields.io/badge/Coroutines_&_Flow-4A148C?style=flat-square&logo=kotlin&logoColor=white) | Thread-safe Mutex state coordinator & reactive room observations |
-| **Build Tooling** | Gradle 8.10 | ![Gradle](https://img.shields.io/badge/Gradle_8.10-02303A?style=flat-square&logo=gradle&logoColor=white) | Kotlin DSL build scripts & multi-variant compilation |
-
----
-
-## 3. End-to-End System Architecture
-
-The following diagram illustrates the complete biometric and persistence flow:
-
-```mermaid
-flowchart TD
-    subgraph Camera ["1. Hardware Frame Acquisition"]
-        C[CameraX YUV Stream] --> FB[Immutable FrameBundle\nFrameId, Timestamp, Rotation, Mirror]
-    end
-
-    subgraph Biometrics ["2. Edge Biometric Pipeline"]
-        FB --> YD[YOLOv8n-Face TFLite\n640x640 RGB float32]
-        YD -->|Bounding Box + 5 Landmarks| FA[Umeyama 2D Similarity Aligner\nCanonical 112x112 Crop]
-        FA --> QE[Quality & Liveness Engine\nPose Bounds, Blur Laplacian, Eye Ratios]
-        FA --> EE[ArcFace MobileFaceNet 512-D\nL2-Normalized Embedding]
-    end
-
-    subgraph Decision ["3. Identity Scoring & Decision"]
-        EE --> GS[IdentityScorer\nGrouped Maximum Cosine Similarity]
-        QE -.->|Quality Gate| GS
-        GS --> DE[RecognitionDecisionEngine\nAccept: >= 0.25 | Margin: >= 0.05]
-        DE -->|Score >= 0.25 & Margin >= 0.05| Match[MATCH: Enrolled Student]
-        DE -->|Margin < 0.05| Ambiguous[AMBIGUOUS: Retry / Teacher Assist]
-        DE -->|Score < 0.25| Unknown[UNKNOWN: Create Profile]
-    end
-
-    subgraph Persistence ["4. Persistence & Security Boundary"]
-        Match --> TX1[Room Database Transaction\nAtomic Attendance Write: PRESENT]
-        TX1 --> RoomDB[(Room SQLite v4\nAES-GCM Encrypted Templates)]
-        Unknown --> PE[Progressive 3-Angle Enrollment\nStraight, Left Turn, Right Turn]
-        PE --> D001{Teacher Auth\nGrant D-001}
-        D001 -->|PIN Verified| DC[DuplicateCheckService\nClass-Wide Duplicate Gate < 0.22]
-        DC -->|Clear| TX2[Room Transaction\nStore Encrypted Templates + Mark PRESENT]
-        TX2 --> RoomDB
-    end
-
-    style Camera fill:#f9f9f9,stroke:#666,stroke-width:1px
-    style Biometrics fill:#f0f7ff,stroke:#0066cc,stroke-width:2px
-    style Decision fill:#f6ffed,stroke:#52c41a,stroke-width:2px
-    style Persistence fill:#fff7e6,stroke:#fa8c16,stroke-width:2px
+Finding:     "export BUNDLE_ENTERPRISE__CONTRIBSYS__COM=cafebabe:deadbeef",
+Secret:      cafebabe:deadbeef
+RuleID:      sidekiq-secret
+Entropy:     2.609850
+File:        cmd/generate/config/rules/sidekiq.go
+Line:        23
+Commit:      cd5226711335c68be1e720b318b7bc3135a30eb2
+Author:      John
+Email:       john@users.noreply.github.com
+Date:        2022-08-03T12:31:40Z
+Fingerprint: cd5226711335c68be1e720b318b7bc3135a30eb2:cmd/generate/config/rules/sidekiq.go:sidekiq-secret:23
 ```
 
----
+## Getting Started
 
-## 4. Core Workflows & Invariants
+Gitleaks can be installed using Homebrew, Docker, or Go. Gitleaks is also available in binary form for many popular platforms and OS types on the [releases page](https://github.com/zricethezav/gitleaks/releases). In addition, Gitleaks can be implemented as a pre-commit hook directly in your repo or as a GitHub action using [Gitleaks-Action](https://github.com/gitleaks/gitleaks-action).
 
-### 4.1 Live Attendance Self Check-In
-1. **Teacher Initialization**: The teacher chooses a class and starts the session. The app engages **Android Screen Pinning (Lock Task Mode)**.
-2. **Student Face Verification**: The student faces the camera. CameraX delivers frames to YOLOv8n-Face, which extracts 5 facial landmarks.
-3. **Similarity Comparison**: The aligned face is converted into a 512-D unit vector. `IdentityScorer` compares it against all active templates enrolled in that specific class using grouped-maximum cosine scoring.
-4. **Idempotent Record**: If score $\ge 0.25$ and margin $\ge 0.05$, a `PRESENT` record is atomically logged with source `FACE`. Repeated scans show *"Already Checked In"* without overwriting check-in times.
-
-### 4.2 Progressive Multi-Angle Enrollment
-1. **Unrecognized Student**: An unenrolled student faces the camera and receives an unrecognized result, offering the **Create Profile** button.
-2. **Strict Roster Isolation**: The selection list shows **only `NOT_ENROLLED` students** (enrolled students are never shown, preventing identity hijacking).
-3. **D-001 Teacher Approval**: The teacher verifies student identity in person and confirms via an action-bound grant dialog.
-4. **Guided 3-Angle Capture**: The student captures 3 distinct validated angles:
-   - **Angle 1**: Frontal (Straight)
-   - **Angle 2**: Slight Left Turn (~15°)
-   - **Angle 3**: Slight Right Turn (~15°)
-5. **Continuity & Duplicate Verification**: The batch validator requires pairwise embedding continuity ($\ge 0.35$ to frontal anchor) and `DuplicateCheckService` verifies against the class gallery ($\text{max score} < 0.22$).
-6. **Atomic Transaction**: Templates are encrypted with Keystore AES-GCM, the student status becomes `ENROLLED`, and an attendance record with source `ENROLLMENT` is saved together in Room.
-
-### 4.3 Teacher-Assisted Fallback & Profile Repair
-- **No Unauthenticated Clicks**: Tapping any student row will never mark attendance without teacher authorization.
-- **PIN Authorization**: The teacher unlocks assisted attendance using their secure PIN, recording attendance with source `TEACHER_ASSISTED`.
-- **Incompatible Profile Repair**: Outdated or damaged templates are marked `REENROLL_REQUIRED` and repaired via teacher-authorized re-enrollment.
-
----
-
-## 5. Biometric Specification & Model Profile
-
-| Pipeline Stage | Model Asset / Algorithm | Input Dimensions | Output Dimensions | Verification Thresholds |
-|---|---|---|---|---|
-| **Face Detection** | `yolov8n_face.tflite` | `[1, 3, 640, 640]` float32 RGB | `[1, 20, 8400]` float32 | IoU: `0.45f`, Confidence: `0.50f` |
-| **Facial Alignment** | 2D Umeyama Similarity Fit | 5 facial landmarks | `[112, 112, 3]` canonical crop | Geometry and residual check |
-| **Feature Extraction** | `arcface_mobilefacenet.tflite` | `[1, 112, 112, 3]` float32 `[-1, 1]` | `[1, 512]` float32 L2-norm | Norm range: $[0.8, 1.2]$ |
-| **Identity Scoring** | Grouped-Maximum Cosine | Query vector vs class gallery | Best score ($B$), Runner-up ($S$) | Accept: $\ge 0.25$, Margin: $\ge 0.05$ |
-| **Duplicate Gate** | Class-wide pairwise check | 3 candidate sample vectors | Max gallery similarity | Block if $\ge 0.22$ |
-| **Envelope Encryption** | Hardware Keystore AES-GCM | Plaintext float bytes | IV + Ciphertext blob (v2) | Non-null hardware boundary |
-
----
-
-## 6. Repository Layout
-
-```text
-Attract/
-├── app/
-│   ├── schemas/                          # Room schema JSON contracts (v1, v2, v3, v4)
-│   └── src/
-│       ├── main/
-│       │   ├── assets/                   # Committed TFLite neural network assets
-│       │   └── java/com/attract/attendance/
-│       │       ├── app/                  # MainActivity, Navigation & App bootstrap
-│       │       ├── core/model/           # Domain models, Status enums & CommandResult
-│       │       ├── data/
-│       │       │   ├── local/            # Room Database, DAOs, Entities & Migrations
-│       │       │   ├── repository/       # AttractRepository & atomic transaction commands
-│       │       │   └── security/         # Keystore cipher & TemplateEnvelopeCodec
-│       │       ├── domain/
-│       │       │   ├── face/             # YOLO detector, Umeyama aligner, ArcFace embedding,
-│       │       │   │                     # IdentityScorer, Liveness, Quality & Duplicate check
-│       │       │   └── session/          # SessionCoordinator, SessionState & Teacher Grants
-│       │       ├── feature/attendance/   # AttendanceScreen, CameraPreview & ViewModels
-│       │       ├── lockdown/             # Screen Pinning (Lock Task Controller)
-│       │       └── ui/                   # Jetpack Compose theme, components & class screens
-│       ├── test/                         # Unit tests (Coordinator, Math, Duplicate, Reproductions)
-│       └── androidTest/                  # Instrumented Room migration & camera integration tests
-├── docs/                                 # Complete Software Design Documents & LLDs
-├── sample-data/                          # Reference student rosters and CSV import templates
-├── scripts/                              # Model downloaders, TFLite inspectors, ADB automation
-├── build.gradle.kts                      # Root Gradle build script
-└── README.md                             # Project overview and architecture guide
-```
-
----
-
-## 7. Quick Start & Building
-
-### Prerequisites
-- **IDE**: Android Studio Ladybug (2024.2.1+) or Koala
-- **JDK**: Java 17
-- **Target Platform**: Android 15 (API level 35), Min SDK 26 (Android 8.0 Oreo)
-- **Device / Emulator**: Physical Android phone or Android Emulator with Virtual Scene Camera (e.g. `Pixel 6 API 35`)
-
-### Build & Test Commands
+### Installing
 
 ```bash
-# 1. Download and verify TFLite models
-python scripts/download_models.py
+# MacOS
+brew install gitleaks
 
-# 2. Run all unit tests (100% green required)
-./gradlew testDebugUnitTest
+# Docker (DockerHub)
+docker pull zricethezav/gitleaks:latest
+docker run -v ${path_to_host_folder_to_scan}:/path zricethezav/gitleaks:latest [COMMAND] --source="/path" [OPTIONS]
 
-# 3. Assemble debug APK
-./gradlew assembleDebug
+# Docker (ghcr.io)
+docker pull ghcr.io/gitleaks/gitleaks:latest
+docker run -v ${path_to_host_folder_to_scan}:/path ghcr.io/gitleaks/gitleaks:latest [COMMAND] --source="/path" [OPTIONS]
 
-# 4. Run instrumented migration and database tests on connected device/emulator
-./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.attract.attendance.data.local.TemplateMigrationAndroidTest
+# From Source
+git clone https://github.com/gitleaks/gitleaks.git
+cd gitleaks
+make build
 ```
 
-### Launching the Development Emulator
-A convenient script is provided to start the emulator and launch the app:
-```cmd
-.\Launch_Emulator.bat
+### GitHub Action
+
+Check out the official [Gitleaks GitHub Action](https://github.com/gitleaks/gitleaks-action)
+
+```
+name: gitleaks
+on: [pull_request, push, workflow_dispatch]
+jobs:
+  scan:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE}} # Only required for Organizations, not personal accounts.
 ```
 
----
+### Pre-Commit
 
-## 8. Architecture Documentation Index
+1. Install pre-commit from https://pre-commit.com/#install
+2. Create a `.pre-commit-config.yaml` file at the root of your repository with the following content:
 
-For in-depth design rationale, mathematical models, and subsystem specifications, refer to the documentation in [`docs/`](docs/):
+   ```
+   repos:
+     - repo: https://github.com/gitleaks/gitleaks
+       rev: v8.16.1
+       hooks:
+         - id: gitleaks
+   ```
 
-| Document | Topic & Scope |
-|---|---|
-| 📄 **[00 Main SDD (docs/00-main-sdd.md)](docs/00-main-sdd.md)** | **Canonical Architecture Document**: HLD, system invariants, domain rules, and security baselines. |
-| 📄 **[00 Architecture Decisions (docs/00-architecture-decisions.md)](docs/00-architecture-decisions.md)** | **ADRs**: Records D-001 through D-006 (teacher proof, class scope, session recovery, ML Kit boundary). |
-| 📄 **[02 Database & Persistence (docs/02-lld-database-and-persistence.md)](docs/02-lld-database-and-persistence.md)** | Room entities, migrations 1→2→3→4, schema integrity, and Keystore envelope encryption. |
-| 📄 **[06 Live Session Engine (docs/06-lld-live-attendance-session-engine.md)](docs/06-lld-live-attendance-session-engine.md)** | Session state machine, attempt tokens, and feedback concurrency control. |
-| 📄 **[08 Camera & Frames (docs/08-lld-camera-and-frame-processing.md)](docs/08-lld-camera-and-frame-processing.md)** | CameraX frame acquisition pipeline, thread safety, and `FrameBundle` contracts. |
-| 📄 **[09 Face Quality Engine (docs/09-lld-face-quality-engine.md)](docs/09-lld-face-quality-engine.md)** | Pose calculation, Laplacian blur detection, and target angle evaluation. |
-| 📄 **[10 Enrollment & Templates (docs/10-lld-face-enrollment-and-template-management.md)](docs/10-lld-face-enrollment-and-template-management.md)** | Guided 3-angle progressive enrollment, same-person continuity, and duplicate detection. |
-| 📄 **[11 Recognition & Decisions (docs/11-lld-face-recognition-and-decision-engine.md)](docs/11-lld-face-recognition-and-decision-engine.md)** | Cosine distance scoring, grouped-maximum algorithm, and decision boundary thresholds. |
-| 📄 **[12 Liveness & Anti-Spoof (docs/12-lld-liveness-and-anti-spoof-engine.md)](docs/12-lld-liveness-and-anti-spoof-engine.md)** | Presentation attack detection, temporal motion analysis, and eye-state safety. |
-| 📄 **[13 Security & Lockdown (docs/13-lld-lockdown-authentication-and-security.md)](docs/13-lld-lockdown-authentication-and-security.md)** | Android Screen Pinning (Lock Task), teacher PIN hashing (Argon2/PBKDF2), and action grants. |
-| 📄 **[16 Multiframe Verification (docs/16-lld-adaptive-multiframe-verification.md)](docs/16-lld-adaptive-multiframe-verification.md)** | Sequential multiframe evidence fusion and attempt budget policy. |
-| 📄 **[Sample Data Guide (sample-data/README.md)](sample-data/README.md)** | CSV roster formatting and import guide. |
-| 📄 **[Developer Scripts (scripts/README.md)](scripts/README.md)** | Tool catalog for model testing, database diagnostics, and automation. |
+   for a [native execution of GitLeaks](https://github.com/zricethezav/gitleaks/releases) or use the [`gitleaks-docker` pre-commit ID](https://github.com/zricethezav/gitleaks/blob/master/.pre-commit-hooks.yaml) for executing GitLeaks using the [official Docker images](#docker)
 
----
+3. Auto-update the config to the latest repos' versions by executing `pre-commit autoupdate`
+4. Install with `pre-commit install`
+5. Now you're all set!
 
-## 9. License
+```
+➜ git commit -m "this commit contains a secret"
+Detect hardcoded secrets.................................................Failed
+```
 
-This project is licensed under the Apache License, Version 2.0. See the `LICENSE` file for details.
+Note: to disable the gitleaks pre-commit hook you can prepend `SKIP=gitleaks` to the commit command
+and it will skip running gitleaks
+
+```
+➜ SKIP=gitleaks git commit -m "skip gitleaks check"
+Detect hardcoded secrets................................................Skipped
+```
+
+## Usage
+
+```
+Usage:
+  gitleaks [command]
+
+Available Commands:
+  completion  generate the autocompletion script for the specified shell
+  detect      detect secrets in code
+  help        Help about any command
+  protect     protect secrets in code
+  version     display gitleaks version
+
+Flags:
+  -b, --baseline-path string       path to baseline with issues that can be ignored
+  -c, --config string              config file path
+                                   order of precedence:
+                                   1. --config/-c
+                                   2. env var GITLEAKS_CONFIG
+                                   3. (--source/-s)/.gitleaks.toml
+                                   If none of the three options are used, then gitleaks will use the default config
+      --exit-code int              exit code when leaks have been encountered (default 1)
+  -h, --help                       help for gitleaks
+  -l, --log-level string           log level (trace, debug, info, warn, error, fatal) (default "info")
+      --max-target-megabytes int   files larger than this will be skipped
+      --no-color                   turn off color for verbose output
+      --no-banner                  suppress banner
+      --redact                     redact secrets from logs and stdout
+  -f, --report-format string       output format (json, csv, junit, sarif) (default "json")
+  -r, --report-path string         report file
+  -s, --source string              path to source (default ".")
+  -v, --verbose                    show verbose output from scan
+
+Use "gitleaks [command] --help" for more information about a command.
+```
+
+### Commands
+
+There are two commands you will use to detect secrets; `detect` and `protect`.
+
+#### Detect
+
+The `detect` command is used to scan repos, directories, and files. This command can be used on developer machines and in CI environments.
+
+When running `detect` on a git repository, gitleaks will parse the output of a `git log -p` command (you can see how this executed
+[here](https://github.com/zricethezav/gitleaks/blob/7240e16769b92d2a1b137c17d6bf9d55a8562899/git/git.go#L17-L25)).
+[`git log -p` generates patches](https://git-scm.com/docs/git-log#_generating_patch_text_with_p) which gitleaks will use to detect secrets.
+You can configure what commits `git log` will range over by using the `--log-opts` flag. `--log-opts` accepts any option for `git log -p`.
+For example, if you wanted to run gitleaks on a range of commits you could use the following command: `gitleaks detect --source . --log-opts="--all commitA..commitB"`.
+See the `git log` [documentation](https://git-scm.com/docs/git-log) for more information.
+
+You can scan files and directories by using the `--no-git` option.
+
+If you want to run only specific rules you can do so by using the `--enable-rule` option (with a rule ID as a parameter), this flag can be used multiple times. For example: `--enable-rule=atlassian-api-token` will only apply that rule. You can find a list of rules [here](config/gitleaks.toml).
+
+#### Protect
+
+The `protect` command is used to scan uncommitted changes in a git repo. This command should be used on developer machines in accordance with
+[shifting left on security](https://cloud.google.com/architecture/devops/devops-tech-shifting-left-on-security).
+When running `protect` on a git repository, gitleaks will parse the output of a `git diff` command (you can see how this executed
+[here](https://github.com/zricethezav/gitleaks/blob/7240e16769b92d2a1b137c17d6bf9d55a8562899/git/git.go#L48-L49)). You can set the
+`--staged` flag to check for changes in commits that have been `git add`ed. The `--staged` flag should be used when running Gitleaks
+as a pre-commit.
+
+**NOTE**: the `protect` command can only be used on git repos, running `protect` on files or directories will result in an error message.
+
+### Creating a baseline
+
+When scanning large repositories or repositories with a long history, it can be convenient to use a baseline. When using a baseline,
+gitleaks will ignore any old findings that are present in the baseline. A baseline can be any gitleaks report. To create a gitleaks report, run gitleaks with the `--report-path` parameter.
+
+```
+gitleaks detect --report-path gitleaks-report.json # This will save the report in a file called gitleaks-report.json
+```
+
+Once as baseline is created it can be applied when running the detect command again:
+
+```
+gitleaks detect --baseline-path gitleaks-report.json --report-path findings.json
+```
+
+After running the detect command with the --baseline-path parameter, report output (findings.json) will only contain new issues.
+
+### Verify Findings
+
+You can verify a finding found by gitleaks using a `git log` command.
+Example output:
+
+```
+Finding:     aws_secret="AKIAIMNOJVGFDXXXE4OA"
+RuleID:      aws-access-token
+Secret       AKIAIMNOJVGFDXXXE4OA
+Entropy:     3.65
+File:        checks_test.go
+Line:        37
+Commit:      ec2fc9d6cb0954fb3b57201cf6133c48d8ca0d29
+Author:      Zachary Rice
+Email:       z@email.com
+Date:        2018-01-28T17:39:00Z
+Fingerprint: ec2fc9d6cb0954fb3b57201cf6133c48d8ca0d29:checks_test.go:aws-access-token:37
+```
+
+We can use the following format to verify the leak:
+
+```
+git log -L {StartLine,EndLine}:{File} {Commit}
+```
+
+So in this example it would look like:
+
+```
+git log -L 37,37:checks_test.go ec2fc9d6cb0954fb3b57201cf6133c48d8ca0d29
+```
+
+Which gives us:
+
+```
+commit ec2fc9d6cb0954fb3b57201cf6133c48d8ca0d29
+Author: zricethezav <thisispublicanyways@gmail.com>
+Date:   Sun Jan 28 17:39:00 2018 -0500
+
+    [update] entropy check
+
+diff --git a/checks_test.go b/checks_test.go
+--- a/checks_test.go
++++ b/checks_test.go
+@@ -28,0 +37,1 @@
++               "aws_secret= \"AKIAIMNOJVGFDXXXE4OA\"":          true,
+
+```
+
+## Pre-Commit hook
+
+You can run Gitleaks as a pre-commit hook by copying the example `pre-commit.py` script into
+your `.git/hooks/` directory.
+
+## Configuration
+
+Gitleaks offers a configuration format you can follow to write your own secret detection rules:
+
+```toml
+# Title for the gitleaks configuration file.
+title = "Gitleaks title"
+
+# Extend the base (this) configuration. When you extend a configuration
+# the base rules take precedence over the extended rules. I.e., if there are
+# duplicate rules in both the base configuration and the extended configuration
+# the base rules will override the extended rules.
+# Another thing to know with extending configurations is you can chain together
+# multiple configuration files to a depth of 2. Allowlist arrays are appended
+# and can contain duplicates.
+# useDefault and path can NOT be used at the same time. Choose one.
+[extend]
+# useDefault will extend the base configuration with the default gitleaks config:
+# https://github.com/zricethezav/gitleaks/blob/master/config/gitleaks.toml
+useDefault = true
+# or you can supply a path to a configuration. Path is relative to where gitleaks
+# was invoked, not the location of the base config.
+path = "common_config.toml"
+
+# An array of tables that contain information that define instructions
+# on how to detect secrets
+[[rules]]
+
+# Unique identifier for this rule
+id = "awesome-rule-1"
+
+# Short human readable description of the rule.
+description = "awesome rule 1"
+
+# Golang regular expression used to detect secrets. Note Golang's regex engine
+# does not support lookaheads.
+regex = '''one-go-style-regex-for-this-rule'''
+
+# Golang regular expression used to match paths. This can be used as a standalone rule or it can be used
+# in conjunction with a valid `regex` entry.
+path = '''a-file-path-regex'''
+
+# Array of strings used for metadata and reporting purposes.
+tags = ["tag","another tag"]
+
+# Int used to extract secret from regex match and used as the group that will have
+# its entropy checked if `entropy` is set.
+secretGroup = 3
+
+# Float representing the minimum shannon entropy a regex group must have to be considered a secret.
+entropy = 3.5
+
+# Keywords are used for pre-regex check filtering. Rules that contain
+# keywords will perform a quick string compare check to make sure the
+# keyword(s) are in the content being scanned. Ideally these values should
+# either be part of the idenitifer or unique strings specific to the rule's regex
+# (introduced in v8.6.0)
+keywords = [
+  "auth",
+  "password",
+  "token",
+]
+
+# You can include an allowlist table for a single rule to reduce false positives or ignore commits
+# with known/rotated secrets
+[rules.allowlist]
+description = "ignore commit A"
+commits = [ "commit-A", "commit-B"]
+paths = [
+  '''go\.mod''',
+  '''go\.sum'''
+]
+# note: (rule) regexTarget defaults to check the _Secret_ in the finding.
+# if regexTarget is not specified then _Secret_ will be used.
+# Acceptable values for regexTarget are "match" and "line"
+regexTarget = "match"
+regexes = [
+  '''process''',
+  '''getenv''',
+]
+# note: stopwords targets the extracted secret, not the entire regex match
+# like 'regexes' does. (stopwords introduced in 8.8.0)
+stopwords = [
+  '''client''',
+  '''endpoint''',
+]
+
+
+# This is a global allowlist which has a higher order of precedence than rule-specific allowlists.
+# If a commit listed in the `commits` field below is encountered then that commit will be skipped and no
+# secrets will be detected for said commit. The same logic applies for regexes and paths.
+[allowlist]
+description = "global allow list"
+commits = [ "commit-A", "commit-B", "commit-C"]
+paths = [
+  '''gitleaks\.toml''',
+  '''(.*?)(jpg|gif|doc)'''
+]
+
+# note: (global) regexTarget defaults to check the _Secret_ in the finding.
+# if regexTarget is not specified then _Secret_ will be used.
+# Acceptable values for regexTarget are "match" and "line"
+regexTarget = "match"
+
+regexes = [
+  '''219-09-9999''',
+  '''078-05-1120''',
+  '''(9[0-9]{2}|666)-\d{2}-\d{4}''',
+]
+# note: stopwords targets the extracted secret, not the entire regex match
+# like 'regexes' does. (stopwords introduced in 8.8.0)
+stopwords = [
+  '''client''',
+  '''endpoint''',
+]
+```
+
+Refer to the default [gitleaks config](https://github.com/zricethezav/gitleaks/blob/master/config/gitleaks.toml) for examples or follow the [contributing guidelines](https://github.com/zricethezav/gitleaks/blob/master/README.md) if you would like to contribute to the default configuration. Additionally, you can check out [this gitleaks blog post](https://blog.gitleaks.io/stop-leaking-secrets-configuration-2-3-aeed293b1fbf) which covers advanced configuration setups.
+
+### Additional Configuration
+
+#### gitleaks:allow
+
+If you are knowingly committing a test secret that gitleaks will catch you can add a `gitleaks:allow` comment to that line which will instruct gitleaks
+to ignore that secret. Ex:
+
+```
+class CustomClass:
+    discord_client_secret = '8dyfuiRyq=vVc3RRr_edRk-fK__JItpZ'  #gitleaks:allow
+
+```
+
+#### .gitleaksignore
+
+You can ignore specific findings by creating a `.gitleaksignore` file at the root of your repo. In release v8.10.0 Gitleaks added a `Fingerprint` value to the Gitleaks report. Each leak, or finding, has a Fingerprint that uniquely identifies a secret. Add this fingerprint to the `.gitleaksignore` file to ignore that specific secret. See Gitleaks' [.gitleaksignore](https://github.com/zricethezav/gitleaks/blob/master/.gitleaksignore) for an example. Note: this feature is experimental and is subject to change in the future.
+
+## Sponsorships
+
+<p align="left">
+	  <a href="https://www.tines.com/?utm_source=oss&utm_medium=sponsorship&utm_campaign=gitleaks">
+		  <img alt="Tines Sponsorship" src="https://user-images.githubusercontent.com/15034943/146411864-4878f936-b4f7-49a0-b625-f9f40c704bfa.png" width=200>
+	  </a>
+  </p>
+
+## Exit Codes
+
+You can always set the exit code when leaks are encountered with the --exit-code flag. Default exit codes below:
+
+```
+0 - no leaks present
+1 - leaks or error encountered
+126 - unknown flag
+```

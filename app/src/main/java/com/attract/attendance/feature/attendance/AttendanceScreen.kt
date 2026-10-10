@@ -1809,6 +1809,12 @@ fun AttendanceScreen(
                             }
                             isAuthenticatingAssist = true
                             scope.launch {
+                                if (repository.isPinLockedOut()) {
+                                    val remaining = repository.getPinLockoutRemainingSeconds()
+                                    teacherAssistPinError = "Too many attempts. Try again in $remaining seconds."
+                                    isAuthenticatingAssist = false
+                                    return@launch
+                                }
                                 val success = repository.authenticate(teacherAssistPinInput.toCharArray())
                                 isAuthenticatingAssist = false
                                 if (success) {
@@ -1816,7 +1822,12 @@ fun AttendanceScreen(
                                     teacherAssistPinInput = ""
                                     showTeacherAssistDialog = true
                                 } else {
-                                    teacherAssistPinError = "Incorrect PIN. Try again."
+                                    if (repository.isPinLockedOut()) {
+                                        val remaining = repository.getPinLockoutRemainingSeconds()
+                                        teacherAssistPinError = "Too many attempts. Locked for $remaining s."
+                                    } else {
+                                        teacherAssistPinError = "Incorrect PIN. Try again."
+                                    }
                                 }
                             }
                         },
@@ -1959,6 +1970,12 @@ fun AttendanceScreen(
                             }
                             isAuthenticating = true
                             scope.launch {
+                                if (repository.isPinLockedOut()) {
+                                    val remaining = repository.getPinLockoutRemainingSeconds()
+                                    pinError = "Too many attempts. Try again in $remaining seconds."
+                                    isAuthenticating = false
+                                    return@launch
+                                }
                                 val success = repository.authenticate(teacherPinInput.toCharArray())
                                 isAuthenticating = false
                                 if (success) {
@@ -1977,7 +1994,12 @@ fun AttendanceScreen(
                                         onEndSession(presentIds)
                                     }
                                 } else {
-                                    pinError = "Incorrect PIN. Try again."
+                                    if (repository.isPinLockedOut()) {
+                                        val remaining = repository.getPinLockoutRemainingSeconds()
+                                        pinError = "Too many attempts. Locked for $remaining s."
+                                    } else {
+                                        pinError = "Incorrect PIN. Try again."
+                                    }
                                 }
                             }
                         },

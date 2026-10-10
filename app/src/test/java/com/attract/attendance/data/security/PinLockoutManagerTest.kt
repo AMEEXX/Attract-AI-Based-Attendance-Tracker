@@ -9,7 +9,8 @@ class PinLockoutManagerTest {
 
     private val storage = InMemoryPinLockoutStorage()
     private var currentTime = 1_000_000L
-    private val manager = PinLockoutManager(storage, timeProvider = { currentTime })
+    private var bootCount = 0
+    private val manager = PinLockoutManager(storage, timeProvider = { currentTime }, currentBootCount = { bootCount })
 
     @Test
     fun underFiveAttempts_noLockout() {
@@ -41,12 +42,19 @@ class PinLockoutManagerTest {
     }
 
     @Test
-    fun sixthAttempt_exponentialBackoffDoubles() {
-        repeat(5) { manager.recordFailedAttempt() }
+    fun sixthAttempt_isStillThirtySeconds() {
+        repeat(5) { manager.recordFailedAttempt() } // 5 fails
 
-        val duration = manager.recordFailedAttempt()
-        assertEquals(60L, duration) // 30s * 2 = 60s
+        val duration = manager.recordFailedAttempt() // 6th fail
+        assertEquals(30L, duration) // 30s (until 8 fails)
         assertTrue(manager.isLockedOut())
+    }
+
+    @Test
+    fun eighthAttempt_locksOutForFiveMinutes() {
+        repeat(7) { manager.recordFailedAttempt() }
+        val duration = manager.recordFailedAttempt() // 8th fail
+        assertEquals(300L, duration) // 300s = 5 min
     }
 
     @Test
@@ -57,5 +65,19 @@ class PinLockoutManagerTest {
         manager.recordSuccessfulAttempt()
         assertFalse(manager.isLockedOut())
         assertEquals(0, manager.getFailedAttempts())
+    }
+
+    @Test
+    fun rebootBypassAttempt_reappliesLockout() {
+        repeat(5) { manager.recordFailedAttempt() }
+        assertTrue(manager.isLockedOut())
+
+        // Simulate reboot: bootCount increases, but elapsedRealtime resets (currentTime = 0)
+        bootCount++
+        currentTime = 1000L
+
+        // Accessing the manager should detect the reboot and re-apply the lockout!
+        assertTrue(manager.isLockedOut())
+        assertEquals(30L, manager.getRemainingLockoutSeconds())
     }
 }

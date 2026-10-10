@@ -108,9 +108,7 @@ class AppContainer(application: Application) {
     val isBiometricCryptoAvailable: Boolean get() = embeddingCipher != null
 
     val pinLockoutManager by lazy {
-        com.attract.attendance.data.security.PinLockoutManager(
-            com.attract.attendance.data.security.PrefsPinLockoutStorage.fromContext(application)
-        )
+        com.attract.attendance.data.security.PinLockoutManager.create(application)
     }
 
     val repository: AttractRepository by lazy {
