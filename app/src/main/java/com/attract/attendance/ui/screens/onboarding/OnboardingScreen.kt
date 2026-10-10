@@ -177,7 +177,7 @@ fun OnboardingScreen(
                             pinInput = it.filter(Char::isDigit).take(12)
                             pinError = null
                         },
-                        label = { Text("Fallback Security PIN (4–12 digits)") },
+                        label = { Text("Fallback Security PIN (6–12 digits)") },
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                         singleLine = true,
@@ -214,8 +214,8 @@ fun OnboardingScreen(
                         onClick = {
                             if (teacherName.isBlank()) {
                                 pinError = "Please enter your name."
-                            } else if (pinInput.length < 4) {
-                                pinError = "PIN must be at least 4 digits."
+                            } else if (pinInput.length < 6) {
+                                pinError = "PIN must be at least 6 digits."
                             } else if (pinInput != pinConfirmInput) {
                                 pinError = "PINs do not match."
                             } else {

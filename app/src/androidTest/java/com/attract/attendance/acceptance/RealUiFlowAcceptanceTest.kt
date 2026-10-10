@@ -1,4 +1,4 @@
-﻿package com.attract.attendance.acceptance
+package com.attract.attendance.acceptance
 
 import android.content.Context
 import androidx.room.Room
@@ -63,7 +63,7 @@ class RealUiFlowAcceptanceTest {
             .allowMainThreadQueries().build()
         val repository = AttractRepository(db, PinHasher(), embeddingCipher = null)
         kotlinx.coroutines.runBlocking {
-            assertTrue(repository.registerTeacher("UITeacher", "1234".toCharArray())
+            assertTrue(repository.registerTeacher("UITeacher", "123456".toCharArray())
                 is com.attract.attendance.core.model.CommandResult.Success)
             classId = valueOf(repository.createClass(CreateClassCommand(name = "Test Class")), "createClass")
             amitId = valueOf(repository.addStudent(CreateStudentCommand(classId = classId, name = "AMIT", rollNumber = "R-01")), "addStudent AMIT")
@@ -339,7 +339,7 @@ class RealUiFlowAcceptanceTest {
         // Focus the field and type digits as hardware key events (Compose-safe).
         device.findObject(By.clazz("android.widget.EditText"))?.click()
         Thread.sleep(400)
-        "1234".forEach { digit ->
+        "123456".forEach { digit ->
             device.pressKeyCode(android.view.KeyEvent.keyCodeFromString("KEYCODE_$digit"))
             Thread.sleep(80)
         }
@@ -349,7 +349,7 @@ class RealUiFlowAcceptanceTest {
         if (textExists("PIN is required") || textExists("Incorrect PIN")) {
             device.findObject(By.clazz("android.widget.EditText"))?.click()
             Thread.sleep(300)
-            "1234".forEach { digit ->
+            "123456".forEach { digit ->
                 device.pressKeyCode(android.view.KeyEvent.keyCodeFromString("KEYCODE_$digit"))
                 Thread.sleep(80)
             }

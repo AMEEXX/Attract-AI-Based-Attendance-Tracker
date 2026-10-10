@@ -23,7 +23,7 @@ class SeedWebcamTestData {
             .addMigrations(AttractDatabase.MIGRATION_1_2, AttractDatabase.MIGRATION_2_3, AttractDatabase.MIGRATION_3_4)
             .build()
         val repo = AttractRepository(db, PinHasher(), embeddingCipher = null)
-        repo.registerTeacher("Test Teacher", "1234".toCharArray())
+        repo.registerTeacher("Test Teacher", "123456".toCharArray())
         val classResult = repo.createClass(CreateClassCommand(name = "Webcam Test"))
         val classId = when (classResult) {
             is CommandResult.Success -> classResult.value

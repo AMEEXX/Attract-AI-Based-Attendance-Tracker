@@ -314,8 +314,8 @@ class AttractRepository(
     suspend fun registerTeacher(displayName: String, pin: CharArray): CommandResult<TeacherProfile> {
         val cleanName = displayName.trim()
         if (cleanName.isBlank()) return CommandResult.Failure(AppError.Validation("displayName", "Your name is required."))
-        if (!pin.concatToString().matches(Regex("\\d{4,12}"))) {
-            return CommandResult.Failure(AppError.Validation("pin", "Choose a 4 to 12 digit PIN."))
+        if (!pin.concatToString().matches(Regex("\\d{6,12}"))) {
+            return CommandResult.Failure(AppError.Validation("pin", "Choose a 6 to 12 digit PIN."))
         }
         return try {
             database.withTransaction {
@@ -346,7 +346,8 @@ class AttractRepository(
                         if (success) {
                             pinLockoutManager.recordSuccessfulAttempt()
                         } else {
-                            pinLockoutManager.recordFailedAttempt()
+                            val durationSeconds = pinLockoutManager.recordFailedAttempt()
+                            AppLog.w("AttractRepository", "Teacher PIN verification failed (AUTH_FAILED). Attempts=${pinLockoutManager.getFailedAttempts()}, lockout=${durationSeconds}s")
                         }
                     }
                     success

@@ -648,9 +648,19 @@ class AttractViewModel(
             return
         }
         viewModelScope.launch {
+            if (repository.isPinLockedOut()) {
+                val remaining = repository.getPinLockoutRemainingSeconds()
+                onComplete(false, "PIN locked due to too many attempts. Try again in $remaining s.")
+                return@launch
+            }
             val authenticated = repository.authenticate(pin.toCharArray())
             if (!authenticated) {
-                onComplete(false, "Invalid teacher PIN")
+                if (repository.isPinLockedOut()) {
+                    val remaining = repository.getPinLockoutRemainingSeconds()
+                    onComplete(false, "PIN locked due to too many attempts. Try again in $remaining s.")
+                } else {
+                    onComplete(false, "Invalid teacher PIN")
+                }
                 return@launch
             }
             when (val result = repository.resetBiometricData()) {
@@ -677,9 +687,19 @@ class AttractViewModel(
             return
         }
         viewModelScope.launch {
+            if (repository.isPinLockedOut()) {
+                val remaining = repository.getPinLockoutRemainingSeconds()
+                onComplete(false, "PIN locked due to too many attempts. Try again in $remaining s.")
+                return@launch
+            }
             val authenticated = repository.authenticate(pin.toCharArray())
             if (!authenticated) {
-                onComplete(false, "Invalid teacher PIN")
+                if (repository.isPinLockedOut()) {
+                    val remaining = repository.getPinLockoutRemainingSeconds()
+                    onComplete(false, "PIN locked due to too many attempts. Try again in $remaining s.")
+                } else {
+                    onComplete(false, "Invalid teacher PIN")
+                }
                 return@launch
             }
             try {

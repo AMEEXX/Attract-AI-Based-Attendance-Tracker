@@ -67,4 +67,26 @@ class PinAuthTest {
 
         assertTrue(pin.all { it == '\u0000' })
     }
+
+    @Test
+    fun lockoutManager_activeLockout_failsClosedImmediatelyAndClearsPin() {
+        val storage = com.attract.attendance.data.security.InMemoryPinLockoutStorage()
+        val lockoutManager = com.attract.attendance.data.security.PinLockoutManager(
+            storage = storage,
+            timeProvider = { 100_000L }
+        )
+        // Simulate 5 failures -> locked out for 30s
+        repeat(5) { lockoutManager.recordFailedAttempt() }
+        assertTrue(lockoutManager.isLockedOut())
+
+        val pinHasher = PinHasher()
+        val encoded = pinHasher.hash("123456".toCharArray())
+        val pinAuth = PinBackedAuthenticator(pinHasher, encoded, lockoutManager)
+
+        val pin = "123456".toCharArray()
+        val result = pinAuth.verifyPin(pin)
+
+        assertFalse("Locked out authenticator must reject even valid PIN", result)
+        assertTrue("Pin buffer must be zeroed even when locked out", pin.all { it == '\u0000' })
+    }
 }

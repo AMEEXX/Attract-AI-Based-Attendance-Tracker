@@ -220,4 +220,41 @@ class BackupExporterTest {
         val encryptedEnvelope = BackupCrypto.encrypt(exporter.toJson(snapshot), "1234".toCharArray())
         BackupCrypto.decrypt(encryptedEnvelope, "9999".toCharArray())
     }
+
+    @Test
+    fun encryptedBackup_twelvePlusCharPassphrase_succeeds() {
+        val snapshot = BackupSnapshot(
+            generatedAt = 1700000000000L,
+            teachers = listOf(
+                TeacherEntity(id = 1L, displayName = "Teacher 1", pinHash = "hash", createdAt = 0L, updatedAt = 0L)
+            ),
+            classes = emptyList(),
+            students = emptyList(),
+            sessions = emptyList(),
+            records = emptyList(),
+        )
+        val passphrase = "Secure-Passphrase-2026!".toCharArray()
+        val encrypted = BackupCrypto.encrypt(exporter.toJson(snapshot), passphrase)
+        val decrypted = BackupCrypto.decrypt(encrypted, passphrase)
+        val restored = exporter.fromJson(decrypted)
+        org.junit.Assert.assertEquals("Teacher 1", restored.teachers[0].displayName)
+    }
+
+    @Test(expected = Exception::class)
+    fun encryptedBackup_tamperedCiphertext_failsDecryption() {
+        val snapshot = BackupSnapshot(
+            generatedAt = 1700000000000L,
+            teachers = emptyList(),
+            classes = emptyList(),
+            students = emptyList(),
+            sessions = emptyList(),
+            records = emptyList(),
+        )
+        val passphrase = "Secure-Passphrase-2026!".toCharArray()
+        val encrypted = BackupCrypto.encrypt(exporter.toJson(snapshot), passphrase)
+        
+        // Tamper with the envelope JSON
+        val tampered = encrypted.replace("ciphertext\": \"", "ciphertext\": \"AAAA")
+        BackupCrypto.decrypt(tampered, passphrase)
+    }
 }
