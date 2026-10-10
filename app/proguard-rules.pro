@@ -15,6 +15,8 @@
 # --- TensorFlow Lite & Face Biometrics ---
 -keep class org.tensorflow.lite.** { *; }
 -dontwarn org.tensorflow.lite.**
+-keep class com.google.ai.edge.litert.** { *; }
+-dontwarn com.google.ai.edge.litert.**
 
 # --- Google API Client & Google Drive ---
 -keep class com.google.api.services.drive.model.** { *; }

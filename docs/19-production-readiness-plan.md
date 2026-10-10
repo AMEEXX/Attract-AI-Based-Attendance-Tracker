@@ -96,7 +96,7 @@ Ten P0 blockers (**BL-01** to **BL-10**) gate any public release, and 19 work pa
 ### WP-02 (P0) — Release hardening and Play compliance
 **Fixes:** BL-02, BL-05, BL-06  
 **Files:** `app/build.gradle.kts`, `app/proguard-rules.pro`, `AndroidManifest.xml`, `res/xml/data_extraction_rules.xml`, `src/debug/`, `src/release/`, `util/AppLog.kt`  
-**Status on `dev`:** 🟡 **Hardening completed; SDK 36 & LiteRT 1.4 pending**
+**Status on `dev`:** 🟢 **COMPLETED (`dev`)**
 1. Target API 36: update `compileSdk = 36`, `targetSdk = 36`. Test predictive back inside pinned mode, WorkManager job quotas, edge-to-edge.
 2. 16 KB pages: migrate from `org.tensorflow:tensorflow-lite*` to Google LiteRT (`com.google.ai.edge.litert:litert` >= 1.4.0). Verify `.so` ELF 16 KB alignment via APK Analyzer.
 3. R8: `isMinifyEnabled = true`, `isShrinkResources = true`. Proguard rules keep Room, LiteRT, Drive models, Gson, ML Kit, Firebase AI. *(Completed)*

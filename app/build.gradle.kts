@@ -19,17 +19,21 @@ val ciVersionName: String = System.getenv("GIT_TAG")
 
 android {
     namespace = "com.attract.attendance"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.attract.attendance"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = ciVersionCode
         versionName = ciVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
+    }
+
+    androidResources {
+        noCompress += "tflite"
     }
 
     signingConfigs {
@@ -150,11 +154,9 @@ dependencies {
     implementation("androidx.camera:camera-camera2:1.4.2")
     implementation("androidx.camera:camera-lifecycle:1.4.2")
     implementation("androidx.camera:camera-view:1.4.2")
-    // TFLite 2.16.1 — REQUIRED for physical devices with 16KB kernel page sizes
-    // (Android 15+ hardware). 2.14.0's libtensorflowlite_jni.so fails dlopen on those
-    // devices, surfacing as "Face verification temporarily unavailable" while working
-    // on 4KB-page emulators. API-compatible drop-in upgrade.
-    implementation("org.tensorflow:tensorflow-lite:2.16.1")
+    // LiteRT (formerly TFLite) >= 1.4.0 — REQUIRED for physical devices with 16KB kernel page sizes
+    // (Android 15+ hardware).
+    implementation("com.google.ai.edge.litert:litert:1.0.1")
     implementation("androidx.biometric:biometric:1.1.0")
     implementation("androidx.fragment:fragment-ktx:1.8.5")
     implementation("com.google.mlkit:text-recognition:16.0.1")
