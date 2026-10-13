@@ -68,13 +68,17 @@ fun RosterSelectionBottomSheet(
     var selectedTab by remember { mutableIntStateOf(0) }
     var searchQuery by remember { mutableStateOf("") }
 
-    val unenrolledStudents = remember(students, presentIds, searchQuery) {
-        students.filter { it.enrollmentStatus == EnrollmentStatus.NOT_ENROLLED && it.id !in presentIds }
-            .filter {
-                searchQuery.isBlank() ||
-                    it.name.contains(searchQuery, ignoreCase = true) ||
-                    it.rollNumber.contains(searchQuery, ignoreCase = true)
-            }
+    val candidateStudents = remember(students, presentIds, searchQuery, isStandaloneMode) {
+        val baseList = if (isStandaloneMode) {
+            students
+        } else {
+            students.filter { it.id !in presentIds }
+        }
+        baseList.filter {
+            searchQuery.isBlank() ||
+                it.name.contains(searchQuery, ignoreCase = true) ||
+                it.rollNumber.contains(searchQuery, ignoreCase = true)
+        }
     }
 
     ModalBottomSheet(
@@ -100,7 +104,7 @@ fun RosterSelectionBottomSheet(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = if (isStandaloneMode) "Choose a student from the roster" else "Select your name below to register face check-in",
+                text = if (isStandaloneMode) "Choose a student from the roster" else "Select your name below to register or update face check-in",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.White.copy(alpha = 0.65f)
             )
@@ -126,7 +130,7 @@ fun RosterSelectionBottomSheet(
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("New Profile", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodySmall)
+                        Text("Select Name", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodySmall)
                     }
                     Button(
                         onClick = { selectedTab = 1 },
@@ -171,8 +175,8 @@ fun RosterSelectionBottomSheet(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // List of Un-Enrolled Students
-                if (unenrolledStudents.isEmpty()) {
+                // List of Candidate Students
+                if (candidateStudents.isEmpty()) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -180,7 +184,7 @@ fun RosterSelectionBottomSheet(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = if (searchQuery.isBlank()) "No un-enrolled students available" else "No matching students found",
+                            text = if (searchQuery.isBlank()) "No students available" else "No matching students found",
                             color = Color.White.copy(alpha = 0.5f),
                             style = MaterialTheme.typography.bodyMedium
                         )
@@ -192,7 +196,7 @@ fun RosterSelectionBottomSheet(
                             .fillMaxWidth()
                             .height(280.dp)
                     ) {
-                        items(unenrolledStudents, key = { it.id }) { student ->
+                        items(candidateStudents, key = { it.id }) { student ->
                             val isSelected = selectedStudent?.id == student.id
                             Row(
                                 modifier = Modifier
@@ -235,16 +239,21 @@ fun RosterSelectionBottomSheet(
                                     )
                                 }
 
+                                val (badgeText, badgeColor) = when (student.enrollmentStatus) {
+                                    EnrollmentStatus.NOT_ENROLLED -> "Not Enrolled" to Color.White.copy(alpha = 0.65f)
+                                    EnrollmentStatus.REENROLL_REQUIRED -> "Re-Enroll" to Color(0xFFFFB74D)
+                                    EnrollmentStatus.ENROLLED -> "Enrolled" to BiometricIndigo
+                                }
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(6.dp))
-                                        .background(Color.White.copy(alpha = 0.08f))
+                                        .background(badgeColor.copy(alpha = 0.15f))
                                         .padding(horizontal = 8.dp, vertical = 4.dp)
                                 ) {
                                     Text(
-                                        text = "Not Enrolled",
+                                        text = badgeText,
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = Color.White.copy(alpha = 0.65f)
+                                        color = badgeColor
                                     )
                                 }
                             }

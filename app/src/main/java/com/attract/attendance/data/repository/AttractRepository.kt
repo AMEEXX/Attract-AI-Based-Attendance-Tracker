@@ -116,7 +116,7 @@ class AttractRepository(
     suspend fun markRecognizedPresent(
         classId: Long,
         studentId: Long,
-        confidence: Float?,
+        confidence: Float? = null,
     ): FallbackMarkResult {
         android.util.Log.i(
             "ATTRACT_ATTENDANCE_FALLBACK",
@@ -763,6 +763,17 @@ class AttractRepository(
 
             val studentsWithUsable = usable.map { it.studentId }.toSet()
             val orphaned = enrolledStudents.filter { it.id !in studentsWithUsable }.map { it.id }
+            if (orphaned.isNotEmpty()) {
+                val now = nowMillis()
+                for (sId in orphaned) {
+                    templates.deactivateForStudent(sId)
+                    students.find(sId)?.let { s ->
+                        if (s.enrollmentStatus == EnrollmentStatus.ENROLLED) {
+                            students.update(s.copy(enrollmentStatus = EnrollmentStatus.REENROLL_REQUIRED, updatedAt = now))
+                        }
+                    }
+                }
+            }
             affectedStudentIds.addAll(orphaned)
 
             val healthSummary = com.attract.attendance.domain.face.GalleryHealthSummary(
@@ -970,6 +981,7 @@ class AttractRepository(
         classId: Long,
         studentId: Long,
         batch: com.attract.attendance.domain.face.ValidatedEnrollmentBatch,
+        allowReEnroll: Boolean = false,
     ): com.attract.attendance.domain.face.EnrollmentResult {
         val lock = getEnrollmentLock(classId)
         return lock.withLock {
@@ -1004,8 +1016,21 @@ class AttractRepository(
                     if (student.archived) {
                         return@withTransaction com.attract.attendance.domain.face.EnrollmentResult.Ineligible("Student is archived")
                     }
-                    if (student.enrollmentStatus == EnrollmentStatus.ENROLLED) {
-                        return@withTransaction com.attract.attendance.domain.face.EnrollmentResult.AlreadyEnrolled(studentId)
+                    if (student.enrollmentStatus == EnrollmentStatus.ENROLLED && !allowReEnroll) {
+                        val activeStudentTemplates = templates.forStudent(studentId).filter { it.active }
+                        val hasUsable = activeStudentTemplates.any { row ->
+                            val floats = com.attract.attendance.data.security.TemplateEnvelopeCodec.decode(
+                                cipher = embeddingCipher,
+                                studentId = row.studentId,
+                                modelVersion = row.modelVersion,
+                                stored = row.encryptedEmbedding,
+                                cryptoVersion = row.cryptoVersion,
+                            )
+                            floats != null && com.attract.attendance.domain.face.TemplateCompatibility.isUsableVector(floats)
+                        }
+                        if (hasUsable) {
+                            return@withTransaction com.attract.attendance.domain.face.EnrollmentResult.AlreadyEnrolled(studentId)
+                        }
                     }
 
                     if (sessionId != null) {
@@ -1021,6 +1046,9 @@ class AttractRepository(
                             "Biometric hardware keystore unavailable — face enrollment disabled. Please use manual attendance."
                         )
                     val now = nowMillis()
+                    // Deactivate existing templates so old/stale/undecryptable templates are purged
+                    templates.deactivateForStudent(studentId)
+
                     val templateIds = mutableListOf<Long>()
 
                     batch.samples.forEach { sample ->
@@ -1039,7 +1067,7 @@ class AttractRepository(
                                 embeddingDim = sample.embedding.size,
                                 qualityScore = sample.qualityScore,
                                 capturedAt = now,
-                                source = "self_enrollment",
+                                source = if (allowReEnroll || student.enrollmentStatus == EnrollmentStatus.ENROLLED || student.enrollmentStatus == EnrollmentStatus.REENROLL_REQUIRED) "re_enrollment" else "self_enrollment",
                                 active = true,
                             )
                         )
@@ -1049,7 +1077,7 @@ class AttractRepository(
                     students.update(
                         student.copy(
                             enrollmentStatus = EnrollmentStatus.ENROLLED,
-                            enrolledAt = now,
+                            enrolledAt = student.enrolledAt ?: now,
                             updatedAt = now,
                         )
                     )
@@ -1096,8 +1124,9 @@ class AttractRepository(
         classId: Long,
         studentId: Long,
         batch: com.attract.attendance.domain.face.ValidatedEnrollmentBatch,
+        allowReEnroll: Boolean = false,
     ): com.attract.attendance.domain.face.EnrollmentResult =
-        selfEnrollAndCheckIn(sessionId = null, classId = classId, studentId = studentId, batch = batch)
+        selfEnrollAndCheckIn(sessionId = null, classId = classId, studentId = studentId, batch = batch, allowReEnroll = allowReEnroll)
 
     /** Legacy delegation for backward compatibility */
     suspend fun firstEnrollAndCheckIn(
@@ -1122,7 +1151,7 @@ class AttractRepository(
         batch: com.attract.attendance.domain.face.ValidatedEnrollmentBatch,
         authorizationGrant: com.attract.attendance.domain.session.TeacherAuthorizationGrant? = null,
     ): com.attract.attendance.domain.face.EnrollmentResult =
-        selfEnroll(classId, studentId, batch)
+        selfEnroll(classId, studentId, batch, allowReEnroll = true)
 
     /**
      * Re-enrollment / profile repair: replaces old templates atomically after teacher authorization (D-001, R18).

@@ -654,6 +654,12 @@ fun AttendanceScreen(
                     delay(1500)
                     onBack()
                 }
+                is com.attract.attendance.domain.face.EnrollmentResult.AlreadyEnrolled -> {
+                    state = SessionScreenState.MATCH_SUCCESS
+                    statusMessage = "✓ PROFILE UPDATED: ${target.name}"
+                    delay(1500)
+                    onBack()
+                }
                 is com.attract.attendance.domain.face.EnrollmentResult.DuplicateSuspected -> {
                     val dupStudent = students.find { it.id == enrollResult.existingStudentId }
                     val name = dupStudent?.name ?: "ID ${enrollResult.existingStudentId}"
@@ -740,16 +746,21 @@ fun AttendanceScreen(
                 }
             }
 
-            val isReEnroll = target.enrollmentStatus == EnrollmentStatus.REENROLL_REQUIRED
+            val isReEnroll = target.enrollmentStatus == EnrollmentStatus.REENROLL_REQUIRED || target.enrollmentStatus == EnrollmentStatus.ENROLLED
             val enrollResult = withContext(Dispatchers.IO) {
-                if (isReEnroll) {
-                    repository.reEnrollStudentFace(classId, target.id, batch, activeTeacherGrant)
+                if (isReEnroll && activeTeacherGrant != null) {
+                    val result = repository.reEnrollStudentFace(classId, target.id, batch, activeTeacherGrant)
+                    if (result is com.attract.attendance.domain.face.EnrollmentResult.Committed && activeSessionId != null) {
+                        repository.markRecognizedPresent(classId, target.id, confidence = null)
+                    }
+                    result
                 } else {
                     repository.selfEnrollAndCheckIn(
                         sessionId = activeSessionId,
                         classId = classId,
                         studentId = target.id,
-                        batch = batch
+                        batch = batch,
+                        allowReEnroll = isReEnroll,
                     )
                 }
             }
@@ -1719,9 +1730,16 @@ fun AttendanceScreen(
             )
         }
 
-        // D-007 Student Confirmation Dialog for First-Time Self-Service Enrollment
+        // D-007 Student Confirmation Dialog for First-Time Self-Service Enrollment or Profile Repair
         if (showStudentConfirmDialog && pendingEnrollmentStudent != null) {
             val student = pendingEnrollmentStudent!!
+            val isAlreadyEnrolled = student.enrollmentStatus == EnrollmentStatus.ENROLLED
+            val isReenroll = student.enrollmentStatus == EnrollmentStatus.REENROLL_REQUIRED
+            val actionDesc = when {
+                isReenroll -> "Your face profile needs an update. Capturing 3 poses will repair your profile and check you in."
+                isAlreadyEnrolled -> "Your face was not recognized. Capturing 3 poses will update your face profile and check you in."
+                else -> "This face will be linked to your attendance profile for this class."
+            }
 
             AlertDialog(
                 onDismissRequest = {
@@ -1731,11 +1749,11 @@ fun AttendanceScreen(
                 containerColor = BiometricSurface,
                 titleContentColor = Color.White,
                 textContentColor = Color.White.copy(alpha = 0.85f),
-                title = { Text("Confirm Your Name", fontWeight = FontWeight.Bold) },
+                title = { Text(if (isAlreadyEnrolled || isReenroll) "Update Face Profile" else "Confirm Your Name", fontWeight = FontWeight.Bold) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(
-                            "Are you ${student.name} (${student.rollNumber})?\n\nThis face will be linked to your attendance profile for this class.",
+                            "Are you ${student.name} (${student.rollNumber})?\n\n$actionDesc",
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -1753,7 +1771,7 @@ fun AttendanceScreen(
                             contentColor = Color.White
                         )
                     ) {
-                        Text("Yes, that's me")
+                        Text(if (isAlreadyEnrolled || isReenroll) "Update & Check In" else "Yes, that's me")
                     }
                 },
                 dismissButton = {
@@ -1881,24 +1899,7 @@ fun AttendanceScreen(
                                             .fillMaxWidth()
                                             .clip(RoundedCornerShape(8.dp))
                                             .background(Color.White.copy(alpha = 0.05f))
-                                            .feedbackClickable {
-                                                val grant = TeacherAuthorizationGrant(
-                                                    sessionId = activeSessionId ?: 0L,
-                                                    classId = classId,
-                                                    studentId = student.id,
-                                                    action = if (isReenroll) TeacherAuthAction.RE_ENROLLMENT
-                                                             else TeacherAuthAction.TEACHER_ASSISTED_CHECKIN,
-                                                    interactionId = currentInteractionToken,
-                                                    expiresAtMillis = System.currentTimeMillis() + 120_000L,
-                                                )
-                                                showTeacherAssistDialog = false
-                                                if (isReenroll) {
-                                                    startInlineEnrollment(student, grant)
-                                                } else {
-                                                    markTeacherAssistedPresent(student, grant)
-                                                }
-                                            }
-                                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                                            .padding(horizontal = 12.dp, vertical = 6.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
@@ -1909,11 +1910,40 @@ fun AttendanceScreen(
                                                 color = if (isReenroll) MaterialTheme.colorScheme.error else Color.Gray
                                             )
                                         }
-                                        Text(
-                                            if (isReenroll) "Repair" else "Mark Present",
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
+                                        TextButton(
+                                            onClick = {
+                                                val grant = TeacherAuthorizationGrant(
+                                                    sessionId = activeSessionId ?: 0L,
+                                                    classId = classId,
+                                                    studentId = student.id,
+                                                    action = TeacherAuthAction.RE_ENROLLMENT,
+                                                    interactionId = currentInteractionToken,
+                                                    expiresAtMillis = System.currentTimeMillis() + 120_000L,
+                                                )
+                                                showTeacherAssistDialog = false
+                                                startInlineEnrollment(student, grant)
+                                            }
+                                        ) {
+                                            Text("Repair Face", style = MaterialTheme.typography.labelSmall, color = BiometricIndigo)
+                                        }
+                                        if (!isReenroll) {
+                                            TextButton(
+                                                onClick = {
+                                                    val grant = TeacherAuthorizationGrant(
+                                                        sessionId = activeSessionId ?: 0L,
+                                                        classId = classId,
+                                                        studentId = student.id,
+                                                        action = TeacherAuthAction.TEACHER_ASSISTED_CHECKIN,
+                                                        interactionId = currentInteractionToken,
+                                                        expiresAtMillis = System.currentTimeMillis() + 120_000L,
+                                                    )
+                                                    showTeacherAssistDialog = false
+                                                    markTeacherAssistedPresent(student, grant)
+                                                }
+                                            ) {
+                                                Text("Present", style = MaterialTheme.typography.labelSmall, color = BiometricSuccess)
+                                            }
+                                        }
                                     }
                                 }
                             }
