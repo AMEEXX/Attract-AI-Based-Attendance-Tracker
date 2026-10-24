@@ -57,7 +57,7 @@ Attract leverages modern Android architecture, high-performance edge machine lea
 |---|---|---|---|
 | **Core Platform** | Android 15 (API 35) | ![Android](https://img.shields.io/badge/Android_15-3DDC84?style=flat-square&logo=android&logoColor=white) | Primary target OS with Screen Pinning & CameraX support. |
 | **Language** | Kotlin 2.0 | ![Kotlin](https://img.shields.io/badge/Kotlin_2.0-7F52FF?style=flat-square&logo=kotlin&logoColor=white) | Type-safe domain logic, coroutines, and sealed state machines. |
-| **UI Framework** | Jetpack Compose | ![Compose](https://img.shields.io/badge/Jetpack_Compose-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white) | Declarative, modern reactive UI with custom biometric overlays |
+| **UI Framework** | Jetpack Compose | ![Compose](https://img.shields.io/badge/Jetpack_Compose-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white) | Declarative, modern reactive UI with custom biometric overlays. |
 | **Design System** | Material Design 3 | ![Material 3](https://img.shields.io/badge/Material_3-757575?style=flat-square&logo=materialdesign&logoColor=white) | Unified typography, dark/light themes, and haptic feedback |
 | **Camera Feed** | CameraX | ![CameraX](https://img.shields.io/badge/CameraX_1.4-00C853?style=flat-square&logo=googlecamera&logoColor=white) | High-speed preview stream & non-blocking `ImageAnalysis` analyzer |
 | **Face Detection** | YOLOv8n-Face | ![YOLOv8](https://img.shields.io/badge/YOLOv8n--Face-00FFFF?style=flat-square&logo=target&logoColor=black) | On-device face detection & 5-point facial landmark regression |
