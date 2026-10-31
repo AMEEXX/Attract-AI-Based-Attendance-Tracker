@@ -58,8 +58,34 @@ jobs:
             app/build/reports/tests/
             app/build/test-results/
 
+      - name: Prepare Debug Keystore for Release Signing Fallback
+        run: |
+          mkdir -p ~/.android
+          if [ ! -f ~/.android/debug.keystore ]; then
+            echo "Generating debug keystore for CI signing fallback..."
+            keytool -genkeypair \
+              -alias androiddebugkey \
+              -keypass android \
+              -keystore ~/.android/debug.keystore \
+              -storepass android \
+              -dname "CN=Android Debug,O=Android,C=US" \
+              -validity 10000 \
+              -keyalg RSA \
+              -keysize 2048
+          fi
+
       - name: Build App Bundle (bundleRelease)
-        run: ./gradlew bundleRelease --stacktrace
+        run: |
+          set -o pipefail
+          ./gradlew bundleRelease --stacktrace 2>&1 | tee bundleRelease.log
+
+      - name: Dump Bundle Failure Log
+        if: failure()
+        run: |
+          if [ -f bundleRelease.log ]; then
+            echo "===== bundleRelease.log tail ====="
+            tail -n 120 bundleRelease.log
+          fi
 
       - name: Upload Release Bundle Artifact
         uses: actions/upload-artifact@v4
@@ -69,4 +95,5 @@ jobs:
             app/build/outputs/bundle/release/*.aab
             app-release.aab
           if-no-files-found: error
+
 
