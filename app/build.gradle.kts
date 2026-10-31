@@ -1,4 +1,5 @@
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.util.Properties
 
 plugins {
@@ -81,8 +82,8 @@ android {
                 // Play App Signing / local testing fallback: use debug keystore so release builds succeed
                 val debugSigning = getByName("debug")
                 val targetKeystore = debugSigning.storeFile?.takeIf { it.exists() }
-                    ?: java.io.File(System.getProperty("user.home"), ".config/.android/debug.keystore").takeIf { it.exists() }
-                    ?: java.io.File(System.getProperty("user.home"), ".android/debug.keystore")
+                    ?: File(System.getProperty("user.home"), ".config/.android/debug.keystore").takeIf { it.exists() }
+                    ?: File(System.getProperty("user.home"), ".android/debug.keystore")
                 storeFile = targetKeystore
                 storePassword = debugSigning.storePassword ?: "android"
                 keyAlias = debugSigning.keyAlias ?: "androiddebugkey"
