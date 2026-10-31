@@ -419,6 +419,9 @@ interface FaceTemplateDao {
     @Query("SELECT * FROM face_templates ORDER BY id")
     suspend fun all(): List<FaceTemplateEntity>
 
+    @Query("SELECT * FROM face_templates WHERE active = 1 ORDER BY id")
+    suspend fun allActive(): List<FaceTemplateEntity>
+
     /** Deactivates templates whose stored dimension differs from the current model output. */
     @Query(
         """

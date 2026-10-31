@@ -1636,7 +1636,7 @@ class AttractRepository(
     suspend fun sessionExportRows(classId: Long): List<SessionExportRow> = records.sessionExportRows(classId)
 
     suspend fun backupSnapshot(): BackupSnapshot = database.withTransaction {
-        val allTemplates = templates.all()
+        val allTemplates = templates.allActive()
         val backupTemplates = mutableListOf<BackupFaceTemplate>()
         for (tmpl in allTemplates) {
             val floats = try {
@@ -1736,10 +1736,9 @@ class AttractRepository(
                 }
             }
 
-            // Re-reconcile enrollment status: any restored student with existing or restored biometric templates remains ENROLLED
-            val now = nowMillis()
-            students.restoreEnrolledWithTemplates(now)
-            templates.reactivateAll()
+            // The backup snapshot is the truthful source of truth for student enrollment
+            // status and active face templates at backup time; do not forcibly reactivate
+            // deleted/deactivated biometric templates.
 
             CommandResult.Success(Unit)
         }
