@@ -45,6 +45,7 @@ import androidx.compose.material.icons.filled.GroupOff
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Warning
 import com.attract.attendance.ui.components.AttractPrimaryButton
 import com.attract.attendance.ui.components.AttractOutlinedButton
 import com.attract.attendance.ui.components.AttractTextButton
@@ -307,7 +308,12 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
                                 isStandaloneMode = true,
                                 targetStudentForStandalone = currentStudent,
                                 onEnrollStudent = { studentId, embeddings, qualityScores, onComplete ->
-                                    viewModel.enrollStudentFace(studentId, embeddings, qualityScores, onComplete)
+                                    viewModel.enrollStudentFace(studentId, embeddings, qualityScores) {
+                                        try {
+                                            com.attract.attendance.data.drive.BackupScheduler.triggerImmediateBackup(context)
+                                        } catch (_: Throwable) {}
+                                        onComplete()
+                                    }
                                 },
                                 onEndSession = { _ -> },
                                 onBack = viewModel::navigateBack
@@ -364,7 +370,12 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
                                 students = currentWorkspace.students,
                                 repository = repository,
                                 onEnrollStudent = { studentId, embeddings, qualityScores, onComplete ->
-                                    viewModel.enrollStudentFace(studentId, embeddings, qualityScores, onComplete)
+                                    viewModel.enrollStudentFace(studentId, embeddings, qualityScores) {
+                                        try {
+                                            com.attract.attendance.data.drive.BackupScheduler.triggerImmediateBackup(context)
+                                        } catch (_: Throwable) {}
+                                        onComplete()
+                                    }
                                 },
                                 onEndSession = { present ->
                                     viewModel.saveFaceAttendance(screen.classId, present, screen.sessionDate)
@@ -406,6 +417,48 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
                 warning = warning,
                 onDismiss = viewModel::dismissNoEnrolledStudentsWarning,
                 onGoToStudents = { viewModel.openStudentsTabFromWarning(warning.classId) },
+            )
+        }
+        if (state.showDataRecoveryPrompt) {
+            AlertDialog(
+                onDismissRequest = viewModel::dismissDataRecoveryPrompt,
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(36.dp)
+                    )
+                },
+                title = {
+                    Text(
+                        text = "Biometric Data Notice",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Enrolled students were detected, but their face templates could not be loaded. If you have a Google Drive backup, you can restore your data now to recover biometric recognition.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                confirmButton = {
+                    AttractPrimaryButton(
+                        onClick = {
+                            viewModel.dismissDataRecoveryPrompt()
+                            viewModel.restoreDriveBackup(context)
+                        }
+                    ) {
+                        Text("Restore from Drive")
+                    }
+                },
+                dismissButton = {
+                    AttractTextButton(onClick = viewModel::dismissDataRecoveryPrompt) {
+                        Text("Dismiss")
+                    }
+                }
             )
         }
     }

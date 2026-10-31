@@ -650,6 +650,12 @@ fun AttendanceScreen(
                 is com.attract.attendance.domain.face.EnrollmentResult.Committed -> {
                     state = SessionScreenState.MATCH_SUCCESS
                     statusMessage = "✓ ENROLLED SUCCESSFULLY: ${target.name}"
+                    try {
+                        val drivePrefs = com.attract.attendance.data.drive.DriveBackupPreferences(context)
+                        if (!drivePrefs.accountEmail.isNullOrBlank()) {
+                            com.attract.attendance.data.drive.BackupScheduler.triggerImmediateBackup(context)
+                        }
+                    } catch (_: Throwable) {}
                     delay(1500)
                     onBack()
                 }
@@ -762,6 +768,12 @@ fun AttendanceScreen(
                     lastRecognizedStudent = target
                     state = SessionScreenState.MATCH_SUCCESS
                     statusMessage = if (isReEnroll) "PROFILE REPAIRED: ${target.name}" else "✓ ENROLLED & PRESENT: ${target.name}"
+                    try {
+                        val drivePrefs = com.attract.attendance.data.drive.DriveBackupPreferences(context)
+                        if (!drivePrefs.accountEmail.isNullOrBlank()) {
+                            com.attract.attendance.data.drive.BackupScheduler.triggerImmediateBackup(context)
+                        }
+                    } catch (_: Throwable) {}
                     delay(2500)
                     resetToReady(resetAttempts = true)
                 }

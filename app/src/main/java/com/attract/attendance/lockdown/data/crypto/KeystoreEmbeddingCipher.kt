@@ -78,8 +78,11 @@ class KeystoreEmbeddingCipher(
         val key = try {
             getKey()
         } catch (e: UnrecoverableKeyException) {
-            recreateKey()
-            getKey()
+            Log.e("KeystoreEmbeddingCipher", "Keystore key unrecoverable during encrypt", e)
+            throw KeyInvalidatedException(
+                "Biometric encryption key was invalidated. Existing face data must be " +
+                "recovered from backup before new enrollments can proceed.", e
+            )
         }
 
         val cipher = javax.crypto.Cipher.getInstance("$KEY_ALGORITHM/$BLOCK_MODE/$PADDING")
@@ -125,14 +128,21 @@ class KeystoreEmbeddingCipher(
         }
     }
 
-    private fun recreateKey(): SecretKey {
-        try {
-            createKey()
-            return getKey()
-        } catch (e: Exception) {
-            throw RuntimeException("Failed to recreate Keystore key", e)
+    /**
+     * Rotates the Keystore key. ONLY call after all existing templates have been
+     * decrypted with the old key and re-encrypted with the new key.
+     */
+    fun rotateKey(): SecretKey {
+        Log.w("KeystoreEmbeddingCipher", "Performing controlled key rotation")
+        val ks = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
+        if (ks.containsAlias(alias)) {
+            ks.deleteEntry(alias)
         }
+        createKey()
+        return getKey()
     }
 }
 
 class TemplateUnavailableException(message: String, cause: Throwable) : RuntimeException(message, cause)
+
+class KeyInvalidatedException(message: String, cause: Throwable) : RuntimeException(message, cause)

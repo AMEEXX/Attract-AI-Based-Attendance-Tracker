@@ -44,6 +44,27 @@ class AttractApplication : Application() {
             android.util.Log.w("AttractApplication", "Firebase App Check init failed: ${t.message}")
         }
 
+        // Pre-upgrade safety backup: if the app version changed, trigger backup
+        // before opening the database (which may trigger migration)
+        try {
+            val upgradePrefs = getSharedPreferences("attract_upgrade_guard", MODE_PRIVATE)
+            val lastVersionCode = upgradePrefs.getInt("last_version_code", -1)
+            val currentVersionCode = com.attract.attendance.BuildConfig.VERSION_CODE
+            if (lastVersionCode != -1 && lastVersionCode != currentVersionCode) {
+                android.util.Log.i(
+                    "AttractApplication",
+                    "Version upgrade detected: $lastVersionCode -> $currentVersionCode. Triggering pre-upgrade backup."
+                )
+                val drivePrefs = com.attract.attendance.data.drive.DriveBackupPreferences(this)
+                if (!drivePrefs.accountEmail.isNullOrBlank()) {
+                    com.attract.attendance.data.drive.BackupScheduler.triggerImmediateBackup(this)
+                }
+            }
+            upgradePrefs.edit().putInt("last_version_code", currentVersionCode).apply()
+        } catch (t: Throwable) {
+            android.util.Log.w("AttractApplication", "Pre-upgrade guard failed", t)
+        }
+
         try {
             container = AppContainer(this)
         } catch (t: Throwable) {

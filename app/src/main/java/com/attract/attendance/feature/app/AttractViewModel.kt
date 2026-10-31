@@ -81,6 +81,7 @@ data class AttractUiState(
     val driveAccountEmail: String? = null,
     val driveSyncStatus: com.attract.attendance.data.drive.DriveSyncStatus = com.attract.attendance.data.drive.DriveSyncStatus.Idle,
     val driveLastSyncMillis: Long = 0L,
+    val showDataRecoveryPrompt: Boolean = false,
     val isWorking: Boolean = false,
     val message: String? = null,
 )
@@ -136,12 +137,27 @@ class AttractViewModel(
         }
         viewModelScope.launch(startupExceptionHandler) {
             repository.restoreAllEnrolledFaceTemplates()
+            // Post-upgrade integrity check: if we have enrolled students but
+            // zero face templates, the database was likely corrupted or biometric key invalidated.
+            val enrolledCount = repository.countEnrolledStudents()
+            val templateCount = repository.countActiveTemplates()
+            if (enrolledCount > 0 && templateCount == 0) {
+                android.util.Log.w(
+                    "AttractViewModel",
+                    "DATA INTEGRITY ALERT: $enrolledCount enrolled students but 0 face templates. Prompting recovery."
+                )
+                _uiState.update { it.copy(showDataRecoveryPrompt = true) }
+            }
         }
         viewModelScope.launch(startupExceptionHandler) {
             repository.observeClasses().collect { classes ->
                 _uiState.update { it.copy(classes = classes) }
             }
         }
+    }
+
+    fun dismissDataRecoveryPrompt() {
+        _uiState.update { it.copy(showDataRecoveryPrompt = false) }
     }
 
     fun createTeacher(displayName: String, pin: String) = runCommand(
@@ -507,6 +523,25 @@ class AttractViewModel(
         viewModelScope.launch {
             try {
                 val snapshot = repository.backupSnapshot()
+                val hasFaceData = snapshot.faceTemplates.isNotEmpty()
+                val hasEnrolledStudents = snapshot.students.any {
+                    it.enrollmentStatus == com.attract.attendance.core.model.EnrollmentStatus.ENROLLED
+                }
+                if (hasEnrolledStudents && !hasFaceData) {
+                    android.util.Log.w(
+                        "AttractViewModel",
+                        "SKIPPING manual Drive backup: students exist but 0 face templates decrypted."
+                    )
+                    _uiState.update {
+                        it.copy(
+                            driveSyncStatus = com.attract.attendance.data.drive.DriveSyncStatus.Error(
+                                "Backup skipped: face biometric data could not be decrypted"
+                            )
+                        )
+                    }
+                    showMessage("Backup aborted: Face biometric data could not be decrypted. Existing Drive backup preserved.")
+                    return@launch
+                }
                 val json = backupExporter.toJson(snapshot)
                 val result = com.attract.attendance.data.drive.DriveServiceHelper(context).uploadBackupJson(email, json)
                 if (result.isSuccess) {

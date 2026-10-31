@@ -36,12 +36,22 @@ class DriveServiceHelper(private val context: Context) {
             val drive = getDriveService(accountName)
             val jsonBytes = jsonContent.toByteArray(Charsets.UTF_8)
             val mediaContent = ByteArrayContent("application/json", jsonBytes)
+            val timestamp = System.currentTimeMillis()
 
-            // Query existing attract_backup.json in appDataFolder
+            // 1. Always create a new timestamped backup file
+            val versionedMetadata = com.google.api.services.drive.model.File().apply {
+                name = "attract_backup_$timestamp.json"
+                parents = listOf("appDataFolder")
+            }
+            drive.files().create(versionedMetadata, mediaContent)
+                .setFields("id")
+                .execute()
+
+            // 2. Also update or create the "latest" pointer for quick restore
             val fileList = drive.files().list()
                 .setSpaces("appDataFolder")
                 .setQ("name = 'attract_backup.json' and trashed = false")
-                .setFields("files(id, name, modifiedTime)")
+                .setFields("files(id, name)")
                 .execute()
 
             val existingFile = fileList.files?.firstOrNull()
@@ -49,15 +59,34 @@ class DriveServiceHelper(private val context: Context) {
             if (existingFile != null) {
                 drive.files().update(existingFile.id, null, mediaContent).execute()
             } else {
-                val metadata = com.google.api.services.drive.model.File().apply {
+                val latestMetadata = com.google.api.services.drive.model.File().apply {
                     name = "attract_backup.json"
                     parents = listOf("appDataFolder")
                 }
-                drive.files().create(metadata, mediaContent)
+                drive.files().create(latestMetadata, mediaContent)
                     .setFields("id")
                     .execute()
             }
-            System.currentTimeMillis()
+
+            // 3. Cleanup: keep only the 5 most recent timestamped backups
+            try {
+                val allBackups = drive.files().list()
+                    .setSpaces("appDataFolder")
+                    .setQ("name contains 'attract_backup_' and trashed = false")
+                    .setFields("files(id, name, createdTime)")
+                    .setOrderBy("createdTime desc")
+                    .execute()
+
+                allBackups.files?.drop(5)?.forEach { oldFile ->
+                    try {
+                        drive.files().delete(oldFile.id).execute()
+                    } catch (_: Throwable) {}
+                }
+            } catch (_: Throwable) {
+                // Non-critical cleanup failure
+            }
+
+            timestamp
         }
     }
 
@@ -70,9 +99,22 @@ class DriveServiceHelper(private val context: Context) {
                 .setFields("files(id, name)")
                 .execute()
 
-            val existingFile = fileList.files?.firstOrNull() ?: return@runCatching null
+            var targetFileId = fileList.files?.firstOrNull()?.id
+            if (targetFileId == null) {
+                // Fall back to most recent timestamped backup if attract_backup.json is not found
+                val fallbackList = drive.files().list()
+                    .setSpaces("appDataFolder")
+                    .setQ("name contains 'attract_backup_' and trashed = false")
+                    .setFields("files(id, name, createdTime)")
+                    .setOrderBy("createdTime desc")
+                    .execute()
+                targetFileId = fallbackList.files?.firstOrNull()?.id
+            }
+
+            if (targetFileId == null) return@runCatching null
+
             val outputStream = ByteArrayOutputStream()
-            drive.files().get(existingFile.id).executeMediaAndDownloadTo(outputStream)
+            drive.files().get(targetFileId).executeMediaAndDownloadTo(outputStream)
             outputStream.toString("UTF-8")
         }
     }

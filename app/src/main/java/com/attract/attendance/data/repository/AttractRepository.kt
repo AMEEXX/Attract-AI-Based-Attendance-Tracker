@@ -858,6 +858,14 @@ class AttractRepository(
         }
     }.getOrDefault(0)
 
+    /** Counts enrolled (non-archived) students across all classes. */
+    suspend fun countEnrolledStudents(): Int =
+        students.all().count { !it.archived && it.enrollmentStatus == EnrollmentStatus.ENROLLED }
+
+    /** Counts active face templates across all classes. */
+    suspend fun countActiveTemplates(): Int =
+        templates.all().count { it.active }
+
     suspend fun attendanceRecordsForSession(sessionId: Long): List<AttendanceRecordEntity> =
         records.forSession(sessionId)
 
