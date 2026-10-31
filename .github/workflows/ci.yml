@@ -36,7 +36,7 @@ jobs:
 
       - name: Prepare Debug Keystore for Signing Fallback
         run: |
-          mkdir -p ~/.android
+          mkdir -p ~/.android ~/.config/.android
           if [ ! -f ~/.android/debug.keystore ]; then
             echo "Generating debug keystore for CI signing fallback..."
             keytool -genkeypair \
@@ -49,6 +49,8 @@ jobs:
               -keyalg RSA \
               -keysize 2048
           fi
+          cp -f ~/.android/debug.keystore ~/.config/.android/debug.keystore
+
 
       - name: Privacy Log Grep Gate
         run: |
