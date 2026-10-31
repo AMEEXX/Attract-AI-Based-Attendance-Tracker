@@ -3,6 +3,7 @@ package com.attract.attendance.ui.components
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -25,14 +26,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import com.attract.attendance.ui.components.AttractIconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -68,6 +71,11 @@ fun OcrImportSheet(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    val prefs = remember { context.getSharedPreferences("attract_ai_prefs", Context.MODE_PRIVATE) }
+    var customApiKey by remember { mutableStateOf(prefs.getString("custom_gemini_api_key", "").orEmpty()) }
+    var showApiKeyDialog by remember { mutableStateOf(false) }
+    var apiKeyInput by remember { mutableStateOf(customApiKey) }
 
     val capturedUris = remember { mutableStateListOf<Uri>() }
     var currentPhotoUri by remember { mutableStateOf<Uri?>(null) }
@@ -108,6 +116,53 @@ fun OcrImportSheet(
         }
     }
 
+    if (showApiKeyDialog) {
+        AlertDialog(
+            onDismissRequest = { showApiKeyDialog = false },
+            title = {
+                Text(
+                    text = "Gemini API Key",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "If your Firebase project API key is restricted or blocked, enter a free Gemini API key from Google AI Studio (aistudio.google.com).",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    OutlinedTextField(
+                        value = apiKeyInput,
+                        onValueChange = { apiKeyInput = it },
+                        label = { Text("API Key (starts with AIza...)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                AttractPrimaryButton(
+                    onClick = {
+                        val trimmed = apiKeyInput.trim()
+                        prefs.edit().putString("custom_gemini_api_key", trimmed).apply()
+                        customApiKey = trimmed
+                        showApiKeyDialog = false
+                        Toast.makeText(context, if (trimmed.isEmpty()) "Using default project key" else "Custom Gemini key saved!", Toast.LENGTH_SHORT).show()
+                    }
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                AttractTextButton(onClick = { showApiKeyDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     ModalBottomSheet(
         onDismissRequest = { if (!isProcessing) onDismissRequest() },
         sheetState = sheetState,
@@ -121,19 +176,37 @@ fun OcrImportSheet(
                 .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column {
-                Text(
-                    text = "Scan Attendance Sheet",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Take 1 to 3 clear photos of your printed attendance sheet. Ensure names & roll numbers are well lit and in focus.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Scan Attendance Sheet",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Take 1 to 3 clear photos of your printed attendance sheet. Gemini AI will extract names & roll numbers.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                IconButton(
+                    onClick = {
+                        apiKeyInput = customApiKey
+                        showApiKeyDialog = true
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Key,
+                        contentDescription = "Configure Gemini API Key",
+                        tint = if (customApiKey.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             // Photo thumbnails row
@@ -221,13 +294,32 @@ fun OcrImportSheet(
             }
 
             if (errorMessage != null) {
-                Text(
-                    text = errorMessage.orEmpty(),
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = errorMessage.orEmpty(),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (errorMessage.orEmpty().contains("API_KEY_SERVICE_BLOCKED") ||
+                        errorMessage.orEmpty().contains("Google Cloud") ||
+                        errorMessage.orEmpty().contains("Cloud AI error")
+                    ) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        AttractTextButton(
+                            onClick = {
+                                apiKeyInput = customApiKey
+                                showApiKeyDialog = true
+                            }
+                        ) {
+                            Text("Set Custom Gemini API Key")
+                        }
+                    }
+                }
             }
 
             // Processing state or Action Button
@@ -235,19 +327,26 @@ fun OcrImportSheet(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 12.dp),
+                        .padding(vertical = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         Text(
-                            text = "Reading attendance sheet with AI OCR...",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = "Reading attendance sheet with Gemini AI OCR...",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Analyzing handwriting, table layout, names & roll numbers.\nPlease note: It may take 3-4 mins to retrieve. Please keep this screen open.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 16.dp)
                         )
                     }
                 }
@@ -267,24 +366,17 @@ fun OcrImportSheet(
                                 isProcessing = false
                                 if (students.isEmpty()) {
                                     errorMessage = if (parser.lastCloudError != null) {
-                                        "Could not extract students. Cloud AI error: ${parser.lastCloudError}. Please check Google Cloud API restrictions."
+                                        "Could not extract students. Gemini Cloud AI error: ${parser.lastCloudError}."
                                     } else {
                                         "Could not detect student names or roll numbers. Ensure photos are sharp, well lit, and in focus, then try again."
                                     }
                                 } else {
-                                    if (parser.lastEngine == OcrRosterParser.Engine.ON_DEVICE && parser.lastCloudError != null) {
-                                        android.widget.Toast.makeText(
-                                            context,
-                                            "Cloud AI unavailable (${parser.lastCloudError}). Processed with on-device OCR.",
-                                            android.widget.Toast.LENGTH_LONG
-                                        ).show()
-                                    }
                                     onDismissRequest()
                                     onStudentsExtracted(students)
                                 }
                             } catch (e: Exception) {
                                 isProcessing = false
-                                errorMessage = "OCR extraction error: ${e.message ?: "Please try again."}"
+                                errorMessage = "Gemini OCR extraction error: ${e.message ?: "Please try again."}"
                             }
                         }
                     },

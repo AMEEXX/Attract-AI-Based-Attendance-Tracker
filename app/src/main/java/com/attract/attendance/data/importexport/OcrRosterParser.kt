@@ -3,36 +3,23 @@ package com.attract.attendance.data.importexport
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
-import android.util.Log
 import com.attract.attendance.core.model.RosterStudent
-import com.google.android.gms.tasks.Task
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.text.Text
-import com.google.mlkit.vision.text.TextRecognition
-import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 /**
- * Same public API as before (parseFromUris / parseFromBitmaps), so OcrImportSheet needs no change.
+ * Parses class attendance sheets exclusively using Gemini Multimodal AI OCR.
  *
- * Pipeline per page:  Gemini (structured rows)  ->  on failure/offline: ML Kit words + row clustering
+ * Pipeline per page:  Gemini (structured rows)
  * Then for the whole roster:  merge pages -> clean names -> RollNumberRepair -> RosterStudent.
- *
- * RosterStudent needs two new defaulted fields so the confirmation dialog can highlight rows:
- *     val needsReview: Boolean = false,
- *     val reviewNote: String = ""
  */
 class OcrRosterParser(
-    private val cloud: GeminiRosterExtractor? = GeminiRosterExtractor()
+    private val cloud: GeminiRosterExtractor = GeminiRosterExtractor()
 ) {
-    enum class Engine { NONE, CLOUD, ON_DEVICE, MIXED }
+    enum class Engine { NONE, CLOUD }
 
-    /** Which engine produced the last result; show "Read with AI" / "Read offline" in the UI. */
+    /** Which engine produced the last result; show "Read with AI" in the UI. */
     @Volatile
     var lastEngine: Engine = Engine.NONE
         private set
@@ -41,89 +28,61 @@ class OcrRosterParser(
     var lastCloudError: String? = null
         private set
 
-    private val recognizer by lazy { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
-
-    private class Run {
-        var cloudUsable = true
-        var usedCloud = false
-        var usedDevice = false
-    }
-
     suspend fun parseFromUris(context: Context, uris: List<Uri>): List<RosterStudent> =
         withContext(Dispatchers.IO) {
-            val run = Run()
+            val customKey = context.getSharedPreferences("attract_ai_prefs", Context.MODE_PRIVATE)
+                .getString("custom_gemini_api_key", null)
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+
             val pages = ArrayList<List<RawRosterRow>>()
             for (uri in uris) {
                 val bitmap = try {
                     loadUprightScaled(context, uri)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Cannot load $uri", e)
                     continue
                 }
                 try {
-                    pages.add(readPage(bitmap, run))
+                    pages.add(readPage(bitmap, customKey))
                 } finally {
                     bitmap.recycle()
                 }
             }
-            finish(pages, run)
+            finish(pages)
         }
 
-    suspend fun parseFromBitmaps(bitmaps: List<Bitmap>): List<RosterStudent> =
+    suspend fun parseFromBitmaps(bitmaps: List<Bitmap>, customKey: String? = null): List<RosterStudent> =
         withContext(Dispatchers.IO) {
-            val run = Run()
-            val pages = bitmaps.map { readPage(it, run) }
-            finish(pages, run)
+            val pages = bitmaps.map { readPage(it, customKey) }
+            finish(pages)
         }
 
     // ---------------------------------------------------------------------------------------------
 
-    private suspend fun readPage(bitmap: Bitmap, run: Run): List<RawRosterRow> {
-        if (cloud != null && run.cloudUsable) {
-            try {
-                val rows = cloud.extract(bitmap)
-                if (rows.isNotEmpty()) {
-                    run.usedCloud = true
-                    return rows
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                val errorDetails = "${e.javaClass.simpleName}: ${e.message}"
-                Log.e(TAG, "Cloud read failed, using on-device OCR fallback: $errorDetails", e)
-                lastCloudError = errorDetails
-                run.cloudUsable = false   // don't wait for a timeout on every remaining page
+    private suspend fun readPage(bitmap: Bitmap, customKey: String?): List<RawRosterRow> {
+        try {
+            val rows = cloud.extract(bitmap, customKey)
+            if (rows.isNotEmpty()) {
+                lastEngine = Engine.CLOUD
+                return rows
             }
-        }
-        run.usedDevice = true
-        return try {
-            rowsFromVisionText(recognizer.process(InputImage.fromBitmap(bitmap, 0)).awaitTask())
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.e(TAG, "On-device OCR failed", e)
-            emptyList()
+            val errorDetails = "${e.javaClass.simpleName}: ${e.message}"
+            lastCloudError = errorDetails
+            throw e
         }
+        return emptyList()
     }
 
-    internal fun rowsFromVisionText(text: Text): List<RawRosterRow> {
-        val words = text.textBlocks
-            .flatMap { block -> block.lines.flatMap { line -> line.elements } }
-            .mapNotNull { e ->
-                e.boundingBox?.let { OcrWord(e.text, it.left, it.top, it.right, it.bottom) }
-            }
-        return RosterGeometry.rowsFromWords(words)
-    }
-
-    private fun finish(pages: List<List<RawRosterRow>>, run: Run): List<RosterStudent> {
-        lastEngine = when {
-            run.usedCloud && run.usedDevice -> Engine.MIXED
-            run.usedCloud -> Engine.CLOUD
-            run.usedDevice -> Engine.ON_DEVICE
-            else -> Engine.NONE
+    private fun finish(pages: List<List<RawRosterRow>>): List<RosterStudent> {
+        val allRows = pages.flatten()
+        if (allRows.isNotEmpty()) {
+            lastEngine = Engine.CLOUD
         }
 
-        val merged = dropRowsRepeatedAcrossPages(pages.flatten()).map { row ->
+        val merged = dropRowsRepeatedAcrossPages(allRows).map { row ->
             val name = RosterGeometry.normalizeName(row.name)
             row.copy(
                 name = name,
@@ -160,14 +119,4 @@ class OcrRosterParser(
             if (roll.isEmpty() || name.isEmpty()) true else seen.add("$roll|$name")
         }
     }
-
-    private companion object {
-        const val TAG = "OcrRosterParser"
-    }
-}
-
-private suspend fun <T> Task<T>.awaitTask(): T = suspendCancellableCoroutine { continuation ->
-    addOnSuccessListener { result -> continuation.resume(result) }
-    addOnFailureListener { exception -> continuation.resumeWithException(exception) }
-    addOnCanceledListener { continuation.cancel() }
 }

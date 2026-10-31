@@ -59,11 +59,7 @@
 -keep class com.attract.attendance.data.importexport.** { *; }
 -keep class com.attract.attendance.core.model.** { *; }
 
-# 6. ML Kit
--keep class com.google.mlkit.** { *; }
--dontwarn com.google.mlkit.**
-
-# 7. Firebase AI & App Check
+# 6. Firebase AI & App Check
 -keep class com.google.firebase.ai.** { *; }
 -keep class com.google.firebase.appcheck.** { *; }
 -dontwarn com.google.firebase.**
