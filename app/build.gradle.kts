@@ -80,30 +80,10 @@ android {
             } else {
                 // Play App Signing / local testing fallback: use debug keystore so release builds succeed
                 val debugSigning = getByName("debug")
-                val keystoreFile = debugSigning.storeFile ?: java.io.File(System.getProperty("user.home"), ".android/debug.keystore")
-                if (!keystoreFile.exists()) {
-                    keystoreFile.parentFile?.mkdirs()
-                    try {
-                        val keytoolCmd = arrayOf(
-                            "keytool", "-genkeypair",
-                            "-alias", "androiddebugkey",
-                            "-keypass", "android",
-                            "-keystore", keystoreFile.absolutePath,
-                            "-storepass", "android",
-                            "-dname", "CN=Android Debug,O=Android,C=US",
-                            "-validity", "10000",
-                            "-keyalg", "RSA",
-                            "-keysize", "2048"
-                        )
-                        ProcessBuilder(*keytoolCmd).redirectErrorStream(true).start().waitFor()
-                    } catch (_: Throwable) {
-                        // ignore if keytool is not available
-                    }
-                }
-                storeFile = keystoreFile
-                storePassword = debugSigning.storePassword ?: "android"
-                keyAlias = debugSigning.keyAlias ?: "androiddebugkey"
-                keyPassword = debugSigning.keyPassword ?: "android"
+                storeFile = debugSigning.storeFile
+                storePassword = debugSigning.storePassword
+                keyAlias = debugSigning.keyAlias
+                keyPassword = debugSigning.keyPassword
             }
         }
     }
