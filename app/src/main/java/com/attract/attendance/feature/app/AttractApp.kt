@@ -287,7 +287,8 @@ fun AttractApp(viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory) {
                                 presentSessions = attendanceStats.first,
                                 totalSessions = attendanceStats.second,
                                 onBack = viewModel::navigateBack,
-                                onReEnroll = { viewModel.openStandaloneEnrollment(screen.classId, screen.studentId) }
+                                onReEnroll = { viewModel.openStandaloneEnrollment(screen.classId, screen.studentId) },
+                                onResetBiometrics = { viewModel.resetStudentBiometrics(screen.studentId, context) }
                             )
                         } else {
                             LoadingScreen()

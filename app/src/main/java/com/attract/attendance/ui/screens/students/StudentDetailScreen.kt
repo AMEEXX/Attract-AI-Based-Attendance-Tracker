@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -57,10 +58,12 @@ fun StudentDetailScreen(
     totalSessions: Int = 0,
     onBack: () -> Unit,
     onReEnroll: () -> Unit,
+    onResetBiometrics: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isEnrolled = student.enrollmentStatus == EnrollmentStatus.ENROLLED
     var showReEnrollDialog by remember { mutableStateOf(false) }
+    var showClearFaceDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -92,6 +95,28 @@ fun StudentDetailScreen(
                 },
                 dismissButton = {
                     AttractTextButton(onClick = { showReEnrollDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+        if (showClearFaceDialog) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { showClearFaceDialog = false },
+                title = { Text("Clear Face Biometrics", fontWeight = FontWeight.Bold) },
+                text = { Text("Remove face biometrics for ${student.name}? They will need to enroll again.") },
+                confirmButton = {
+                    AttractPrimaryButton(
+                        onClick = {
+                            showClearFaceDialog = false
+                            onResetBiometrics()
+                        }
+                    ) {
+                        Text("Clear Data")
+                    }
+                },
+                dismissButton = {
+                    AttractTextButton(onClick = { showClearFaceDialog = false }) {
                         Text("Cancel")
                     }
                 }
@@ -225,6 +250,26 @@ fun StudentDetailScreen(
                                     EnrollmentStatus.NOT_ENROLLED -> "Enroll face biometrics"
                                 }
                             )
+                        }
+
+                        if (student.enrollmentStatus != EnrollmentStatus.NOT_ENROLLED) {
+                            AttractTextButton(
+                                onClick = { showClearFaceDialog = true },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                                Spacer(modifier = Modifier.size(6.dp))
+                                Text(
+                                    "Clear face data",
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
                         }
                     }
                 }

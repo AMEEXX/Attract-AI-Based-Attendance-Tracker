@@ -675,6 +675,27 @@ fun AttendanceScreen(
                     delay(2500)
                     resetToReady()
                 }
+                is com.attract.attendance.domain.face.EnrollmentResult.AlreadyEnrolled -> {
+                    statusMessage = "⚠️ ${target.name} is already enrolled."
+                    state = SessionScreenState.ERROR
+                    isValidatingFrame = false
+                    delay(2500)
+                    resetToReady()
+                }
+                is com.attract.attendance.domain.face.EnrollmentResult.Ineligible -> {
+                    statusMessage = "⚠️ Ineligible: ${enrollResult.reason}"
+                    state = SessionScreenState.ERROR
+                    isValidatingFrame = false
+                    delay(2500)
+                    resetToReady()
+                }
+                is com.attract.attendance.domain.face.EnrollmentResult.ApprovalExpired -> {
+                    statusMessage = "⚠️ Authorization: ${enrollResult.reason}"
+                    state = SessionScreenState.ERROR
+                    isValidatingFrame = false
+                    delay(2500)
+                    resetToReady()
+                }
                 else -> {
                     statusMessage = "⚠️ Enrollment could not be completed."
                     state = SessionScreenState.ERROR

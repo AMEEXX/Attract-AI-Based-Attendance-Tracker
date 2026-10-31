@@ -348,6 +348,22 @@ class AttractViewModel(
         }
     )
 
+    fun resetStudentBiometrics(studentId: Long, context: Context? = null, onComplete: () -> Unit = {}) = runCommand(
+        work = { repository.resetStudentBiometricData(studentId) },
+        onSuccess = {
+            showMessage("Face biometrics cleared.")
+            if (context != null) {
+                try {
+                    val drivePrefs = com.attract.attendance.data.drive.DriveBackupPreferences(context)
+                    if (!drivePrefs.accountEmail.isNullOrBlank()) {
+                        com.attract.attendance.data.drive.BackupScheduler.triggerImmediateBackup(context)
+                    }
+                } catch (_: Throwable) {}
+            }
+            onComplete()
+        }
+    )
+
     fun exportClassReport(classId: Long, uri: Uri) {
         if (_uiState.value.isWorking) return
         viewModelScope.launch {

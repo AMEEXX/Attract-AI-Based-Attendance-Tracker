@@ -898,6 +898,30 @@ class AttractRepository(
         CommandResult.Failure(AppError.Storage(e))
     }
 
+    /**
+     * Resets biometric face data for a single student.
+     * Deactivates all face templates and sets enrollmentStatus to NOT_ENROLLED.
+     */
+    suspend fun resetStudentBiometricData(studentId: Long): CommandResult<Unit> = try {
+        database.withTransaction {
+            val student = students.find(studentId)
+                ?: return@withTransaction CommandResult.Failure(AppError.NotFound)
+            val now = nowMillis()
+            templates.deactivateForStudent(studentId)
+            students.update(
+                student.copy(
+                    enrollmentStatus = EnrollmentStatus.NOT_ENROLLED,
+                    enrolledAt = null,
+                    updatedAt = now,
+                )
+            )
+        }
+        CommandResult.Success(Unit)
+    } catch (e: Exception) {
+        android.util.Log.e("ATTRACT_FACE", "resetStudentBiometricData failed", e)
+        CommandResult.Failure(AppError.Storage(e))
+    }
+
     private val classEnrollmentLocks = java.util.concurrent.ConcurrentHashMap<Long, Mutex>()
     private fun getEnrollmentLock(classId: Long): Mutex =
         classEnrollmentLocks.computeIfAbsent(classId) { Mutex() }
@@ -1060,14 +1084,106 @@ class AttractRepository(
 
     /**
      * Standalone enrollment: persists templates without creating an attendance session or record (D-007, WP-D).
+     * Supports both initial enrollment and re-enrollment:
+     * - Checks duplicates against active gallery (excluding target student's existing templates).
+     * - Deactivates any stale templates for this student before inserting new ones.
+     * - Sets student enrollmentStatus to ENROLLED.
      */
     suspend fun standaloneEnrollStudentFace(
         classId: Long,
         studentId: Long,
         batch: com.attract.attendance.domain.face.ValidatedEnrollmentBatch,
         authorizationGrant: com.attract.attendance.domain.session.TeacherAuthorizationGrant? = null,
-    ): com.attract.attendance.domain.face.EnrollmentResult =
-        selfEnroll(classId, studentId, batch)
+    ): com.attract.attendance.domain.face.EnrollmentResult {
+        val lock = getEnrollmentLock(classId)
+        return lock.withLock {
+            val candidateEmbeddings = batch.samples.map { it.embedding }
+            val galleryResult = loadGallery(classId)
+            val activeTemplates = when (galleryResult) {
+                is com.attract.attendance.domain.face.GalleryLoadResult.Ready -> galleryResult.templates
+                is com.attract.attendance.domain.face.GalleryLoadResult.EmptyHealthy -> emptyList()
+                is com.attract.attendance.domain.face.GalleryLoadResult.NeedsRepair -> emptyList()
+                is com.attract.attendance.domain.face.GalleryLoadResult.Unavailable -> {
+                    return@withLock com.attract.attendance.domain.face.EnrollmentResult.Failed(
+                        "Duplicate check unavailable: ${galleryResult.message}"
+                    )
+                }
+            }
+
+            val dupResult = com.attract.attendance.domain.face.DuplicateCheckService.checkDuplicate(
+                candidateSamples = candidateEmbeddings,
+                galleryTemplates = activeTemplates,
+                excludeStudentId = studentId,
+            )
+            if (dupResult is com.attract.attendance.domain.face.DuplicateResult.Suspicious) {
+                return@withLock com.attract.attendance.domain.face.EnrollmentResult.DuplicateSuspected(
+                    dupResult.existingStudentId,
+                    dupResult.score,
+                )
+            }
+
+            try {
+                database.withTransaction {
+                    val student = students.find(studentId)
+                        ?: return@withTransaction com.attract.attendance.domain.face.EnrollmentResult.Failed("Student not found")
+                    if (student.classId != classId) {
+                        return@withTransaction com.attract.attendance.domain.face.EnrollmentResult.Ineligible("Student does not belong to this class")
+                    }
+                    if (student.archived) {
+                        return@withTransaction com.attract.attendance.domain.face.EnrollmentResult.Ineligible("Student is archived")
+                    }
+
+                    // Deactivate existing templates for this student (handles both re-enrollment and repair)
+                    templates.deactivateForStudent(studentId)
+
+                    val now = nowMillis()
+                    val templateIds = mutableListOf<Long>()
+
+                    batch.samples.forEach { sample ->
+                        val (blob, cryptoVersion) = com.attract.attendance.data.security.TemplateEnvelopeCodec.encode(
+                            cipher = embeddingCipher,
+                            studentId = studentId,
+                            modelVersion = batch.profileId,
+                            plaintextFloats = sample.embedding,
+                        )
+                        val id = templates.insert(
+                            FaceTemplateEntity(
+                                studentId = studentId,
+                                encryptedEmbedding = blob,
+                                cryptoVersion = cryptoVersion,
+                                modelVersion = batch.profileId,
+                                embeddingDim = sample.embedding.size,
+                                qualityScore = sample.qualityScore,
+                                capturedAt = now,
+                                source = if (student.enrollmentStatus == EnrollmentStatus.ENROLLED)
+                                    "standalone_re_enrollment" else "standalone_enrollment",
+                                active = true,
+                            )
+                        )
+                        templateIds.add(id)
+                    }
+
+                    students.update(
+                        student.copy(
+                            enrollmentStatus = EnrollmentStatus.ENROLLED,
+                            enrolledAt = now,
+                            updatedAt = now,
+                        )
+                    )
+
+                    com.attract.attendance.domain.face.EnrollmentResult.Committed(
+                        studentId = studentId,
+                        templateIds = templateIds,
+                        attendanceRecordId = null,
+                        galleryVersion = now,
+                    )
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("ATTRACT_FACE", "standaloneEnrollStudentFace failed", e)
+                com.attract.attendance.domain.face.EnrollmentResult.Failed(e.message ?: "Database transaction error")
+            }
+        }
+    }
 
     /**
      * Re-enrollment / profile repair: replaces old templates atomically after teacher authorization (D-001, R18).
