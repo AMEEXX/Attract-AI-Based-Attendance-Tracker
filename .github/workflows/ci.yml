@@ -23,7 +23,16 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Accept Android SDK Licenses & Prepare Tools
+        run: |
+          echo "Accepting Android SDK licenses..."
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+          echo "Ensuring Android SDK Platform 35 is available..."
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-35" "build-tools;35.0.0" 2>/dev/null || true
 
       - name: Privacy Log Grep Gate
         run: |
@@ -56,5 +65,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: app/build/outputs/bundle/release/*.aab
+          path: |
+            app/build/outputs/bundle/release/*.aab
+            app-release.aab
           if-no-files-found: error
+

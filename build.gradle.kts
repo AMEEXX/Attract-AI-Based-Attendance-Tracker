@@ -6,8 +6,15 @@ plugins {
     id("com.google.gms.google-services") version "4.4.2" apply false
 }
 
-// Redirect build outputs to outside OneDrive to prevent file-locking issues
-// during connected Android tests (OneDrive sync locks files in the project tree).
-allprojects {
-    layout.buildDirectory.set(file("C:/tmp/attract-build/${project.name}"))
+// Redirect build outputs to outside OneDrive only on local Windows environments
+// to prevent file-locking issues with OneDrive sync, while keeping standard build
+// directories in CI environments and non-Windows systems.
+val isWindows = System.getProperty("os.name")?.lowercase()?.contains("windows") == true
+val isCi = !System.getenv("CI").isNullOrBlank() || !System.getenv("GITHUB_ACTIONS").isNullOrBlank()
+
+if (isWindows && !isCi) {
+    allprojects {
+        layout.buildDirectory.set(file("C:/tmp/attract-build/${project.name}"))
+    }
 }
+

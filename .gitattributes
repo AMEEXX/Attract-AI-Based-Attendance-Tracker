@@ -1,0 +1,8 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Ensure shell scripts, gradlew and workflows maintain LF line endings
+*.sh text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+gradlew text eol=lf
