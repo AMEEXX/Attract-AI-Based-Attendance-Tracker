@@ -38,10 +38,19 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run Unit Tests
-        run: ./gradlew testDebugUnitTest
+        run: ./gradlew testDebugUnitTest --stacktrace
+
+      - name: Upload Test Results on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: |
+            app/build/reports/tests/
+            app/build/test-results/
 
       - name: Build App Bundle (bundleRelease)
-        run: ./gradlew bundleRelease
+        run: ./gradlew bundleRelease --stacktrace
 
       - name: Upload Release Bundle Artifact
         uses: actions/upload-artifact@v4

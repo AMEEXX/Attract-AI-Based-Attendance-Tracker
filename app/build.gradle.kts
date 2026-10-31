@@ -139,6 +139,12 @@ android {
             java.srcDirs("src/androidTest/java", "src/sharedTest/java")
         }
     }
+
+    testOptions {
+        unitTests {
+            isReturnDefaultValues = true
+        }
+    }
 }
 
 ksp {
@@ -232,3 +238,12 @@ tasks.register("copyBundleToWorkspace") {
 tasks.matching { it.name == "bundleRelease" }.configureEach {
     finalizedBy("copyBundleToWorkspace")
 }
+
+tasks.withType<Test>().configureEach {
+    testLogging {
+        events("passed", "skipped", "failed")
+        showStandardStreams = false
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+}
+
