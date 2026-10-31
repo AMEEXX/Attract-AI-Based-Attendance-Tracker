@@ -1,9 +1,46 @@
+import java.io.ByteArrayOutputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.devtools.ksp")
     id("com.google.gms.google-services")
+}
+
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.inputStream().use { stream -> keystoreProperties.load(stream) }
+}
+
+fun computeVersionCode(): Int {
+    val ciRunNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()
+    return ciRunNumber ?: 2
+}
+
+fun computeVersionName(): String {
+    val envTag = System.getenv("RELEASE_VERSION")
+        ?: System.getenv("GITHUB_REF_NAME")?.takeIf { System.getenv("GITHUB_REF_TYPE") == "tag" }
+    if (!envTag.isNullOrBlank()) {
+        return envTag.removePrefix("v").trim()
+    }
+    val gitTag = try {
+        val stdout = ByteArrayOutputStream()
+        val stderr = ByteArrayOutputStream()
+        project.exec {
+            commandLine("git", "describe", "--tags", "--exact-match")
+            standardOutput = stdout
+            errorOutput = stderr
+            isIgnoreExitValue = true
+        }
+        val tagStr = stdout.toString("UTF-8").trim().removePrefix("v")
+        if (tagStr.isNotBlank()) tagStr else null
+    } catch (_: Throwable) {
+        null
+    }
+    return gitTag ?: "0.2.0"
 }
 
 android {
@@ -14,20 +51,64 @@ android {
         applicationId = "com.attract.attendance"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = computeVersionCode()
+        versionName = computeVersionName()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }
 
+    signingConfigs {
+        create("release") {
+            val storeFilePath = System.getenv("KEYSTORE_FILE")
+                ?: keystoreProperties.getProperty("storeFile")
+            val storePass = System.getenv("KEYSTORE_PASSWORD")
+                ?: keystoreProperties.getProperty("storePassword")
+            val keyAliasName = System.getenv("KEY_ALIAS")
+                ?: keystoreProperties.getProperty("keyAlias")
+            val keyPass = System.getenv("KEY_PASSWORD")
+                ?: keystoreProperties.getProperty("keyPassword")
+
+            val resolvedStoreFile = if (!storeFilePath.isNullOrBlank()) rootProject.file(storeFilePath) else null
+            if (resolvedStoreFile != null && resolvedStoreFile.exists() && !storePass.isNullOrBlank() && !keyAliasName.isNullOrBlank()) {
+                storeFile = resolvedStoreFile
+                storePassword = storePass
+                keyAlias = keyAliasName
+                keyPassword = if (!keyPass.isNullOrBlank()) keyPass else storePass
+                enableV1Signing = true
+                enableV2Signing = true
+            } else {
+                // Play App Signing / local testing fallback: use debug keystore so release builds succeed
+                val debugSigning = getByName("debug")
+                storeFile = debugSigning.storeFile
+                storePassword = debugSigning.storePassword
+                keyAlias = debugSigning.keyAlias
+                keyPassword = debugSigning.keyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+        }
+    }
+
+    bundle {
+        abi {
+            enableSplit = true
+        }
+        density {
+            enableSplit = true
+        }
+        language {
+            enableSplit = false
         }
     }
 
@@ -107,7 +188,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:35.0.0"))
     implementation("com.google.firebase:firebase-ai")
     implementation("com.google.firebase:firebase-appcheck-playintegrity")
-    implementation("com.google.firebase:firebase-appcheck-debug")
+    debugImplementation("com.google.firebase:firebase-appcheck-debug")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
@@ -135,4 +216,19 @@ tasks.register("copyApkToWorkspace") {
 
 tasks.matching { it.name == "assembleDebug" }.configureEach {
     finalizedBy("copyApkToWorkspace")
+}
+
+tasks.register("copyBundleToWorkspace") {
+    doNotTrackState("Direct copy to root")
+    doLast {
+        val src = layout.buildDirectory.file("outputs/bundle/release/app-release.aab").get().asFile
+        val dst = rootProject.file("app-release.aab")
+        if (src.exists()) {
+            src.copyTo(dst, overwrite = true)
+        }
+    }
+}
+
+tasks.matching { it.name == "bundleRelease" }.configureEach {
+    finalizedBy("copyBundleToWorkspace")
 }

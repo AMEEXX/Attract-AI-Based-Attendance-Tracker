@@ -2,7 +2,7 @@ package com.attract.attendance.lockdown.data.crypto
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
-import android.util.Log
+import com.attract.attendance.util.AppLog
 import com.attract.attendance.lockdown.domain.EncryptedEmbedding
 import com.attract.attendance.lockdown.domain.EmbeddingCipher
 import java.security.KeyStore
@@ -78,7 +78,7 @@ class KeystoreEmbeddingCipher(
         val key = try {
             getKey()
         } catch (e: UnrecoverableKeyException) {
-            Log.e("KeystoreEmbeddingCipher", "Keystore key unrecoverable during encrypt", e)
+            AppLog.e("KeystoreCipher", "Keystore key unrecoverable during encrypt", e)
             throw KeyInvalidatedException(
                 "Biometric encryption key was invalidated. Existing face data must be " +
                 "recovered from backup before new enrollments can proceed.", e
@@ -124,7 +124,7 @@ class KeystoreEmbeddingCipher(
             val ks = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
             ks.deleteEntry(alias)
         } catch (e: Exception) {
-            Log.w("KeystoreEmbeddingCipher", "Failed to delete key: ${e.message}")
+            AppLog.w("KeystoreCipher", "Failed to delete key: ${e.message}")
         }
     }
 
@@ -133,7 +133,7 @@ class KeystoreEmbeddingCipher(
      * decrypted with the old key and re-encrypted with the new key.
      */
     fun rotateKey(): SecretKey {
-        Log.w("KeystoreEmbeddingCipher", "Performing controlled key rotation")
+        AppLog.w("KeystoreCipher", "Performing secure key rotation")
         val ks = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
         if (ks.containsAlias(alias)) {
             ks.deleteEntry(alias)

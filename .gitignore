@@ -9,6 +9,7 @@ captures/
 .cxx/
 *.keystore
 *.jks
+keystore.properties
 *.bak
 *.docx
 
@@ -33,8 +34,9 @@ attract_large_face_dataset_pack/
 opencode.json
 client_secret*.json
 
-# APK binaries
+# APK & App Bundle binaries
 *.apk
+*.aab
 
 # Biometric eval datasets (downloaded on demand)
 .datasets/

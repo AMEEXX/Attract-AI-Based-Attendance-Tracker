@@ -18,7 +18,7 @@ class AttractApplication : Application() {
         super.onCreate()
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            android.util.Log.e("AttractCrash", "Fatal crash on thread ${thread.name}", throwable)
+            android.util.Log.e("AttractCrash", "Fatal crash on thread id=${thread.id}", throwable)
             try {
                 val prefs = getSharedPreferences("attract_crash_log", MODE_PRIVATE)
                 prefs.edit()
@@ -31,15 +31,7 @@ class AttractApplication : Application() {
 
         try {
             val firebaseAppCheck = com.google.firebase.appcheck.FirebaseAppCheck.getInstance()
-            if (com.attract.attendance.BuildConfig.DEBUG) {
-                firebaseAppCheck.installAppCheckProviderFactory(
-                    com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory.getInstance()
-                )
-            } else {
-                firebaseAppCheck.installAppCheckProviderFactory(
-                    com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory.getInstance()
-                )
-            }
+            AppCheckInitializer.init(firebaseAppCheck)
         } catch (t: Throwable) {
             android.util.Log.w("AttractApplication", "Firebase App Check init failed: ${t.message}")
         }
@@ -95,7 +87,7 @@ class AppContainer(application: Application) {
                 keyVersion = 1,
             )
         } catch (t: Throwable) {
-            android.util.Log.w("AppContainer", "Keystore embedding cipher unavailable, falling back to plaintext templates", t)
+            android.util.Log.w("AppContainer", "Keystore cipher unavailable, falling back to plaintext templates", t)
             null
         }
     }

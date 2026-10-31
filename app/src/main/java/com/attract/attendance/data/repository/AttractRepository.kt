@@ -2,6 +2,7 @@ package com.attract.attendance.data.repository
 
 import android.database.sqlite.SQLiteConstraintException
 import androidx.room.withTransaction
+import com.attract.attendance.util.AppLog
 import com.attract.attendance.core.model.AppError
 import com.attract.attendance.core.model.ActiveSessionSummary
 import com.attract.attendance.core.model.AttendanceSource
@@ -1055,7 +1056,7 @@ class AttractRepository(
                     )
                 }
             } catch (e: Exception) {
-                android.util.Log.e("ATTRACT_FACE", "selfEnrollAndCheckIn failed", e)
+                AppLog.e("ATTRACT_FACE", "selfRegistrationAndCheckIn failed", e)
                 com.attract.attendance.domain.face.EnrollmentResult.Failed(e.message ?: "Database transaction error")
             }
         }
@@ -1179,7 +1180,7 @@ class AttractRepository(
                     )
                 }
             } catch (e: Exception) {
-                android.util.Log.e("ATTRACT_FACE", "standaloneEnrollStudentFace failed", e)
+                AppLog.e("ATTRACT_FACE", "standaloneRegistration failed", e)
                 com.attract.attendance.domain.face.EnrollmentResult.Failed(e.message ?: "Database transaction error")
             }
         }
@@ -1273,7 +1274,7 @@ class AttractRepository(
                 )
             }
         } catch (e: Exception) {
-            android.util.Log.e("ATTRACT_FACE", "reEnrollStudentFace failed", e)
+            AppLog.e("ATTRACT_FACE", "reRegistration failed", e)
             com.attract.attendance.domain.face.EnrollmentResult.Failed(e.message ?: "Database transaction error")
         }
     }
@@ -1291,7 +1292,7 @@ class AttractRepository(
         }
         when (val check = com.attract.attendance.domain.face.TemplateCompatibility.validateEnrollment(floatsList)) {
             is com.attract.attendance.domain.face.TemplateCompatibility.EnrollmentValidation.Rejected -> {
-                android.util.Log.e("ATTRACT_FACE", "Enrollment rejected: ${check.reason}")
+                AppLog.e("ATTRACT_FACE", "Registration rejected: ${check.reason}")
                 return CommandResult.Failure(AppError.Validation("embedding", check.reason))
             }
             is com.attract.attendance.domain.face.TemplateCompatibility.EnrollmentValidation.Ok -> Unit
