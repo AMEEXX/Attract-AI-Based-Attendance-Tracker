@@ -240,6 +240,21 @@ tasks.matching { it.name == "assembleDebug" }.configureEach {
     finalizedBy("copyApkToWorkspace")
 }
 
+tasks.register("copyReleaseApkToWorkspace") {
+    doNotTrackState("Direct copy to root")
+    doLast {
+        val src = layout.buildDirectory.file("outputs/apk/release/app-release.apk").get().asFile
+        val dst = rootProject.file("app-release.apk")
+        if (src.exists()) {
+            src.copyTo(dst, overwrite = true)
+        }
+    }
+}
+
+tasks.matching { it.name == "assembleRelease" }.configureEach {
+    finalizedBy("copyReleaseApkToWorkspace")
+}
+
 tasks.register("copyBundleToWorkspace") {
     doNotTrackState("Direct copy to root")
     doLast {
