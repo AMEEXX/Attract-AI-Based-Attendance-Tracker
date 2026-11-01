@@ -2,6 +2,8 @@ package com.attract.attendance.domain.face
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.graphics.PointF
 import android.graphics.Rect
 import org.tensorflow.lite.Interpreter
@@ -41,6 +43,19 @@ object YoloFaceDetector {
     private var isModelLoaded = false
     var lastInitError: String? = null
         private set
+
+    // Pre-allocated buffers to achieve zero per-frame garbage during hot-path detection
+    private var preallocatedScaledBitmap: Bitmap? = null
+    private var preallocatedCanvas: Canvas? = null
+    private val preallocatedPaint = Paint(Paint.FILTER_BITMAP_FLAG)
+    private val srcRect = Rect()
+    private val dstRect = Rect(0, 0, INPUT_SIZE, INPUT_SIZE)
+
+    private var preallocatedInputBuffer: ByteBuffer? = null
+    private var preallocatedPixels: IntArray? = null
+    private var preallocatedRawOutput: Array<Array<FloatArray>>? = null
+    private var preallocatedOutputMap: HashMap<Int, Any>? = null
+    private var preallocatedInputs: Array<Any>? = null
 
     data class DetectedFace(
         val boundingBox: Rect,
@@ -121,13 +136,23 @@ object YoloFaceDetector {
         val frameWidth = bitmap.width
         val frameHeight = bitmap.height
 
-        // 1. Preprocess: resize to 640x640, RGB normalized [0, 1] in NCHW format
-        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, INPUT_SIZE, INPUT_SIZE, true)
-        val inputBuffer = ByteBuffer.allocateDirect(1 * 3 * INPUT_SIZE * INPUT_SIZE * 4).apply {
-            order(ByteOrder.nativeOrder())
+        // 1. Preprocess: draw into pre-allocated 640x640 bitmap, RGB normalized [0, 1] in NCHW format
+        val scaledBitmap = preallocatedScaledBitmap ?: Bitmap.createBitmap(
+            INPUT_SIZE, INPUT_SIZE, Bitmap.Config.ARGB_8888
+        ).also {
+            preallocatedScaledBitmap = it
+            preallocatedCanvas = Canvas(it)
         }
+        val canvas = preallocatedCanvas ?: Canvas(scaledBitmap).also { preallocatedCanvas = it }
+        srcRect.set(0, 0, frameWidth, frameHeight)
+        canvas.drawBitmap(bitmap, srcRect, dstRect, preallocatedPaint)
 
-        val pixels = IntArray(INPUT_SIZE * INPUT_SIZE)
+        val inputBuffer = preallocatedInputBuffer ?: ByteBuffer.allocateDirect(1 * 3 * INPUT_SIZE * INPUT_SIZE * 4).apply {
+            order(ByteOrder.nativeOrder())
+        }.also { preallocatedInputBuffer = it }
+        inputBuffer.rewind()
+
+        val pixels = preallocatedPixels ?: IntArray(INPUT_SIZE * INPUT_SIZE).also { preallocatedPixels = it }
         scaledBitmap.getPixels(pixels, 0, INPUT_SIZE, 0, 0, INPUT_SIZE, INPUT_SIZE)
 
         // Red plane
@@ -142,26 +167,27 @@ object YoloFaceDetector {
         for (p in pixels) {
             inputBuffer.putFloat((p and 0xFF) / 255.0f)
         }
+        inputBuffer.rewind()
 
         // 2. Run inference: output shape [1, 20, 8400]
-        val outputMap = HashMap<Int, Any>()
-        val rawOutput = Array(1) { Array(20) { FloatArray(8400) } }
-        outputMap[0] = rawOutput
+        val rawOutput = preallocatedRawOutput ?: Array(1) { Array(20) { FloatArray(8400) } }.also {
+            preallocatedRawOutput = it
+        }
+        val outputMap = preallocatedOutputMap ?: HashMap<Int, Any>(1).apply {
+            put(0, rawOutput)
+        }.also { preallocatedOutputMap = it }
+        val inputs = preallocatedInputs ?: arrayOf<Any>(inputBuffer).also { preallocatedInputs = it }
+        inputs[0] = inputBuffer
 
         try {
-            activeInterpreter.runForMultipleInputsOutputs(arrayOf(inputBuffer), outputMap)
+            activeInterpreter.runForMultipleInputsOutputs(inputs, outputMap)
         } catch (e: Exception) {
-            if (scaledBitmap !== bitmap) scaledBitmap.recycle()
             android.util.Log.e("ATTRACT_FACE", "YOLO inference failed: ${e.message}", e)
             throw IllegalStateException("YOLO inference failed: ${e.message}", e)
         }
 
         // 3. Post-process
-        val detections = parseDetections(rawOutput[0], frameWidth, frameHeight)
-
-        if (scaledBitmap !== bitmap) scaledBitmap.recycle()
-
-        return detections
+        return parseDetections(rawOutput[0], frameWidth, frameHeight)
     }
 
     private data class Candidate(

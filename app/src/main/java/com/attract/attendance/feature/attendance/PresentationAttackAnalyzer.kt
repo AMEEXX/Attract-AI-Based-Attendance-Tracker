@@ -21,17 +21,19 @@ object PresentationAttackAnalyzer {
         if (crop == null || crop.width < 8 || crop.height < 8) return null
         return runCatching {
             val small = Bitmap.createScaledBitmap(crop, ANALYSIS_SIZE, ANALYSIS_SIZE, true)
+            val pixels = IntArray(ANALYSIS_SIZE * ANALYSIS_SIZE)
+            small.getPixels(pixels, 0, ANALYSIS_SIZE, 0, 0, ANALYSIS_SIZE, ANALYSIS_SIZE)
+            if (small !== crop) small.recycle()
+
             val gray = FloatArray(ANALYSIS_SIZE * ANALYSIS_SIZE)
             var highlightPixels = 0
-            for (y in 0 until ANALYSIS_SIZE) {
-                for (x in 0 until ANALYSIS_SIZE) {
-                    val pixel = small.getPixel(x, y)
-                    val r = (pixel shr 16) and 0xFF
-                    val g = (pixel shr 8) and 0xFF
-                    val b = pixel and 0xFF
-                    gray[y * ANALYSIS_SIZE + x] = 0.299f * r + 0.587f * g + 0.114f * b
-                    if (r > 235 && g > 235 && b > 235) highlightPixels++
-                }
+            for (i in pixels.indices) {
+                val pixel = pixels[i]
+                val r = (pixel shr 16) and 0xFF
+                val g = (pixel shr 8) and 0xFF
+                val b = pixel and 0xFF
+                gray[i] = 0.299f * r + 0.587f * g + 0.114f * b
+                if (r > 235 && g > 235 && b > 235) highlightPixels++
             }
 
             val highFrequencyEnergy = meanAbsoluteLaplacian(gray)

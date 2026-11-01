@@ -2,6 +2,8 @@ package com.attract.attendance.domain.face
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.graphics.Rect
 import org.tensorflow.lite.Interpreter
 import java.io.FileInputStream
@@ -24,6 +26,16 @@ object EmbeddingEngine {
     /** Last initialization failure, for diagnostics (null when healthy). */
     var lastInitError: String? = null
         private set
+
+    // Pre-allocated buffers to minimize GC allocations during embedding extraction
+    private var preallocatedInputBuffer: ByteBuffer? = null
+    private var preallocatedPixels: IntArray? = null
+    private var preallocatedOutputBuffer: Array<FloatArray>? = null
+    private var preallocatedScaledBitmap: Bitmap? = null
+    private var preallocatedCanvas: Canvas? = null
+    private val preallocatedPaint = Paint(Paint.FILTER_BITMAP_FLAG)
+    private val srcRect = Rect()
+    private val dstRect = Rect(0, 0, INPUT_SIZE, INPUT_SIZE)
 
     @Synchronized
     fun getOrInitInterpreter(context: Context): Interpreter? {
@@ -110,13 +122,27 @@ object EmbeddingEngine {
         val activeInterpreter = getOrInitInterpreter(context)
             ?: throw IllegalStateException("Biometric face model interpreter unavailable.")
 
-        val scaledBitmap = Bitmap.createScaledBitmap(faceBitmap, INPUT_SIZE, INPUT_SIZE, true)
-        val inputBuffer = ByteBuffer.allocateDirect(1 * INPUT_SIZE * INPUT_SIZE * 3 * 4).apply {
-            order(ByteOrder.nativeOrder())
+        val pixels = preallocatedPixels ?: IntArray(INPUT_SIZE * INPUT_SIZE).also { preallocatedPixels = it }
+
+        if (faceBitmap.width == INPUT_SIZE && faceBitmap.height == INPUT_SIZE) {
+            faceBitmap.getPixels(pixels, 0, INPUT_SIZE, 0, 0, INPUT_SIZE, INPUT_SIZE)
+        } else {
+            val scaledBitmap = preallocatedScaledBitmap ?: Bitmap.createBitmap(
+                INPUT_SIZE, INPUT_SIZE, Bitmap.Config.ARGB_8888
+            ).also {
+                preallocatedScaledBitmap = it
+                preallocatedCanvas = Canvas(it)
+            }
+            val canvas = preallocatedCanvas ?: Canvas(scaledBitmap).also { preallocatedCanvas = it }
+            srcRect.set(0, 0, faceBitmap.width, faceBitmap.height)
+            canvas.drawBitmap(faceBitmap, srcRect, dstRect, preallocatedPaint)
+            scaledBitmap.getPixels(pixels, 0, INPUT_SIZE, 0, 0, INPUT_SIZE, INPUT_SIZE)
         }
 
-        val pixels = IntArray(INPUT_SIZE * INPUT_SIZE)
-        scaledBitmap.getPixels(pixels, 0, INPUT_SIZE, 0, 0, INPUT_SIZE, INPUT_SIZE)
+        val inputBuffer = preallocatedInputBuffer ?: ByteBuffer.allocateDirect(1 * INPUT_SIZE * INPUT_SIZE * 3 * 4).apply {
+            order(ByteOrder.nativeOrder())
+        }.also { preallocatedInputBuffer = it }
+        inputBuffer.rewind()
 
         for (pixel in pixels) {
             val r = ((pixel shr 16) and 0xFF)
@@ -126,9 +152,12 @@ object EmbeddingEngine {
             inputBuffer.putFloat((g - 127.5f) / 128.0f)
             inputBuffer.putFloat((r - 127.5f) / 128.0f)
         }
+        inputBuffer.rewind()
 
-        val outputEmbedding = FloatArray(EMBEDDING_SIZE)
-        val outputBuffer = Array(1) { FloatArray(EMBEDDING_SIZE) }
+        val outputBuffer = preallocatedOutputBuffer ?: Array(1) { FloatArray(EMBEDDING_SIZE) }.also {
+            preallocatedOutputBuffer = it
+        }
+
         try {
             activeInterpreter.run(inputBuffer, outputBuffer)
         } catch (e: Exception) {
@@ -139,12 +168,8 @@ object EmbeddingEngine {
             )
             throw IllegalStateException("Face model inference failed: ${e::class.simpleName}: ${e.message}", e)
         }
-        System.arraycopy(outputBuffer[0], 0, outputEmbedding, 0, EMBEDDING_SIZE)
 
-        // Clean up scaled copy immediately — raw bitmaps must not linger per LLD-13
-        if (scaledBitmap !== faceBitmap) scaledBitmap.recycle()
-
-        return l2Normalize(outputEmbedding)
+        return l2Normalize(outputBuffer[0])
     }
 
 
@@ -157,7 +182,7 @@ object EmbeddingEngine {
         return if (norm > 0.00001f) {
             FloatArray(vec.size) { vec[it] / norm }
         } else {
-            vec
+            vec.clone()
         }
     }
 

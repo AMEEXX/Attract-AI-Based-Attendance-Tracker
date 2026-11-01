@@ -34,6 +34,7 @@ object FaceAligner {
 
     private val dstMeanX = CANONICAL_LANDMARKS.map { it.x }.average().toFloat()
     private val dstMeanY = CANONICAL_LANDMARKS.map { it.y }.average().toFloat()
+    private val alignPaint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
 
     /**
      * Aligns [bitmap] using the given [landmarks] (in bitmap coordinates).
@@ -48,8 +49,7 @@ object FaceAligner {
 
         val alignedBitmap = Bitmap.createBitmap(ALIGNED_SIZE, ALIGNED_SIZE, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(alignedBitmap)
-        val paint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
-        canvas.drawBitmap(bitmap, matrix, paint)
+        canvas.drawBitmap(bitmap, matrix, alignPaint)
 
         return alignedBitmap
     }

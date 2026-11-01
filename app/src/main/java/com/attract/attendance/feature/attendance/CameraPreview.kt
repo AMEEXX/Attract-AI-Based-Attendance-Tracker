@@ -6,12 +6,15 @@ import android.graphics.ImageFormat
 import android.graphics.Matrix
 import android.graphics.Rect
 import android.graphics.YuvImage
+import android.util.Size
 import androidx.annotation.OptIn
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.runtime.Composable
@@ -65,8 +68,18 @@ fun CameraPreview(
 
             var lastAnalyzedTimestampMs = 0L
 
+            val resolutionSelector = ResolutionSelector.Builder()
+                .setResolutionStrategy(
+                    ResolutionStrategy(
+                        Size(640, 480),
+                        ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
+                    )
+                )
+                .build()
+
             val imageAnalysis = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .setResolutionSelector(resolutionSelector)
                 .build()
 
             imageAnalysis.setAnalyzer(analysisExecutor) { imageProxy ->
@@ -202,6 +215,7 @@ fun CameraPreview(
                         onFrameBundleAnalyzed?.invoke(errorBundle)
                     }
                 } finally {
+                    frameBitmap.recycle()
                     imageProxy.close()
                 }
             }
@@ -300,7 +314,9 @@ private fun computeBitmapLaplacianVariance(bitmap: Bitmap, box: Rect): Float {
     val bottom = (box.bottom - 1).coerceIn(top + 1, bitmap.height - 1)
 
     val step = ((bottom - top) / 30).coerceAtLeast(1)
-    val responses = mutableListOf<Float>()
+    var count = 0
+    var mean = 0.0
+    var m2 = 0.0
 
     var y = top
     while (y < bottom) {
@@ -312,21 +328,18 @@ private fun computeBitmapLaplacianVariance(bitmap: Bitmap, box: Rect): Float {
             val leftPx = getLuminance(bitmap, x - 1, y)
             val rightPx = getLuminance(bitmap, x + 1, y)
 
-            val lap = up + down + leftPx + rightPx - 4 * c
-            responses.add(lap)
+            val lap = (up + down + leftPx + rightPx - 4 * c).toDouble()
+            count++
+            val delta = lap - mean
+            mean += delta / count
+            val delta2 = lap - mean
+            m2 += delta * delta2
             x += step
         }
         y += step
     }
 
-    if (responses.isEmpty()) return 0f
-    val mean = responses.average().toFloat()
-    var varSum = 0.0
-    for (r in responses) {
-        val diff = r - mean
-        varSum += diff * diff
-    }
-    return (varSum / responses.size).toFloat()
+    return if (count > 0) (m2 / count).toFloat() else 0f
 }
 
 /**
@@ -367,7 +380,11 @@ private fun toBitmap(imageProxy: ImageProxy): Bitmap? {
         if (rotationDegrees != 0) {
             val matrix = Matrix()
             matrix.postRotate(rotationDegrees.toFloat())
-            Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+            val rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+            if (rotated !== bitmap) {
+                bitmap.recycle()
+            }
+            rotated
         } else {
             bitmap
         }

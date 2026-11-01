@@ -190,7 +190,7 @@ fun OcrImportSheet(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Take 1 to 3 clear photos of your printed attendance sheet. Gemini AI will extract names & roll numbers.",
+                        text = "📸 Take only ONE clear photo per sheet.\n📄 If multiple pages, capture them in serial order (Page 1 → 2 → 3).\n✅ Please review the extracted names & roll numbers after OCR.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
