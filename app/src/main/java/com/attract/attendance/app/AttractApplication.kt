@@ -1,6 +1,9 @@
 package com.attract.attendance.app
 
 import android.app.Application
+import android.os.StrictMode
+import com.attract.attendance.BuildConfig
+import com.attract.attendance.core.observability.AppObservability
 import com.attract.attendance.data.importexport.AttendanceExporter
 import com.attract.attendance.data.importexport.BackupExporter
 import com.attract.attendance.data.importexport.CsvRosterImporter
@@ -28,6 +31,26 @@ class AttractApplication : Application() {
             } catch (_: Throwable) {}
             defaultHandler?.uncaughtException(thread, throwable)
         }
+
+        if (BuildConfig.DEBUG) {
+            StrictMode.setThreadPolicy(
+                StrictMode.ThreadPolicy.Builder()
+                    .detectDiskReads()
+                    .detectDiskWrites()
+                    .detectNetwork()
+                    .penaltyLog()
+                    .build()
+            )
+            StrictMode.setVmPolicy(
+                StrictMode.VmPolicy.Builder()
+                    .detectLeakedSqlLiteObjects()
+                    .detectLeakedClosableObjects()
+                    .penaltyLog()
+                    .build()
+            )
+        }
+
+        AppObservability.initialize(BuildConfig.VERSION_NAME)
 
         try {
             val firebaseAppCheck = com.google.firebase.appcheck.FirebaseAppCheck.getInstance()

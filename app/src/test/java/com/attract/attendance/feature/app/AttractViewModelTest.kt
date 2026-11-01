@@ -103,4 +103,59 @@ class AttractViewModelTest {
         assertTrue(errorState.driveSyncStatus is com.attract.attendance.data.drive.DriveSyncStatus.Error)
         assertEquals("Network timeout", (errorState.driveSyncStatus as com.attract.attendance.data.drive.DriveSyncStatus.Error).message)
     }
+
+    @Test
+    fun toUserMessage_formatsStorageErrorsActionably() {
+        val fullEx = android.database.sqlite.SQLiteFullException("Disk full")
+        val corruptEx = android.database.sqlite.SQLiteDatabaseCorruptException("Corrupted DB")
+        val constraintEx = android.database.sqlite.SQLiteConstraintException("UNIQUE constraint failed")
+        val permEx = java.io.IOException("Permission denied to write")
+        val diskSpaceEx = java.io.IOException("ENOSPC: No space left on device")
+        val genericEx = RuntimeException("Unexpected error")
+
+        assertEquals(
+            "Your device is running low on storage. Free up space and try again.",
+            com.attract.attendance.core.model.AppError.Storage(fullEx).toUserMessage()
+        )
+        assertEquals(
+            "The attendance database may be corrupted. Please restore from your latest backup.",
+            com.attract.attendance.core.model.AppError.Storage(corruptEx).toUserMessage()
+        )
+        assertEquals(
+            "This record conflicts with existing data.",
+            com.attract.attendance.core.model.AppError.Storage(constraintEx).toUserMessage()
+        )
+        assertEquals(
+            "Storage permission was denied. Check app permissions in Settings.",
+            com.attract.attendance.core.model.AppError.Storage(permEx).toUserMessage()
+        )
+        assertEquals(
+            "Your device is running low on storage. Free up space and try again.",
+            com.attract.attendance.core.model.AppError.Storage(diskSpaceEx).toUserMessage()
+        )
+        assertEquals(
+            "Your data could not be saved. Please try again.",
+            com.attract.attendance.core.model.AppError.Storage(genericEx).toUserMessage()
+        )
+        assertEquals(
+            "Your data could not be saved. Please try again.",
+            com.attract.attendance.core.model.AppError.Storage(null).toUserMessage()
+        )
+    }
+
+    @Test
+    fun toUserMessage_formatsStandardAppErrors() {
+        assertEquals(
+            "That roll number already exists in this class.",
+            com.attract.attendance.core.model.AppError.DuplicateRollNumber.toUserMessage()
+        )
+        assertEquals(
+            "End or recover the active attendance session first.",
+            com.attract.attendance.core.model.AppError.AnotherSessionActive.toUserMessage()
+        )
+        assertEquals(
+            "Custom validation message",
+            com.attract.attendance.core.model.AppError.Validation("field", "Custom validation message").toUserMessage()
+        )
+    }
 }

@@ -232,6 +232,11 @@ fun AttendanceScreen(
     }
 
     var state by remember { mutableStateOf(SessionScreenState.READY) }
+    LaunchedEffect(state) {
+        val meta = mutableMapOf<String, Any>("class_id" to classId)
+        activeSessionId?.let { meta["session_id"] = it }
+        com.attract.attendance.core.observability.AppObservability.logSessionState(state.name, meta)
+    }
     var presentIds by remember { mutableStateOf(setOf<Long>()) }
     var collectedFrames by remember { mutableIntStateOf(0) }
     var lastRecognizedStudent by remember { mutableStateOf<StudentSummary?>(null) }

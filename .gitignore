@@ -12,6 +12,7 @@ captures/
 keystore.properties
 *.bak
 *.docx
+*.pdf
 
 # OS files
 .DS_Store

@@ -25,9 +25,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
+import com.attract.attendance.core.observability.AppObservability
 import com.attract.attendance.ui.theme.AppThemeMode
 
 sealed interface AppScreen {
@@ -102,7 +104,24 @@ class AttractViewModel(
     init {
         val startupExceptionHandler = kotlinx.coroutines.CoroutineExceptionHandler { _, throwable ->
             android.util.Log.e("AttractViewModel", "Startup error in ViewModel coroutine", throwable)
+            AppObservability.recordNonFatal(throwable, "ViewModel.startupCoroutine")
             _uiState.update { it.copy(message = "Startup note: ${throwable.localizedMessage ?: "Database synchronizing"}") }
+        }
+
+        viewModelScope.launch {
+            uiState.map { it.screen }.distinctUntilChanged().collect { screen ->
+                val screenName = screen::class.simpleName ?: "Unknown"
+                val metadata = when (screen) {
+                    is AppScreen.ClassWorkspace -> mapOf("class_id" to screen.classId)
+                    is AppScreen.StudentDetail -> mapOf("class_id" to screen.classId)
+                    is AppScreen.StandaloneEnrollment -> mapOf("class_id" to screen.classId)
+                    is AppScreen.ManualAttendance -> mapOf("class_id" to screen.classId)
+                    is AppScreen.FaceAttendance -> mapOf("class_id" to screen.classId)
+                    is AppScreen.SessionHistory -> mapOf("class_id" to screen.classId, "session_id" to screen.sessionId)
+                    else -> emptyMap()
+                }
+                AppObservability.logScreenTransition(screenName, metadata)
+            }
         }
 
         themeRepository?.let { repo ->
@@ -714,25 +733,52 @@ class AttractViewModel(
             _uiState.update { it.copy(isWorking = true) }
             when (val result = work()) {
                 is CommandResult.Success -> onSuccess(result.value)
-                is CommandResult.Failure -> showMessage(result.error.toUserMessage())
+                is CommandResult.Failure -> {
+                    if (result.error is AppError.Storage && result.error.cause != null) {
+                        AppObservability.recordNonFatal(result.error.cause, "AppError.Storage")
+                    }
+                    showMessage(result.error.toUserMessage())
+                }
             }
             _uiState.update { it.copy(isWorking = false) }
         }
     }
 
     fun showMessage(message: String) = _uiState.update { it.copy(message = message) }
+}
 
-    private fun AppError.toUserMessage(): String = when (this) {
-        is AppError.Validation -> message
-        AppError.DuplicateRollNumber -> "That roll number already exists in this class."
-        AppError.AnotherSessionActive -> "End or recover the active attendance session first."
-        AppError.ActiveSessionExists -> "This change is unavailable while attendance is active."
-        AppError.SessionNotActive -> "This attendance session is no longer active."
-        AppError.NotEligible -> "This student is not eligible for this session."
-        AppError.WrongClass -> "Selected students must belong to this class."
-        AppError.AlreadyPresent -> "This student is already marked present."
-        AppError.AlreadyFinalized -> "This attendance session is already finalized."
-        AppError.NotFound -> "This item is unavailable."
-        is AppError.Storage -> "Your data could not be saved. Please try again."
+fun AppError.toUserMessage(): String = when (this) {
+    is AppError.Validation -> message
+    AppError.DuplicateRollNumber -> "That roll number already exists in this class."
+    AppError.AnotherSessionActive -> "End or recover the active attendance session first."
+    AppError.ActiveSessionExists -> "This change is unavailable while attendance is active."
+    AppError.SessionNotActive -> "This attendance session is no longer active."
+    AppError.NotEligible -> "This student is not eligible for this session."
+    AppError.WrongClass -> "Selected students must belong to this class."
+    AppError.AlreadyPresent -> "This student is already marked present."
+    AppError.AlreadyFinalized -> "This attendance session is already finalized."
+    AppError.NotFound -> "This item is unavailable."
+    is AppError.Storage -> resolveStorageErrorMessage(cause)
+}
+
+fun resolveStorageErrorMessage(cause: Throwable?): String {
+    return when (cause) {
+        is android.database.sqlite.SQLiteFullException ->
+            "Your device is running low on storage. Free up space and try again."
+        is android.database.sqlite.SQLiteDatabaseCorruptException ->
+            "The attendance database may be corrupted. Please restore from your latest backup."
+        is android.database.sqlite.SQLiteConstraintException ->
+            "This record conflicts with existing data."
+        is java.io.IOException -> {
+            val message = cause.message.orEmpty()
+            if (message.contains("permission", ignoreCase = true) || message.contains("access denied", ignoreCase = true)) {
+                "Storage permission was denied. Check app permissions in Settings."
+            } else if (message.contains("ENOSPC", ignoreCase = true) || message.contains("space", ignoreCase = true)) {
+                "Your device is running low on storage. Free up space and try again."
+            } else {
+                "A storage error occurred while reading or writing data. Please try again."
+            }
+        }
+        else -> "Your data could not be saved. Please try again."
     }
 }
