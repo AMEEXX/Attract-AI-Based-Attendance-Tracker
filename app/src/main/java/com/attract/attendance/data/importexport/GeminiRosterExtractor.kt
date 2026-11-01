@@ -69,9 +69,11 @@ class GeminiRosterExtractor(private val modelName: String = DEFAULT_MODEL) {
 
         // 1. If an effective Gemini API key is available (custom or embedded via local.properties), use direct REST API
         if (!effectiveApiKey.isNullOrBlank()) {
+            var successfulCall = false
             for (targetModel in modelsToTry) {
                 try {
                     val rows = extractViaRest(page, effectiveApiKey, targetModel)
+                    successfulCall = true
                     if (rows.isNotEmpty()) {
                         return rows
                     }
@@ -81,20 +83,22 @@ class GeminiRosterExtractor(private val modelName: String = DEFAULT_MODEL) {
                     lastError = e
                 }
             }
-            if (lastError != null) throw lastError
+            if (!successfulCall && lastError != null) throw lastError
             return emptyList()
         }
 
         // 2. Otherwise use Firebase AI with GenerativeBackend.googleAI()
+        var successfulCall = false
         for (targetModel in modelsToTry) {
             try {
                 val currentModel = getModel(targetModel)
                 val response = currentModel.generateContent(
                     content {
                         image(page)
-                        text("Extract every student row from this attendance sheet.")
+                        text("Extract every student row from this attendance sheet into JSON with key \"rows\".")
                     }
                 )
+                successfulCall = true
                 val rows = parse(response.text.orEmpty())
                 if (rows.isNotEmpty()) {
                     return rows
@@ -115,7 +119,7 @@ class GeminiRosterExtractor(private val modelName: String = DEFAULT_MODEL) {
                 lastError = friendlyException
             }
         }
-        if (lastError != null) throw lastError
+        if (!successfulCall && lastError != null) throw lastError
         return emptyList()
     }
 
@@ -125,8 +129,8 @@ class GeminiRosterExtractor(private val modelName: String = DEFAULT_MODEL) {
             val conn = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
                 doOutput = true
-                connectTimeout = 60_000
-                readTimeout = 240_000 // 4 minutes
+                connectTimeout = 30_000
+                readTimeout = 90_000 // 90 seconds per model attempt
                 setRequestProperty("Content-Type", "application/json")
             }
 
@@ -135,18 +139,18 @@ class GeminiRosterExtractor(private val modelName: String = DEFAULT_MODEL) {
             val base64Image = Base64.encodeToString(bos.toByteArray(), Base64.NO_WRAP)
 
             val requestJson = JSONObject().apply {
-                put("system_instruction", JSONObject().put("parts", JSONArray().put(JSONObject().put("text", SYSTEM_PROMPT))))
+                put("systemInstruction", JSONObject().put("parts", JSONArray().put(JSONObject().put("text", SYSTEM_PROMPT))))
                 put("contents", JSONArray().put(
                     JSONObject().put("parts", JSONArray().apply {
-                        put(JSONObject().put("inline_data", JSONObject().apply {
-                            put("mime_type", "image/jpeg")
+                        put(JSONObject().put("inlineData", JSONObject().apply {
+                            put("mimeType", "image/jpeg")
                             put("data", base64Image)
                         }))
-                        put(JSONObject().put("text", "Extract every student row from this attendance sheet."))
+                        put(JSONObject().put("text", "Extract every student row from this attendance sheet into JSON with key \"rows\"."))
                     })
                 ))
                 put("generationConfig", JSONObject().apply {
-                    put("response_mime_type", "application/json")
+                    put("responseMimeType", "application/json")
                     put("temperature", 0)
                 })
             }
@@ -164,35 +168,106 @@ class GeminiRosterExtractor(private val modelName: String = DEFAULT_MODEL) {
             }
 
             val json = JSONObject(responseBody)
-            val candidate = json.optJSONArray("candidates")?.optJSONObject(0)
-            val text = candidate?.optJSONObject("content")?.optJSONArray("parts")?.optJSONObject(0)?.optString("text").orEmpty()
-            parse(text)
+            val candidates = json.optJSONArray("candidates")
+            val candidate = candidates?.optJSONObject(0)
+            val parts = candidate?.optJSONObject("content")?.optJSONArray("parts")
+
+            val sb = StringBuilder()
+            if (parts != null) {
+                for (i in 0 until parts.length()) {
+                    val part = parts.optJSONObject(i) ?: continue
+                    if (part.optBoolean("thought", false)) continue
+                    val textPart = part.optString("text")
+                    if (!textPart.isNullOrEmpty()) {
+                        sb.append(textPart)
+                    }
+                }
+            }
+            parse(sb.toString())
         }
 
     internal fun parse(json: String): List<RawRosterRow> {
-        if (json.isBlank()) return emptyList()
-        val rows = JSONObject(json).optJSONArray("rows") ?: return emptyList()
+        val trimmed = json.trim()
+        if (trimmed.isEmpty()) return emptyList()
+
+        // Strip markdown code fences if present (e.g. ```json ... ```)
+        val sanitized = trimmed
+            .removePrefix("```json")
+            .removePrefix("```")
+            .removeSuffix("```")
+            .trim()
+
+        // If the response is a direct JSON array of student rows
+        if (sanitized.startsWith("[")) {
+            val arr = try {
+                JSONArray(sanitized)
+            } catch (_: Exception) {
+                val start = sanitized.indexOf('[')
+                val end = sanitized.lastIndexOf(']')
+                if (start != -1 && end > start) {
+                    try { JSONArray(sanitized.substring(start, end + 1)) } catch (_: Exception) { null }
+                } else null
+            }
+            if (arr != null) {
+                return parseRowArray(arr)
+            }
+        }
+
+        // Otherwise find root JSON object between outermost '{' and '}'
+        val obj = try {
+            JSONObject(sanitized)
+        } catch (_: Exception) {
+            val start = sanitized.indexOf('{')
+            val end = sanitized.lastIndexOf('}')
+            if (start != -1 && end > start) {
+                try { JSONObject(sanitized.substring(start, end + 1)) } catch (_: Exception) { null }
+            } else null
+        } ?: return emptyList()
+
+        // Check standard "rows" key, then common alternatives ("students", "roster", or first array)
+        val rows = obj.optJSONArray("rows")
+            ?: obj.optJSONArray("students")
+            ?: obj.optJSONArray("roster")
+            ?: run {
+                val keys = obj.keys()
+                var foundArr: JSONArray? = null
+                while (keys.hasNext()) {
+                    val key = keys.next()
+                    val candidateArr = obj.optJSONArray(key)
+                    if (candidateArr != null) {
+                        foundArr = candidateArr
+                        break
+                    }
+                }
+                foundArr
+            } ?: return emptyList()
+
+        return parseRowArray(rows)
+    }
+
+    private fun parseRowArray(rows: JSONArray): List<RawRosterRow> {
         return (0 until rows.length()).mapNotNull { i ->
             val o = rows.optJSONObject(i) ?: return@mapNotNull null
             val roll = o.optString("roll").trim()
             val name = o.optString("name").trim()
             if (roll.isEmpty() && name.isEmpty()) return@mapNotNull null
+            val conf = o.optString("nameConfidence", "").lowercase()
             RawRosterRow(
                 serial = o.optString("serial").trim(),
                 roll = roll,
                 name = name,
-                nameUncertain = o.optString("nameConfidence") == "low"
+                nameUncertain = conf == "low" || conf == "0" || conf == "false"
             )
         }
     }
 
     companion object {
-        const val DEFAULT_MODEL = "gemini-3.8-flash"
-        val FALLBACK_MODELS = listOf("gemini-3.8-flash", "gemini-2.0-flash", "gemini-1.5-flash")
+        const val DEFAULT_MODEL = "gemini-3.5-flash"
+        val FALLBACK_MODELS = listOf("gemini-3.5-flash", "gemini-3.8-flash", "gemini-3.1-flash-lite")
 
         private val SYSTEM_PROMPT = """
-            You read photographed class attendance sheets and rosters. Return one entry per student row, top to
-            bottom, in exactly the order they appear on the sheet.
+            You read photographed class attendance sheets and rosters. Return a JSON object with a "rows" array
+            containing one entry per student row, top to bottom, in exactly the order they appear on the sheet.
 
             For each row return:
             - serial: the value from the serial / S.No / Sl.No column if the sheet has one, otherwise "".
