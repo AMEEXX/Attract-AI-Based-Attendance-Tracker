@@ -16,6 +16,14 @@ if (keystorePropertiesFile.exists()) {
     keystorePropertiesFile.inputStream().use { stream -> keystoreProperties.load(stream) }
 }
 
+val localPropertiesFile = rootProject.file("local.properties")
+val localProperties = Properties()
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { stream -> localProperties.load(stream) }
+}
+val resolvedGeminiApiKey: String = System.getenv("GEMINI_API_KEY")
+    ?: localProperties.getProperty("gemini.api.key", "")
+
 fun computeVersionCode(): Int {
     val ciRunNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()
     return ciRunNumber ?: 2
@@ -54,6 +62,8 @@ android {
         targetSdk = 35
         versionCode = computeVersionCode()
         versionName = computeVersionName()
+
+        buildConfigField("String", "GEMINI_API_KEY", "\"$resolvedGeminiApiKey\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true

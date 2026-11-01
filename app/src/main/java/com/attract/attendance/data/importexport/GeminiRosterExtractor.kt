@@ -64,11 +64,14 @@ class GeminiRosterExtractor(private val modelName: String = DEFAULT_MODEL) {
         val modelsToTry = (listOf(modelName) + FALLBACK_MODELS).distinct()
         var lastError: Exception? = null
 
-        // 1. If a custom Gemini API key is provided, use direct REST API
-        if (!customApiKey.isNullOrBlank()) {
+        val effectiveApiKey = customApiKey?.trim()?.takeIf { it.isNotBlank() }
+            ?: com.attract.attendance.BuildConfig.GEMINI_API_KEY.trim().takeIf { it.isNotBlank() }
+
+        // 1. If an effective Gemini API key is available (custom or embedded via local.properties), use direct REST API
+        if (!effectiveApiKey.isNullOrBlank()) {
             for (targetModel in modelsToTry) {
                 try {
-                    val rows = extractViaRest(page, customApiKey, targetModel)
+                    val rows = extractViaRest(page, effectiveApiKey, targetModel)
                     if (rows.isNotEmpty()) {
                         return rows
                     }
