@@ -461,5 +461,20 @@ interface FaceTemplateDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(templates: List<FaceTemplateEntity>)
+
+    @Query("SELECT COUNT(*) FROM face_templates WHERE student_id = :studentId AND source = 'AUTO_UPDATE' AND active = 1")
+    suspend fun countAutoTemplates(studentId: Long): Int
+
+    @Query("SELECT MAX(captured_at) FROM face_templates WHERE student_id = :studentId AND source = 'AUTO_UPDATE' AND active = 1")
+    suspend fun lastAutoTemplateAt(studentId: Long): Long?
+
+    @Query("SELECT * FROM face_templates WHERE student_id = :studentId AND source = 'AUTO_UPDATE' AND active = 1 ORDER BY captured_at ASC")
+    suspend fun autoTemplatesForStudent(studentId: Long): List<FaceTemplateEntity>
+
+    @Query("DELETE FROM face_templates WHERE student_id = :studentId AND source = 'AUTO_UPDATE'")
+    suspend fun deleteAutoTemplatesForStudent(studentId: Long): Int
+
+    @Query("DELETE FROM face_templates WHERE id = :id")
+    suspend fun deleteById(id: Long): Int
 }
 

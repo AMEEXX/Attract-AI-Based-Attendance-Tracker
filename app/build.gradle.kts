@@ -65,9 +65,14 @@ android {
         versionName = computeVersionName()
 
         buildConfigField("String", "GEMINI_API_KEY", "\"$resolvedGeminiApiKey\"")
+        buildConfigField("boolean", "BIOMETRIC_COLLECT", "false")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
+    }
+
+    androidResources {
+        noCompress += listOf("tflite", "task")
     }
 
     signingConfigs {
@@ -112,6 +117,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+        }
+        create("collect") {
+            initWith(getByName("debug"))
+            buildConfigField("boolean", "BIOMETRIC_COLLECT", "true")
+            matchingFallbacks += listOf("debug")
         }
     }
 
@@ -192,6 +202,8 @@ dependencies {
     implementation("androidx.camera:camera-camera2:1.4.2")
     implementation("androidx.camera:camera-lifecycle:1.4.2")
     implementation("androidx.camera:camera-view:1.4.2")
+    // MediaPipe Tasks-Vision (Doc 20 WP4.4) for 478-point 3D Face Landmarker
+    implementation("com.google.mediapipe:tasks-vision:0.10.20")
     // TFLite 2.16.1 — REQUIRED for physical devices with 16KB kernel page sizes
     // (Android 15+ hardware). 2.14.0's libtensorflowlite_jni.so fails dlopen on those
     // devices, surfacing as "Face verification temporarily unavailable" while working

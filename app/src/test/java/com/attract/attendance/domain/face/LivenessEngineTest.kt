@@ -35,17 +35,21 @@ class LivenessEngineTest {
     }
 
     @Test
-    fun staticLowQualityBlur_rejected() {
+    fun staticLowQualityBlur_passedByLiveness_qualityEngineOwnsIt() {
         val result = LivenessEngine.check(signals(blurVariance = 10f))
-        assertTrue(result is LivenessResult.Rejected)
-        assertEquals(LivenessReason.PASSIVE_SPOOF_SUSPECTED, (result as LivenessResult.Rejected).reason)
+        assertTrue(result is LivenessResult.Passed)
     }
 
     @Test
-    fun lowLight_rejected() {
+    fun lowLight_passedByLiveness_qualityEngineOwnsIt() {
         val result = LivenessEngine.check(signals(brightness = 30f))
-        assertTrue(result is LivenessResult.Rejected)
-        assertEquals(LivenessReason.PASSIVE_SPOOF_SUSPECTED, (result as LivenessResult.Rejected).reason)
+        assertTrue(result is LivenessResult.Passed)
+    }
+
+    @Test
+    fun darkAndBlurryFrame_passedByLiveness() {
+        val result = LivenessEngine.check(signals(brightness = 30f, blurVariance = 10f))
+        assertTrue(result is LivenessResult.Passed)
     }
 
     @Test

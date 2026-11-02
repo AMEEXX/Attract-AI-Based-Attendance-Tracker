@@ -95,7 +95,7 @@ object YoloFaceDetector {
                 fd.startOffset,
                 fd.declaredLength
             )
-            val options = Interpreter.Options().setNumThreads(2)
+            val options = Interpreter.Options().setNumThreads(4).setUseXNNPACK(true)
             interpreter = Interpreter(buffer, options)
             isModelLoaded = true
             lastInitError = null
@@ -136,7 +136,13 @@ object YoloFaceDetector {
         val frameWidth = bitmap.width
         val frameHeight = bitmap.height
 
-        // 1. Preprocess: draw into pre-allocated 640x640 bitmap, RGB normalized [0, 1] in NCHW format
+        val mapping = LetterboxMapping.create(frameWidth, frameHeight, INPUT_SIZE)
+        val newW = (frameWidth * mapping.scale).toInt()
+        val newH = (frameHeight * mapping.scale).toInt()
+        val padX = mapping.padX.toInt()
+        val padY = mapping.padY.toInt()
+
+        // 1. Preprocess: letterbox draw into 640x640 canvas filled with 0xFF727272 (114/255 YOLO standard)
         val scaledBitmap = preallocatedScaledBitmap ?: Bitmap.createBitmap(
             INPUT_SIZE, INPUT_SIZE, Bitmap.Config.ARGB_8888
         ).also {
@@ -144,7 +150,9 @@ object YoloFaceDetector {
             preallocatedCanvas = Canvas(it)
         }
         val canvas = preallocatedCanvas ?: Canvas(scaledBitmap).also { preallocatedCanvas = it }
+        canvas.drawColor(0xFF727272.toInt())
         srcRect.set(0, 0, frameWidth, frameHeight)
+        dstRect.set(padX, padY, padX + newW, padY + newH)
         canvas.drawBitmap(bitmap, srcRect, dstRect, preallocatedPaint)
 
         val inputBuffer = preallocatedInputBuffer ?: ByteBuffer.allocateDirect(1 * 3 * INPUT_SIZE * INPUT_SIZE * 4).apply {
@@ -154,6 +162,32 @@ object YoloFaceDetector {
 
         val pixels = preallocatedPixels ?: IntArray(INPUT_SIZE * INPUT_SIZE).also { preallocatedPixels = it }
         scaledBitmap.getPixels(pixels, 0, INPUT_SIZE, 0, 0, INPUT_SIZE, INPUT_SIZE)
+
+        // Low-light enhancement: when frame luma < 60, run gamma LUT on pixels (WP4.2)
+        var lumaSum = 0L
+        val sampleStride = 64
+        var sampleCount = 0
+        var si = 0
+        while (si < pixels.size) {
+            val p = pixels[si]
+            val r = (p shr 16) and 0xFF
+            val g = (p shr 8) and 0xFF
+            val b = p and 0xFF
+            lumaSum += (77 * r + 150 * g + 29 * b) shr 8
+            sampleCount++
+            si += sampleStride
+        }
+        val meanLuma = if (sampleCount > 0) lumaSum.toFloat() / sampleCount else 100f
+        if (meanLuma < 60f) {
+            val lut = LowLightEnhancer.gammaLut(LowLightEnhancer.gammaFor(meanLuma))
+            for (i in pixels.indices) {
+                val p = pixels[i]
+                val r = lut[(p shr 16) and 0xFF]
+                val g = lut[(p shr 8) and 0xFF]
+                val b = lut[p and 0xFF]
+                pixels[i] = (0xFF shl 24) or (r shl 16) or (g shl 8) or b
+            }
+        }
 
         // Red plane
         for (p in pixels) {
@@ -186,8 +220,8 @@ object YoloFaceDetector {
             throw IllegalStateException("YOLO inference failed: ${e.message}", e)
         }
 
-        // 3. Post-process
-        return parseDetections(rawOutput[0], frameWidth, frameHeight)
+        // 3. Post-process with LetterboxMapping unmapping
+        return parseDetections(rawOutput[0], frameWidth, frameHeight, mapping)
     }
 
     private data class Candidate(
@@ -201,6 +235,7 @@ object YoloFaceDetector {
         rawOutput: Array<FloatArray>, // [20][8400]
         frameWidth: Int,
         frameHeight: Int,
+        mapping: LetterboxMapping,
     ): List<DetectedFace> {
         val candidates = mutableListOf<Candidate>()
 
@@ -254,14 +289,17 @@ object YoloFaceDetector {
 
         for (idx in keep) {
             val c = candidates[idx]
-            val bx1 = (c.boxNorm[0] * frameWidth).toInt().coerceAtLeast(0)
-            val by1 = (c.boxNorm[1] * frameHeight).toInt().coerceAtLeast(0)
-            val bx2 = (c.boxNorm[2] * frameWidth).toInt().coerceAtMost(frameWidth)
-            val by2 = (c.boxNorm[3] * frameHeight).toInt().coerceAtMost(frameHeight)
-            val box = Rect(bx1, by1, bx2, by2)
+            val bx1 = mapping.toFrameX(c.boxNorm[0] * INPUT_SIZE).toInt().coerceIn(0, frameWidth)
+            val by1 = mapping.toFrameY(c.boxNorm[1] * INPUT_SIZE).toInt().coerceIn(0, frameHeight)
+            val bx2 = mapping.toFrameX(c.boxNorm[2] * INPUT_SIZE).toInt().coerceIn(0, frameWidth)
+            val by2 = mapping.toFrameY(c.boxNorm[3] * INPUT_SIZE).toInt().coerceIn(0, frameHeight)
+            val box = Rect(minOf(bx1, bx2), minOf(by1, by2), maxOf(bx1, bx2), maxOf(by1, by2))
 
             val landmarks = c.landmarksNorm.map {
-                PointF(it.x * frameWidth, it.y * frameHeight)
+                PointF(
+                    mapping.toFrameX(it.x * INPUT_SIZE).coerceIn(0f, frameWidth.toFloat()),
+                    mapping.toFrameY(it.y * INPUT_SIZE).coerceIn(0f, frameHeight.toFloat())
+                )
             }
 
             val roll = estimateRoll(landmarks)

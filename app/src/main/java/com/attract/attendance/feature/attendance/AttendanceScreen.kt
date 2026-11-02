@@ -38,6 +38,9 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateIntAsState
+import com.attract.attendance.ui.components.biometric.ScreenFlashOverlay
+import com.attract.attendance.domain.face.CameraTuning
+import com.attract.attendance.domain.face.HeadPose
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -97,6 +100,7 @@ import com.attract.attendance.ui.theme.BiometricSurface
 import com.attract.attendance.ui.theme.BiometricWarning
 import com.attract.attendance.core.model.StudentSummary
 import com.attract.attendance.data.repository.AttractRepository
+import com.attract.attendance.domain.face.AttemptTrace
 import com.attract.attendance.domain.face.FaceQualityConfig
 import com.attract.attendance.domain.face.FaceQualityEngine
 import com.attract.attendance.domain.face.FaceQualitySignals
@@ -293,6 +297,8 @@ fun AttendanceScreen(
     var showZeroConfirmDialog by remember { mutableStateOf(false) }
     var showEnrollBottomSheet by remember { mutableStateOf(false) }
     var selectedStudentForEnroll by remember(targetStudentForStandalone) { mutableStateOf<StudentSummary?>(targetStudentForStandalone) }
+    val livenessOrchestrator = remember { com.attract.attendance.domain.face.liveness.LivenessOrchestrator() }
+    var isScreenFlashActive by remember { mutableStateOf(false) }
 
     // R04/R05: attempt tokens, feedback job tracking, and active teacher authorization grant
     var currentInteractionToken by remember { mutableLongStateOf(0L) }
@@ -499,6 +505,8 @@ fun AttendanceScreen(
         lastPoseHintTimeMs = 0L
         lastFrameQualityScore = 0f
         lastFrameLive = false
+        livenessOrchestrator.reset()
+        isScreenFlashActive = false
         if (clearEnrollmentTarget) {
             inlineEnrollmentTarget = null
             activeTeacherGrant = null
@@ -1075,7 +1083,8 @@ fun AttendanceScreen(
         // (STRAIGHT/LEFT/RIGHT per LLD-09 with anchor straight yaw). Live attendance uses adaptive gating (LLD-16):
         // frame 1 expects STRAIGHT; supporting frames accept any natural pose and reject
         // only EXTREMES, using existing production thresholds.
-        val qualityEval: QualityResult = if (isStandaloneMode || inlineEnrollmentTarget != null) {
+        val isEnrollmentMode = isStandaloneMode || inlineEnrollmentTarget != null
+        val qualityEval: QualityResult = if (isEnrollmentMode) {
             // Strict pose gating for enrollment captures (standalone AND inline)
             val expectedPose = when (captureStep) {
                 0 -> com.attract.attendance.domain.face.ExpectedPose.STRAIGHT
@@ -1083,27 +1092,14 @@ fun AttendanceScreen(
                 else -> com.attract.attendance.domain.face.ExpectedPose.RIGHT
             }
             FaceQualityEngine.evaluate(signals, FaceQualityConfig.calibrationDefaults(), expectedPose, anchorStraightYaw)
-        } else if (captureStep == 0) {
-            FaceQualityEngine.evaluate(signals, FaceQualityConfig.calibrationDefaults())
         } else {
-            val supportPoseOk =
-                com.attract.attendance.domain.face.AdaptiveVerificationEngine.isAcceptableSupportPose(
-                    signals, FaceQualityConfig.calibrationDefaults(),
-                )
-            if (!supportPoseOk) {
-                statusMessage = AttendanceStrings.QUALITY_POSE_TITLE
-                statusSubtitle = "Keep your head roughly facing the camera"
-                isValidatingFrame = false
-                return
+            // Doc 20 WP5.2: Live attendance accepts ANY natural pose within calibrated degree limits
+            val config = if (signals.poseSource == com.attract.attendance.domain.face.PoseSource.MESH) {
+                FaceQualityConfig.v4Defaults()
+            } else {
+                FaceQualityConfig.calibrationDefaults()
             }
-            // Bin by MEASURED yaw so genuine profiles validate against their own window.
-            val cfg = FaceQualityConfig.calibrationDefaults()
-            val measured = when {
-                signals.yawDegrees <= -cfg.profileMinYawDegrees -> com.attract.attendance.domain.face.ExpectedPose.LEFT
-                signals.yawDegrees >= cfg.profileMinYawDegrees -> com.attract.attendance.domain.face.ExpectedPose.RIGHT
-                else -> com.attract.attendance.domain.face.ExpectedPose.STRAIGHT
-            }
-            FaceQualityEngine.evaluate(signals, cfg, measured)
+            FaceQualityEngine.evaluate(signals, config, com.attract.attendance.domain.face.ExpectedPose.ANY)
         }
         if (qualityEval is QualityResult.Rejected) {
             val (qTitle, qSub) = when (qualityEval.reason) {
@@ -1124,12 +1120,24 @@ fun AttendanceScreen(
             return
         }
 
-        // Presentation-attack signals (LLD-12) computed once per capture on the face crop.
-        val patSignals = PresentationAttackAnalyzer.analyze(frameBitmap)
+        // Presentation-attack signals (LLD-12 / doc-20 WP1.3) computed on the wide crop
+        val patCrop = bundle?.wideCrop ?: frameBitmap
+        val patSignals = PresentationAttackAnalyzer.analyze(patCrop)
 
-        val livenessEval = LivenessEngine.check(signals, lastQualitySignals, patSignals)
+        val livenessEval = if (isEnrollmentMode) {
+            LivenessEngine.check(signals, lastQualitySignals, patSignals)
+        } else {
+            livenessOrchestrator.onFrame(signals, patSignals, bundle?.meshResult, null)
+            val (risk, eval) = livenessOrchestrator.evaluate(signals, patSignals)
+            eval
+        }
         if (livenessEval is LivenessResult.Rejected) {
-            statusMessage = "Liveness check failed"
+            statusMessage = when (livenessEval.reason) {
+                com.attract.attendance.domain.face.LivenessReason.SCREEN_REPLAY_SUSPECTED -> "Screen replay detected"
+                com.attract.attendance.domain.face.LivenessReason.PRINT_PHOTO_SUSPECTED -> "Printed photo detected"
+                com.attract.attendance.domain.face.LivenessReason.INSUFFICIENT_VARIANCE -> "Liveness check failed — static image"
+                else -> "Liveness check failed"
+            }
             statusSubtitle = livenessEval.message
             isValidatingFrame = false
             return
@@ -1139,7 +1147,6 @@ fun AttendanceScreen(
         lastFrameLive = livenessEval is LivenessResult.Passed
         lastFrameQualityScore = (qualityEval as QualityResult.Accepted).score
 
-        val isEnrollmentMode = isStandaloneMode || inlineEnrollmentTarget != null
         if (isEnrollmentMode) {
             capturedYawDegrees = capturedYawDegrees + signals.yawDegrees
             capturedQualityScores = capturedQualityScores + qualityEval.score
@@ -1283,9 +1290,15 @@ fun AttendanceScreen(
 
         scope.launch {
             runCatching {
+                val isEnroll = isStandaloneMode || inlineEnrollmentTarget != null
                 val currentSignals = lastQualitySignals
                 if (currentSignals != null) {
-                    val livenessReCheck = LivenessEngine.check(currentSignals)
+                    val livenessReCheck = if (isEnroll) {
+                        LivenessEngine.check(currentSignals)
+                    } else {
+                        val (risk, eval) = livenessOrchestrator.evaluate(currentSignals, null)
+                        eval
+                    }
                     if (livenessReCheck is LivenessResult.Rejected) {
                         state = SessionScreenState.CAPTURING
                         collectedFrames = 2
@@ -1318,6 +1331,22 @@ fun AttendanceScreen(
 
                 val outcome = engine.evaluate(targetFloats, activeTemplates)
 
+                val trace = AttemptTrace(
+                    faceLuma = lastQualitySignals?.brightness ?: 0f,
+                    enhancementApplied = false,
+                    yawDeg = lastQualitySignals?.yawDegrees ?: 0f,
+                    pitchDeg = lastQualitySignals?.pitchDegrees ?: 0f,
+                    rollDeg = lastQualitySignals?.rollDegrees ?: 0f,
+                    top1 = (outcome as? com.attract.attendance.domain.face.RecognitionOutcome.Match)?.studentId?.toString(),
+                    framesUsed = collectedFrames,
+                    outcome = if (outcome is com.attract.attendance.domain.face.RecognitionOutcome.Match) "MATCH" else "UNKNOWN"
+                )
+                try {
+                    android.util.Log.i("ATTRACT_RECOGNITION", trace.toString())
+                } catch (_: Throwable) {
+                    println("[ATTRACT_RECOGNITION] $trace")
+                }
+
                 when (outcome) {
                     is com.attract.attendance.domain.face.RecognitionOutcome.Match -> {
                         recognitionAttemptCount = 0
@@ -1334,6 +1363,18 @@ fun AttendanceScreen(
                                 lastRecognizedStudent = matchedStudent
                                 state = SessionScreenState.MATCH_SUCCESS
                                 statusMessage = "PRESENT: ${matchedStudent.name}"
+                                val meshPose = lastQualitySignals?.let { sig ->
+                                    HeadPose.poseBucket(sig.yawDegrees, sig.pitchDegrees)
+                                } ?: "FRONTAL"
+                                repository.maybeAutoUpdateTemplate(
+                                    studentId = matchedId,
+                                    newEmbedding = targetFloats,
+                                    qualityScore = lastFrameQualityScore,
+                                    matchScore = outcome.confidence,
+                                    margin = 0.20f,
+                                    livenessRisk = com.attract.attendance.domain.face.liveness.LivenessRisk.LOW,
+                                    poseBucket = meshPose,
+                                )
                                 delay(2000)
                                 resetToReady(resetAttempts = true)
                             }
@@ -1495,12 +1536,23 @@ fun AttendanceScreen(
                         modifier = Modifier.fillMaxSize(),
                         onFrameBundleAnalyzed = { bundle ->
                             latestFrameBundle = bundle
+                            val luma = bundle.qualitySignals?.brightness ?: 100f
+                            isScreenFlashActive = CameraTuning.shouldUseScreenFlash(
+                                faceLuma = luma,
+                                evIndex = 0,
+                                evMax = 2,
+                                currentlyActive = isScreenFlashActive
+                            )
                             processAutoCaptureFrame(bundle)
                         },
                         onFrameAnalyzed = { signals, frameBitmap ->
                             latestFrameSignals = signals
                             latestFrameBitmap = frameBitmap
                         }
+                    )
+                    ScreenFlashOverlay(
+                        active = isScreenFlashActive,
+                        modifier = Modifier.fillMaxSize()
                     )
                 } else {
                     Text("Camera permission required", color = Color.White, style = MaterialTheme.typography.bodySmall)

@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -59,6 +60,7 @@ fun StudentDetailScreen(
     onBack: () -> Unit,
     onReEnroll: () -> Unit,
     onResetBiometrics: () -> Unit = {},
+    onResetLearnedFaceData: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isEnrolled = student.enrollmentStatus == EnrollmentStatus.ENROLLED
@@ -253,6 +255,24 @@ fun StudentDetailScreen(
                         }
 
                         if (student.enrollmentStatus != EnrollmentStatus.NOT_ENROLLED) {
+                            AttractTextButton(
+                                onClick = { onResetLearnedFaceData() },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(
+                                    Icons.Default.Refresh,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.size(6.dp))
+                                Text(
+                                    "Reset learned face data",
+                                    color = MaterialTheme.colorScheme.primary,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+
                             AttractTextButton(
                                 onClick = { showClearFaceDialog = true },
                                 modifier = Modifier.fillMaxWidth()

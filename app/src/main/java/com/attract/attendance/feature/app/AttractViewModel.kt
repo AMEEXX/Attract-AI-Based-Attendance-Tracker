@@ -383,6 +383,17 @@ class AttractViewModel(
         }
     )
 
+    fun resetLearnedFaceData(studentId: Long, onComplete: () -> Unit = {}) = runCommand(
+        work = {
+            repository.resetLearnedFaceData(studentId)
+            com.attract.attendance.core.model.CommandResult.Success(Unit)
+        },
+        onSuccess = {
+            showMessage("Learned face data reset.")
+            onComplete()
+        }
+    )
+
     fun exportClassReport(classId: Long, uri: Uri) {
         if (_uiState.value.isWorking) return
         viewModelScope.launch {

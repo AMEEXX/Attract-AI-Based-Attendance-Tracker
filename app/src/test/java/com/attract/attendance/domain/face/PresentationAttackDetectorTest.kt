@@ -32,22 +32,26 @@ class PresentationAttackDetectorTest {
 
     @Test
     fun screenReplay_highFrequencyMoireEnergy_rejected() {
-        val result = PresentationAttackDetector.analyze(signals(0.30f, 0.01f, 20f), blurVariance = 500f)
+        val result = PresentationAttackDetector.analyze(signals(0.35f, 0.01f, 20f), blurVariance = 500f)
         assertTrue(result is LivenessResult.Rejected)
         assertEquals(LivenessReason.SCREEN_REPLAY_SUSPECTED, (result as LivenessResult.Rejected).reason)
     }
 
     @Test
     fun screenGlare_specularHighlights_rejectedAsScreenReplay() {
-        val result = PresentationAttackDetector.analyze(signals(0.05f, 0.20f, 20f), blurVariance = 500f)
+        // 0.15 passes with recalibrated 0.25 threshold
+        assertEquals(LivenessResult.Passed, PresentationAttackDetector.analyze(signals(0.05f, 0.15f, 20f), blurVariance = 500f))
+
+        // 0.30 exceeds 0.25 threshold and is rejected
+        val result = PresentationAttackDetector.analyze(signals(0.05f, 0.30f, 20f), blurVariance = 500f)
         assertTrue(result is LivenessResult.Rejected)
         assertEquals(LivenessReason.SCREEN_REPLAY_SUSPECTED, (result as LivenessResult.Rejected).reason)
     }
 
     @Test
     fun printedPhoto_flatSharpTexture_rejectedAsPrintPhoto() {
-        // Sharp frame overall but abnormally flat central texture — print signature.
-        val result = PresentationAttackDetector.analyze(signals(0.05f, 0.01f, 3f), blurVariance = 150f)
+        // Sharp frame overall (blur < 120) but abnormally flat central texture — print signature.
+        val result = PresentationAttackDetector.analyze(signals(0.05f, 0.01f, 3f), blurVariance = 100f)
         assertTrue(result is LivenessResult.Rejected)
         assertEquals(LivenessReason.PRINT_PHOTO_SUSPECTED, (result as LivenessResult.Rejected).reason)
     }

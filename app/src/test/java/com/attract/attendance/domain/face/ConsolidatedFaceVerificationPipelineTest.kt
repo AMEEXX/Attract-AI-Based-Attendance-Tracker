@@ -322,7 +322,7 @@ class ConsolidatedFaceVerificationPipelineTest {
             for (step in seq) {
                 // Test a valid pose for the expected step
                 val targetYaw = when (step) {
-                    ExpectedPose.STRAIGHT -> 5f
+                    ExpectedPose.STRAIGHT, ExpectedPose.ANY, ExpectedPose.DOWN_HOLD -> 5f
                     ExpectedPose.LEFT -> -30f
                     ExpectedPose.RIGHT -> 30f
                 }
@@ -332,7 +332,7 @@ class ConsolidatedFaceVerificationPipelineTest {
 
                 // Test an invalid pose for the current step
                 val wrongYaw = when (step) {
-                    ExpectedPose.STRAIGHT -> -30f
+                    ExpectedPose.STRAIGHT, ExpectedPose.ANY, ExpectedPose.DOWN_HOLD -> -30f
                     ExpectedPose.LEFT -> 5f
                     ExpectedPose.RIGHT -> -30f
                 }
@@ -354,6 +354,7 @@ class ConsolidatedFaceVerificationPipelineTest {
                     ExpectedPose.STRAIGHT -> assertTrue(abs(yaw) <= config.straightMaxYawDegrees)
                     ExpectedPose.LEFT -> assertTrue(yaw in -config.profileMaxYawDegrees..-config.profileMinYawDegrees)
                     ExpectedPose.RIGHT -> assertTrue(yaw in config.profileMinYawDegrees..config.profileMaxYawDegrees)
+                    else -> Unit
                 }
             }
             poseCases++
@@ -380,18 +381,13 @@ class ConsolidatedFaceVerificationPipelineTest {
             livenessCases++
         }
 
-        // 2. Low Light Liveness check (threshold: 45f)
+        // 2. Low Light Liveness check (WP1.1: Quality engine owns brightness, so liveness does not reject)
         val brightnessEpsilons = listOf(-1f, -0.001f, 0f, 0.001f, 1f)
         for (eps in brightnessEpsilons) {
             val brightness = 45f + eps
             val signals = createSignals(brightness = brightness)
             val result = LivenessEngine.check(signals, null, PresentationAttackSignals.Unavailable)
-            if (brightness < 45f) {
-                assertTrue(result is LivenessResult.Rejected)
-                assertEquals(LivenessReason.PASSIVE_SPOOF_SUSPECTED, (result as LivenessResult.Rejected).reason)
-            } else {
-                assertTrue(result is LivenessResult.Passed)
-            }
+            assertTrue(result is LivenessResult.Passed)
             livenessCases++
         }
 
@@ -410,17 +406,12 @@ class ConsolidatedFaceVerificationPipelineTest {
             livenessCases++
         }
 
-        // 4. Low Blur Variance liveness check (threshold: 15f)
+        // 4. Low Blur Variance liveness check (WP1.1: Quality engine owns blur, so liveness does not reject)
         for (eps in brightnessEpsilons) {
             val blur = 15f + eps
             val signals = createSignals(blurVariance = blur)
             val result = LivenessEngine.check(signals, null, PresentationAttackSignals.Unavailable)
-            if (blur < 15f) {
-                assertTrue(result is LivenessResult.Rejected)
-                assertEquals(LivenessReason.PASSIVE_SPOOF_SUSPECTED, (result as LivenessResult.Rejected).reason)
-            } else {
-                assertTrue(result is LivenessResult.Passed)
-            }
+            assertTrue(result is LivenessResult.Passed)
             livenessCases++
         }
 

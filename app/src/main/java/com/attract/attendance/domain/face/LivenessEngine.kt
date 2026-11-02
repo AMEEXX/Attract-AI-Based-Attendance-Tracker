@@ -42,22 +42,6 @@ object LivenessEngine {
         val patOutcome = PresentationAttackDetector.analyze(presentationAttackSignals, signals.blurVariance)
         if (patOutcome is LivenessResult.Rejected) return patOutcome
 
-        // 3. Passive anti-spoofing check using brightness & blur variance ratio
-        // Photos of screens or printed cards have unnaturally high/low contrast or static glare
-        if (signals.blurVariance < 15.0f) {
-            return LivenessResult.Rejected(
-                LivenessReason.PASSIVE_SPOOF_SUSPECTED,
-                "Liveness check failed — image appears static or low quality."
-            )
-        }
-
-        if (signals.brightness < 45.0f) {
-            return LivenessResult.Rejected(
-                LivenessReason.PASSIVE_SPOOF_SUSPECTED,
-                "Lighting too low for biometric liveness verification."
-            )
-        }
-
         // 4. Eye open probability variance check across consecutive frames if REAL eye signals are available
         if (previousSignals != null && leftEye != null && rightEye != null &&
             previousSignals.leftEyeOpenProbability != null && previousSignals.rightEyeOpenProbability != null) {

@@ -1822,5 +1822,102 @@ class AttractRepository(
         val error = validator(raw).exceptionOrNull() as? ValidationException
         return CommandResult.Failure(error?.error ?: AppError.Validation("input", "Enter a valid value."))
     }
+
+    suspend fun maybeAutoUpdateTemplate(
+        studentId: Long,
+        newEmbedding: FloatArray,
+        qualityScore: Float,
+        matchScore: Float,
+        margin: Float,
+        livenessRisk: com.attract.attendance.domain.face.liveness.LivenessRisk,
+        poseBucket: String,
+    ): Boolean {
+        return try {
+            val allTemplates = templates.forStudent(studentId)
+            val enrolledTemplates = allTemplates.filter { it.source != "AUTO_UPDATE" }
+            if (enrolledTemplates.isEmpty()) return false
+
+            var maxSimToEnrolled = 0f
+            for (et in enrolledTemplates) {
+                val floats = com.attract.attendance.data.security.TemplateEnvelopeCodec.decode(
+                    cipher = embeddingCipher,
+                    studentId = et.studentId,
+                    modelVersion = et.modelVersion,
+                    stored = et.encryptedEmbedding,
+                    cryptoVersion = et.cryptoVersion,
+                ) ?: continue
+                val sim = com.attract.attendance.domain.face.TemplateMatcher.cosineSimilarity(newEmbedding, floats)
+                if (sim > maxSimToEnrolled) maxSimToEnrolled = sim
+            }
+
+            val lastAutoTime = templates.lastAutoTemplateAt(studentId)
+            val hoursSinceLastAuto = if (lastAutoTime != null) {
+                (nowMillis() - lastAutoTime).toDouble() / (1000.0 * 3600.0)
+            } else {
+                Double.MAX_VALUE
+            }
+
+            if (!com.attract.attendance.domain.face.TemplateUpdatePolicy.shouldAdd(
+                    score = matchScore,
+                    margin = margin,
+                    risk = livenessRisk,
+                    quality = qualityScore,
+                    maxSimToEnrolled = maxSimToEnrolled,
+                    hoursSinceLastAuto = hoursSinceLastAuto
+                )
+            ) {
+                return false
+            }
+
+            database.withTransaction {
+                val autoTemplates = templates.autoTemplatesForStudent(studentId)
+                val bucketTemplates = autoTemplates.filter { it.poseBucket == poseBucket }
+
+                if (bucketTemplates.size >= com.attract.attendance.domain.face.TemplateUpdatePolicy.MAX_AUTO_PER_BUCKET) {
+                    val lowestQuality = bucketTemplates.minByOrNull { it.qualityScore }
+                    if (lowestQuality != null) {
+                        templates.deleteById(lowestQuality.id)
+                    }
+                } else if (autoTemplates.size >= com.attract.attendance.domain.face.TemplateUpdatePolicy.MAX_AUTO_TOTAL) {
+                    val oldest = autoTemplates.minByOrNull { it.capturedAt }
+                    if (oldest != null) {
+                        templates.deleteById(oldest.id)
+                    }
+                }
+
+                val now = nowMillis()
+                val (blob, cryptoVersion) = com.attract.attendance.data.security.TemplateEnvelopeCodec.encode(
+                    cipher = embeddingCipher,
+                    studentId = studentId,
+                    modelVersion = com.attract.attendance.domain.face.TemplateCompatibility.CURRENT_MODEL_ID,
+                    plaintextFloats = newEmbedding,
+                )
+
+                templates.insert(
+                    FaceTemplateEntity(
+                        studentId = studentId,
+                        encryptedEmbedding = blob,
+                        cryptoVersion = cryptoVersion,
+                        modelVersion = com.attract.attendance.domain.face.TemplateCompatibility.CURRENT_MODEL_ID,
+                        embeddingDim = newEmbedding.size,
+                        poseBucket = poseBucket,
+                        qualityScore = qualityScore,
+                        capturedAt = now,
+                        source = "AUTO_UPDATE",
+                        active = true
+                    )
+                )
+                android.util.Log.i("ATTRACT_FACE", "Auto-updated template for student $studentId (bucket=$poseBucket, quality=$qualityScore, sim=$maxSimToEnrolled)")
+            }
+            true
+        } catch (e: Throwable) {
+            android.util.Log.w("ATTRACT_FACE", "maybeAutoUpdateTemplate skipped due to: ${e.message}")
+            false
+        }
+    }
+
+    suspend fun resetLearnedFaceData(studentId: Long): Int {
+        return templates.deleteAutoTemplatesForStudent(studentId)
+    }
 }
 

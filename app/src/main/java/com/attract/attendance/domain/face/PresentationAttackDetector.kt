@@ -12,10 +12,10 @@ package com.attract.attendance.domain.face
 object PresentationAttackDetector {
 
     data class Thresholds(
-        val maxHighFrequencyEnergy: Float = 0.18f,
-        val maxSpecularHighlightRatio: Float = 0.10f,
-        val printFlatTextureStdDev: Float = 6.0f,
-        val printMaxBlurVariance: Float = 200f,
+        val maxHighFrequencyEnergy: Float = LivenessPolicy().maxHighFrequencyEnergy,
+        val maxSpecularHighlightRatio: Float = LivenessPolicy().maxSpecularHighlightRatio,
+        val printFlatTextureStdDev: Float = LivenessPolicy().printFlatTextureStdDev,
+        val printMaxBlurVariance: Float = LivenessPolicy().printMaxBlurVariance,
     ) {
         init {
             require(maxHighFrequencyEnergy > 0f) { "maxHighFrequencyEnergy must be positive." }

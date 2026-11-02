@@ -6,6 +6,8 @@ package com.attract.attendance.domain.face
  * Pixel statistics (blur/brightness) are computed on a bounded down-sampled crop by the
  * Android adapter and passed here as plain values so the decision logic stays JVM-testable.
  */
+enum class PoseSource { YOLO_RATIO, MESH }
+
 data class FaceQualitySignals(
     val faceCount: Int,
     val yawDegrees: Float,
@@ -19,6 +21,8 @@ data class FaceQualitySignals(
     val blurVariance: Float,
     val brightness: Float,
     val landmarkMinConf: Float = 1.0f,
+    val noiseSigma: Float = 0f,
+    val poseSource: PoseSource = PoseSource.YOLO_RATIO,
 ) {
     val isSingleFace: Boolean get() = faceCount == 1
 

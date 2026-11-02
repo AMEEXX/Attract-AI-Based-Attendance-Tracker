@@ -17,6 +17,9 @@ data class FrameBundle(
     val detections: List<YoloFaceDetector.DetectedFace> = emptyList(),
     val qualitySignals: FaceQualitySignals? = null,
     val alignedCrop: Bitmap? = null,
+    val wideCrop: Bitmap? = null,
+    val padCrops: Pair<IntArray, IntArray>? = null,
+    val meshResult: FaceMeshResult? = null,
     val error: String? = null,
 ) {
     val hasFace: Boolean get() = qualitySignals?.isSingleFace == true && alignedCrop != null

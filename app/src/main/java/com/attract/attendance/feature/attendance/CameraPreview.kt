@@ -25,11 +25,33 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.attract.attendance.domain.face.FaceAligner
+import com.attract.attendance.domain.face.FaceBox
 import com.attract.attendance.domain.face.FaceQualitySignals
+import com.attract.attendance.domain.face.FaceTracker
 import com.attract.attendance.domain.face.FrameBundle
+import com.attract.attendance.domain.face.PadCrop
+import com.attract.attendance.domain.face.PoseSource
 import com.attract.attendance.domain.face.YoloFaceDetector
+import com.attract.attendance.platform.camera.CameraCaptureController
+import com.attract.attendance.platform.face.FaceMeshEngine
+import android.hardware.camera2.CaptureRequest
+import android.os.Build
+import android.util.Range
+import androidx.camera.camera2.interop.Camera2Interop
+import androidx.camera.camera2.interop.ExperimentalCamera2Interop
+import com.attract.attendance.domain.face.CameraTuning
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.Executors
+
+@OptIn(ExperimentalCamera2Interop::class)
+private fun <T> Camera2Interop.Extender<T>.lowLightFriendly() {
+    setCaptureRequestOption(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Range(10, 30))
+    setCaptureRequestOption(CaptureRequest.NOISE_REDUCTION_MODE, CaptureRequest.NOISE_REDUCTION_MODE_HIGH_QUALITY)
+    setCaptureRequestOption(CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE, CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_OFF)
+    if (Build.VERSION.SDK_INT >= 35) {
+        setCaptureRequestOption(CaptureRequest.CONTROL_AE_MODE, 6)
+    }
+}
 
 /**
  * Callback delivers:
@@ -46,6 +68,7 @@ import java.util.concurrent.Executors
 fun CameraPreview(
     modifier: Modifier = Modifier,
     cameraSelector: CameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA,
+    cameraCaptureController: CameraCaptureController? = null,
     onFrameAnalyzed: ((FaceQualitySignals, Bitmap?) -> Unit)? = null,
     onFrameBundleAnalyzed: ((FrameBundle) -> Unit)? = null,
     onProviderInitialized: ((ProcessCameraProvider) -> Unit)? = null
@@ -62,25 +85,31 @@ fun CameraPreview(
     DisposableEffect(lifecycleOwner, cameraSelector) {
         var activeCameraProvider: ProcessCameraProvider? = null
         try {
+            FaceMeshEngine.init(context)
+            val tracker = FaceTracker()
             val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
             val mainExecutor = ContextCompat.getMainExecutor(context)
             val analysisExecutor = Executors.newSingleThreadExecutor()
 
+            var activeCamera: androidx.camera.core.Camera? = null
+            var lastExposureAdjustTimeMs = 0L
             var lastAnalyzedTimestampMs = 0L
 
             val resolutionSelector = ResolutionSelector.Builder()
                 .setResolutionStrategy(
                     ResolutionStrategy(
-                        Size(640, 480),
+                        Size(1280, 720),
                         ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
                     )
                 )
                 .build()
 
-            val imageAnalysis = ImageAnalysis.Builder()
+            val imageAnalysisBuilder = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .setResolutionSelector(resolutionSelector)
-                .build()
+                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
+            Camera2Interop.Extender(imageAnalysisBuilder).lowLightFriendly()
+            val imageAnalysis = imageAnalysisBuilder.build()
 
             imageAnalysis.setAnalyzer(analysisExecutor) { imageProxy ->
                 val now = System.currentTimeMillis()
@@ -112,6 +141,7 @@ fun CameraPreview(
                     val faceCount = detections.size
 
                     if (faceCount == 0) {
+                        tracker.update(emptyList(), nowNanos)
                         val emptySignals = FaceQualitySignals(
                             faceCount = 0,
                             yawDegrees = 0f,
@@ -128,6 +158,7 @@ fun CameraPreview(
                         val bundle = FrameBundle(
                             frameId = frameId,
                             timestampNanos = nowNanos,
+                            trackId = 0,
                             detections = emptyList(),
                             qualitySignals = emptySignals,
                             alignedCrop = null
@@ -168,36 +199,122 @@ fun CameraPreview(
                         return@setAnalyzer
                     }
 
+                    val faceBoxes = detections.map { d ->
+                        FaceBox(
+                            left = d.boundingBox.left.toFloat(),
+                            top = d.boundingBox.top.toFloat(),
+                            right = d.boundingBox.right.toFloat(),
+                            bottom = d.boundingBox.bottom.toFloat()
+                        )
+                    }
+                    val activeTrack = tracker.update(faceBoxes, nowNanos)
+                    val trackId = activeTrack?.id ?: 1
+
                     val primaryFace = detections[0]
                     val box = primaryFace.boundingBox
 
                     // Quality signals computed on full frame with bounding-box region
-                    val brightness = computeBitmapBrightness(frameBitmap, box)
+                    val lumaAndNoise = computeFaceLumaAndNoise(frameBitmap, box)
+                    val brightness = lumaAndNoise.meanLuma
+                    val noiseSigma = lumaAndNoise.noiseSigma
                     val blurVariance = computeBitmapLaplacianVariance(frameBitmap, box)
 
-                    val liveSignals = FaceQualitySignals(
-                        faceCount = 1,
-                        yawDegrees = primaryFace.estimatedYaw,
-                        pitchDegrees = primaryFace.estimatedPitch,
-                        rollDegrees = primaryFace.estimatedRoll,
-                        leftEyeOpenProbability = null, // R13: Leave null (unavailable), do not fabricate 1.0f
-                        rightEyeOpenProbability = null,
-                        faceRatio = primaryFace.faceRatio,
-                        centerX = primaryFace.centerX,
-                        centerY = primaryFace.centerY,
-                        blurVariance = blurVariance,
-                        brightness = brightness
-                    )
+                    if (now - lastExposureAdjustTimeMs >= 500L) {
+                        lastExposureAdjustTimeMs = now
+                        activeCamera?.let { cam ->
+                            try {
+                                val exp = cam.cameraInfo.exposureState
+                                if (exp.isExposureCompensationSupported) {
+                                    val range = exp.exposureCompensationRange
+                                    val currentIdx = exp.exposureCompensationIndex
+                                    val nextIdx = CameraTuning.nextExposureIndex(brightness, currentIdx, range.lower..range.upper)
+                                    if (nextIdx != currentIdx) {
+                                        cam.cameraControl.setExposureCompensationIndex(nextIdx)
+                                    }
+                                }
+                            } catch (_: Throwable) {}
+                        }
+                    }
+
+                    // Run MediaPipe FaceMesh when available
+                    val mesh = if (FaceMeshEngine.isAvailable) {
+                        FaceMeshEngine.detect(frameBitmap)
+                    } else null
+
+                    val liveSignals = if (mesh != null) {
+                        FaceQualitySignals(
+                            faceCount = 1,
+                            yawDegrees = mesh.yawDeg,
+                            pitchDegrees = mesh.pitchDeg,
+                            rollDegrees = mesh.rollDeg,
+                            leftEyeOpenProbability = (1f - mesh.eyeBlinkLeft).coerceIn(0f, 1f),
+                            rightEyeOpenProbability = (1f - mesh.eyeBlinkRight).coerceIn(0f, 1f),
+                            faceRatio = primaryFace.faceRatio,
+                            centerX = primaryFace.centerX,
+                            centerY = primaryFace.centerY,
+                            blurVariance = blurVariance,
+                            brightness = brightness,
+                            landmarkMinConf = primaryFace.minLandmarkConfidence,
+                            noiseSigma = noiseSigma,
+                            poseSource = PoseSource.MESH
+                        )
+                    } else {
+                        FaceQualitySignals(
+                            faceCount = 1,
+                            yawDegrees = primaryFace.estimatedYaw,
+                            pitchDegrees = primaryFace.estimatedPitch,
+                            rollDegrees = primaryFace.estimatedRoll,
+                            leftEyeOpenProbability = null, // R13: Leave null (unavailable), do not fabricate 1.0f
+                            rightEyeOpenProbability = null,
+                            faceRatio = primaryFace.faceRatio,
+                            centerX = primaryFace.centerX,
+                            centerY = primaryFace.centerY,
+                            blurVariance = blurVariance,
+                            brightness = brightness,
+                            landmarkMinConf = primaryFace.minLandmarkConfidence,
+                            noiseSigma = noiseSigma,
+                            poseSource = PoseSource.YOLO_RATIO
+                        )
+                    }
 
                     // FaceAligner produces 112x112 canonical ArcFace aligned face bitmap
                     val alignedFace = FaceAligner.align(frameBitmap, primaryFace.landmarks)
 
+                    // Wide crop (160x160) for presentation attack detection (WP1.3)
+                    val wideCropRect = PadCrop.box(
+                        srcW = frameBitmap.width,
+                        srcH = frameBitmap.height,
+                        faceBox = faceBoxes[0],
+                        scale = 2.7f
+                    )
+                    val wideFace = if (wideCropRect.width > 0 && wideCropRect.height > 0) {
+                        try {
+                            val rawCrop = Bitmap.createBitmap(
+                                frameBitmap,
+                                wideCropRect.left,
+                                wideCropRect.top,
+                                wideCropRect.width,
+                                wideCropRect.height
+                            )
+                            val scaled = Bitmap.createScaledBitmap(rawCrop, 160, 160, true)
+                            if (rawCrop != scaled && rawCrop != frameBitmap) {
+                                rawCrop.recycle()
+                            }
+                            scaled
+                        } catch (_: Throwable) {
+                            null
+                        }
+                    } else null
+
                     val bundle = FrameBundle(
                         frameId = frameId,
                         timestampNanos = nowNanos,
+                        trackId = trackId,
                         detections = detections,
                         qualitySignals = liveSignals,
-                        alignedCrop = alignedFace
+                        alignedCrop = alignedFace,
+                        wideCrop = wideFace,
+                        meshResult = mesh
                     )
 
                     mainExecutor.execute {
@@ -226,27 +343,33 @@ fun CameraPreview(
                     activeCameraProvider = cameraProvider
                     onProviderInitialized?.invoke(cameraProvider)
 
-                    val preview = Preview.Builder().build().also {
+                    val previewBuilder = Preview.Builder().setResolutionSelector(resolutionSelector)
+                    Camera2Interop.Extender(previewBuilder).lowLightFriendly()
+                    val preview = previewBuilder.build().also {
                         it.surfaceProvider = previewView.surfaceProvider
                     }
 
                     cameraProvider.unbindAll()
                     try {
-                        cameraProvider.bindToLifecycle(
+                        val boundCam = cameraProvider.bindToLifecycle(
                             lifecycleOwner,
                             cameraSelector,
                             preview,
                             imageAnalysis
                         )
+                        activeCamera = boundCam
+                        cameraCaptureController?.attachCamera(boundCam)
                     } catch (e: Exception) {
                         // Preferred camera unavailable (emulator/edge device) — fall back to the other lens.
                         android.util.Log.w("CameraPreview", "Preferred camera unavailable, trying fallback: ${e.message}")
                         val fallback = if (cameraSelector == CameraSelector.DEFAULT_FRONT_CAMERA)
                             CameraSelector.DEFAULT_BACK_CAMERA else CameraSelector.DEFAULT_FRONT_CAMERA
                         try {
-                            cameraProvider.bindToLifecycle(
+                            val boundCam = cameraProvider.bindToLifecycle(
                                 lifecycleOwner, fallback, preview, imageAnalysis
                             )
+                            activeCamera = boundCam
+                            cameraCaptureController?.attachCamera(boundCam)
                         } catch (e2: Exception) {
                             android.util.Log.e("CameraPreview", "Fallback camera bind also failed: ${e2.message}")
                         }
@@ -258,6 +381,7 @@ fun CameraPreview(
 
             onDispose {
                 try {
+                    cameraCaptureController?.detachCamera()
                     analysisExecutor.shutdown()
                     activeCameraProvider?.unbindAll()
                 } catch (_: Exception) {}
@@ -282,29 +406,45 @@ private fun getLuminance(bitmap: Bitmap, x: Int, y: Int): Float {
     return 0.299f * r + 0.587f * g + 0.114f * b
 }
 
-private fun computeBitmapBrightness(bitmap: Bitmap, box: Rect): Float {
-    val left = box.left.coerceIn(0, bitmap.width - 1)
-    val right = box.right.coerceIn(left + 1, bitmap.width)
-    val top = box.top.coerceIn(0, bitmap.height - 1)
-    val bottom = box.bottom.coerceIn(top + 1, bitmap.height)
+data class LumaAndNoise(val meanLuma: Float, val noiseSigma: Float)
+
+fun computeFaceLumaAndNoise(bitmap: Bitmap, box: Rect): LumaAndNoise {
+    val left = (box.left + 1).coerceIn(1, bitmap.width - 2)
+    val right = (box.right - 1).coerceIn(left + 1, bitmap.width - 1)
+    val top = (box.top + 1).coerceIn(1, bitmap.height - 2)
+    val bottom = (box.bottom - 1).coerceIn(top + 1, bitmap.height - 1)
 
     var sum = 0L
     var count = 0
+    val residuals = ArrayList<Float>(1024)
 
-    val step = ((bottom - top) / 40).coerceAtLeast(1)
+    val step = maxOf(1, minOf((right - left) / 32, (bottom - top) / 32))
     var y = top
     while (y < bottom) {
         var x = left
         while (x < right) {
-            val luminance = getLuminance(bitmap, x, y)
-            sum += luminance.toLong()
+            val c = getLuminance(bitmap, x, y)
+            sum += c.toLong()
+            val up = getLuminance(bitmap, x, y - 1)
+            val down = getLuminance(bitmap, x, y + 1)
+            val leftPx = getLuminance(bitmap, x - 1, y)
+            val rightPx = getLuminance(bitmap, x + 1, y)
+            val lap = kotlin.math.abs(up + down + leftPx + rightPx - 4 * c)
+            residuals.add(lap)
             count++
             x += step
         }
         y += step
     }
 
-    return if (count > 0) sum.toFloat() / count else 0f
+    val meanLuma = if (count > 0) sum.toFloat() / count else 0f
+    val noiseSigma = if (residuals.isNotEmpty()) {
+        residuals.sort()
+        val median = residuals[residuals.size / 2]
+        median * 1.4826f
+    } else 0f
+
+    return LumaAndNoise(meanLuma, noiseSigma)
 }
 
 private fun computeBitmapLaplacianVariance(bitmap: Bitmap, box: Rect): Float {

@@ -24,19 +24,30 @@ object FaceQualityEngine {
         if (signals.faceCount > 1) return QualityResult.Rejected(QualityReason.MULTIPLE_FACES)
         if (signals.faceRatio < config.minFaceRatio) return QualityResult.Rejected(QualityReason.TOO_SMALL)
         if (!isInFrame(signals, config)) return QualityResult.Rejected(QualityReason.OFF_CENTER)
-        if (abs(signals.pitchDegrees) > config.maxPoseDegrees) {
+        if (abs(signals.rollDegrees) > config.maxRollDegrees) {
             return QualityResult.Rejected(QualityReason.POSE)
         }
-        if (!yawInWindow(signals.yawDegrees, config, expectedPose, anchorYaw)) {
+        if (signals.pitchDegrees < config.minPitchDegrees || signals.pitchDegrees > config.maxPitchDegrees || abs(signals.pitchDegrees) > config.maxPoseDegrees) {
+            return QualityResult.Rejected(QualityReason.POSE)
+        }
+        if (!yawInWindow(signals.yawDegrees, config, expectedPose, anchorYaw, signals.pitchDegrees)) {
             val reason = when (expectedPose) {
-                ExpectedPose.STRAIGHT -> QualityReason.POSE_NOT_STRAIGHT
+                ExpectedPose.STRAIGHT, ExpectedPose.ANY -> QualityReason.POSE_NOT_STRAIGHT
                 ExpectedPose.LEFT -> QualityReason.POSE_NOT_LEFT
                 ExpectedPose.RIGHT -> QualityReason.POSE_NOT_RIGHT
+                ExpectedPose.DOWN_HOLD -> QualityReason.POSE_NOT_DOWN
             }
             return QualityResult.Rejected(reason)
         }
-        if (signals.blurVariance < config.minBlurVariance) return QualityResult.Rejected(QualityReason.BLUR)
-        if (signals.brightness < config.minBrightness) return QualityResult.Rejected(QualityReason.DARK)
+        val effectiveMinBlur = if (config.version >= 4) {
+            config.minBlurVariance * (signals.brightness / 110f).coerceIn(0.5f, 1.0f)
+        } else {
+            config.minBlurVariance
+        }
+        if (signals.blurVariance < effectiveMinBlur) return QualityResult.Rejected(QualityReason.BLUR)
+        if (signals.brightness < config.minBrightness || (config.version >= 4 && signals.noiseSigma > 18f && signals.brightness < 55f)) {
+            return QualityResult.Rejected(QualityReason.DARK)
+        }
         if (signals.brightness > config.maxBrightness) return QualityResult.Rejected(QualityReason.OVEREXPOSED)
         if (config.requireEyes && !eyesClear(signals, config.minEyeOpenProbability)) {
             return QualityResult.Rejected(QualityReason.EYES_UNCLEAR)
@@ -57,8 +68,10 @@ object FaceQualityEngine {
     fun isDistinctFromCaptured(yawDegrees: Float, capturedYaws: List<Float>): Boolean =
         capturedYaws.all { abs(yawDegrees - it) >= MIN_CAPTURE_YAW_SEPARATION_DEGREES }
 
-    private fun yawInWindow(yaw: Float, config: FaceQualityConfig, expected: ExpectedPose, anchorYaw: Float?): Boolean = when (expected) {
+    private fun yawInWindow(yaw: Float, config: FaceQualityConfig, expected: ExpectedPose, anchorYaw: Float?, pitch: Float = 0f): Boolean = when (expected) {
         ExpectedPose.STRAIGHT -> abs(yaw) <= config.straightMaxYawDegrees
+        ExpectedPose.ANY -> abs(yaw) <= config.maxAttendanceYawDegrees
+        ExpectedPose.DOWN_HOLD -> abs(yaw) <= 15f && pitch in -30f..-10f
         ExpectedPose.LEFT -> {
             val delta = yaw - (anchorYaw ?: 0f)
             delta in -config.profileMaxYawDegrees..-config.profileMinYawDegrees
@@ -87,7 +100,8 @@ object FaceQualityEngine {
         anchorYaw: Float? = null,
     ): Float {
         val targetYaw = when (expected) {
-            ExpectedPose.STRAIGHT -> 0f
+            ExpectedPose.STRAIGHT, ExpectedPose.ANY -> 0f
+            ExpectedPose.DOWN_HOLD -> 0f
             ExpectedPose.LEFT -> (anchorYaw ?: 0f) - (config.profileMinYawDegrees + config.profileMaxYawDegrees) / 2f
             ExpectedPose.RIGHT -> (anchorYaw ?: 0f) + (config.profileMinYawDegrees + config.profileMaxYawDegrees) / 2f
         }
