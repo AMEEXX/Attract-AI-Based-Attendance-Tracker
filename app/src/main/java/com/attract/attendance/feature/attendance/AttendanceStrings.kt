@@ -39,7 +39,7 @@ object AttendanceStrings {
     const val QUALITY_OVEREXPOSED_TITLE = "Too bright or glare"
     const val QUALITY_OVEREXPOSED_SUBTITLE = "Adjust lighting and avoid direct glare"
 
-    const val QUALITY_BLUR_TITLE = "Too blurry"
+    const val QUALITY_BLUR_TITLE = "Hold the phone still for a moment"
     const val QUALITY_BLUR_SUBTITLE = "Hold steady and try again"
 
     const val QUALITY_TOO_SMALL_TITLE = "Move closer"

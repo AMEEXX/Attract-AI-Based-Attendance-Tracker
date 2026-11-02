@@ -21,6 +21,7 @@ data class FrameBundle(
     val wideCrop: Bitmap? = null,
     val padCrops: Pair<IntArray, IntArray>? = null,
     val meshResult: FaceMeshResult? = null,
+    val trackFrameCount: Int = 1,
     val error: String? = null,
 ) {
     val hasFace: Boolean get() = qualitySignals?.isSingleFace == true && alignedCrop != null

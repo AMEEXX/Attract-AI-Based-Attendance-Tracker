@@ -443,6 +443,7 @@ fun AttendanceScreen(
     var anchorStraightYaw by remember { mutableStateOf<Float?>(null) }
     var autoCaptureJob by remember { mutableStateOf<Job?>(null) }
     var lastPoseHintTimeMs by remember { mutableLongStateOf(0L) }
+    var consecutiveBlurFrames by remember { mutableIntStateOf(0) }
 
     var recognitionAttemptCount by remember { mutableIntStateOf(0) }
 
@@ -861,106 +862,6 @@ fun AttendanceScreen(
         }
     }
 
-    fun processAutoCaptureFrame(bundle: com.attract.attendance.domain.face.FrameBundle) {
-        val isEnrollment = inlineEnrollmentTarget != null || (isStandaloneMode && (targetStudentForStandalone != null || selectedStudentForEnroll != null))
-        if (!isEnrollment) return
-        if (state != SessionScreenState.CAPTURING) return
-        if (isValidatingFrame) return
-        if (autoCaptureJob?.isActive == true) return
-
-        val signals = bundle.qualitySignals ?: return
-        val cropBitmap = bundle.alignedCrop ?: return
-        if (signals.faceCount != 1) return
-
-        val config = FaceQualityConfig.calibrationDefaults()
-        val currentSlot = captureStep
-        val expectedPose = when (currentSlot) {
-            0 -> com.attract.attendance.domain.face.ExpectedPose.STRAIGHT
-            1 -> com.attract.attendance.domain.face.ExpectedPose.LEFT
-            else -> com.attract.attendance.domain.face.ExpectedPose.RIGHT
-        }
-
-        val qualityEval = FaceQualityEngine.evaluate(signals, config, expectedPose, anchorStraightYaw)
-        if (qualityEval is QualityResult.Rejected) {
-            val now = System.currentTimeMillis()
-            if (now - lastPoseHintTimeMs > 1000L) {
-                lastPoseHintTimeMs = now
-                val targetName = inlineEnrollmentTarget?.name ?: selectedStudentForEnroll?.name ?: targetStudentForStandalone?.name ?: "Student"
-                val (msgTitle, msgSubtitle) = when (qualityEval.reason) {
-                    com.attract.attendance.domain.face.QualityReason.DARK -> AttendanceStrings.QUALITY_DARK_TITLE to AttendanceStrings.QUALITY_DARK_SUBTITLE
-                    com.attract.attendance.domain.face.QualityReason.OVEREXPOSED -> AttendanceStrings.QUALITY_OVEREXPOSED_TITLE to AttendanceStrings.QUALITY_OVEREXPOSED_SUBTITLE
-                    com.attract.attendance.domain.face.QualityReason.BLUR -> AttendanceStrings.QUALITY_BLUR_TITLE to AttendanceStrings.QUALITY_BLUR_SUBTITLE
-                    com.attract.attendance.domain.face.QualityReason.TOO_SMALL -> AttendanceStrings.QUALITY_TOO_SMALL_TITLE to AttendanceStrings.QUALITY_TOO_SMALL_SUBTITLE
-                    com.attract.attendance.domain.face.QualityReason.OFF_CENTER -> AttendanceStrings.QUALITY_OFF_CENTER_TITLE to AttendanceStrings.QUALITY_OFF_CENTER_SUBTITLE
-                    com.attract.attendance.domain.face.QualityReason.POSE_NOT_STRAIGHT -> AttendanceStrings.ENROLL_STEP1_TITLE to AttendanceStrings.ENROLL_STEP1_SUBTITLE
-                    com.attract.attendance.domain.face.QualityReason.POSE_NOT_LEFT -> AttendanceStrings.ENROLL_STEP2_TITLE to AttendanceStrings.ENROLL_STEP2_SUBTITLE
-                    com.attract.attendance.domain.face.QualityReason.POSE_NOT_RIGHT -> AttendanceStrings.ENROLL_STEP3_TITLE to AttendanceStrings.ENROLL_STEP3_SUBTITLE
-                    com.attract.attendance.domain.face.QualityReason.POSE -> AttendanceStrings.QUALITY_POSE_TITLE to AttendanceStrings.QUALITY_POSE_SUBTITLE
-                    else -> "Hold steady in good lighting" to null
-                }
-                statusMessage = msgTitle
-                statusSubtitle = msgSubtitle
-            }
-            return
-        }
-
-        isValidatingFrame = true
-        autoCaptureJob = scope.launch {
-            try {
-                val embedding = withContext(Dispatchers.IO) {
-                    com.attract.attendance.domain.face.EmbeddingEngine.extractEmbedding(context, cropBitmap)
-                }
-
-                if (currentSlot > 0 && enrollmentSlotEmbeddings.isNotEmpty()) {
-                    val straightEmbedding = enrollmentSlotEmbeddings[0]
-                    val sim = com.attract.attendance.domain.face.IdentityScorer.cosineSimilarity(straightEmbedding, embedding)
-                    if (sim < com.attract.attendance.domain.face.BiometricModelProfile.CURRENT.continuityThreshold) {
-                        statusMessage = "Person swap suspected"
-                        statusSubtitle = "Hold steady and retake pose"
-                        isValidatingFrame = false
-                        return@launch
-                    }
-                }
-
-                capturedPoseBitmaps = capturedPoseBitmaps + cropBitmap
-                capturedYawDegrees = capturedYawDegrees + signals.yawDegrees
-                capturedQualityScores = capturedQualityScores + (qualityEval as QualityResult.Accepted).score
-                enrollmentSlotEmbeddings = enrollmentSlotEmbeddings + embedding
-
-                if (currentSlot == 0) {
-                    anchorStraightYaw = signals.yawDegrees
-                    captureStep = 1
-                    collectedFrames = 1
-                    statusMessage = AttendanceStrings.ENROLL_STEP2_TITLE
-                    statusSubtitle = AttendanceStrings.ENROLL_STEP2_SUBTITLE
-                    delay(500)
-                    isValidatingFrame = false
-                } else if (currentSlot == 1) {
-                    captureStep = 2
-                    collectedFrames = 2
-                    statusMessage = AttendanceStrings.ENROLL_STEP3_TITLE
-                    statusSubtitle = AttendanceStrings.ENROLL_STEP3_SUBTITLE
-                    delay(500)
-                    isValidatingFrame = false
-                } else {
-                    captureStep = 3
-                    collectedFrames = 3
-                    state = SessionScreenState.PROCESSING
-                    statusMessage = AttendanceStrings.ENROLL_SAVING_TITLE
-                    statusSubtitle = AttendanceStrings.ENROLL_SAVING_SUBTITLE
-                    if (inlineEnrollmentTarget != null) {
-                        completeInlineEnrollment()
-                    } else if (isStandaloneMode) {
-                        completeStandaloneEnrollment()
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Auto-capture failed", e)
-                isValidatingFrame = false
-            }
-        }
-    }
-
     fun handleMatchedStudent(matchedId: Long, confidence: Float? = null) {
         recognitionAttemptCount = 0
         val matchedStudent = students.firstOrNull { it.id == matchedId }
@@ -1280,6 +1181,192 @@ fun AttendanceScreen(
                 statusMessage = unavailableMessage(error)
                 delay(2000)
                 resetToReady()
+            }
+        }
+    }
+
+    fun processAutoCaptureFrame(bundle: com.attract.attendance.domain.face.FrameBundle) {
+        val isEnrollment = inlineEnrollmentTarget != null || (isStandaloneMode && (targetStudentForStandalone != null || selectedStudentForEnroll != null))
+        if (!isEnrollment) {
+            if (state != SessionScreenState.CAPTURING) return
+            if (isValidatingFrame) return
+            if (autoCaptureJob?.isActive == true) return
+
+            val signals = bundle.qualitySignals
+            if (signals == null || signals.faceCount == 0) {
+                consecutiveBlurFrames = 0
+                val now = System.currentTimeMillis()
+                if (now - lastPoseHintTimeMs > 600L) {
+                    lastPoseHintTimeMs = now
+                    statusMessage = AttendanceStrings.NO_FACE_TITLE
+                    statusSubtitle = AttendanceStrings.NO_FACE_SUBTITLE
+                }
+                return
+            }
+
+            if (signals.faceCount > 1) {
+                consecutiveBlurFrames = 0
+                val now = System.currentTimeMillis()
+                if (now - lastPoseHintTimeMs > 600L) {
+                    lastPoseHintTimeMs = now
+                    statusMessage = AttendanceStrings.MULTIPLE_FACES_TITLE
+                    statusSubtitle = AttendanceStrings.MULTIPLE_FACES_SUBTITLE
+                }
+                return
+            }
+
+            val config = if (signals.poseSource == com.attract.attendance.domain.face.PoseSource.MESH) {
+                FaceQualityConfig.v4Defaults()
+            } else {
+                FaceQualityConfig.calibrationDefaults()
+            }
+            val qualityEval = FaceQualityEngine.evaluate(signals, config, com.attract.attendance.domain.face.ExpectedPose.ANY)
+
+            if (qualityEval is QualityResult.Rejected) {
+                when (qualityEval.reason) {
+                    com.attract.attendance.domain.face.QualityReason.TOO_SMALL -> {
+                        consecutiveBlurFrames = 0
+                        val now = System.currentTimeMillis()
+                        if (now - lastPoseHintTimeMs > 600L) {
+                            lastPoseHintTimeMs = now
+                            statusMessage = AttendanceStrings.QUALITY_TOO_SMALL_TITLE
+                            statusSubtitle = AttendanceStrings.QUALITY_TOO_SMALL_SUBTITLE
+                        }
+                    }
+                    com.attract.attendance.domain.face.QualityReason.POSE,
+                    com.attract.attendance.domain.face.QualityReason.POSE_NOT_STRAIGHT,
+                    com.attract.attendance.domain.face.QualityReason.OFF_CENTER -> {
+                        consecutiveBlurFrames = 0
+                        val now = System.currentTimeMillis()
+                        if (now - lastPoseHintTimeMs > 600L) {
+                            lastPoseHintTimeMs = now
+                            statusMessage = AttendanceStrings.QUALITY_POSE_TITLE
+                            statusSubtitle = AttendanceStrings.QUALITY_POSE_SUBTITLE
+                        }
+                    }
+                    com.attract.attendance.domain.face.QualityReason.DARK -> {
+                        consecutiveBlurFrames = 0
+                        // Doc 21 WP-F: screen flash on automatically, no text shown
+                    }
+                    com.attract.attendance.domain.face.QualityReason.BLUR -> {
+                        consecutiveBlurFrames++
+                        if (consecutiveBlurFrames >= 3) {
+                            val now = System.currentTimeMillis()
+                            if (now - lastPoseHintTimeMs > 600L) {
+                                lastPoseHintTimeMs = now
+                                statusMessage = AttendanceStrings.QUALITY_BLUR_TITLE
+                                statusSubtitle = AttendanceStrings.QUALITY_BLUR_SUBTITLE
+                            }
+                        }
+                    }
+                    else -> {
+                        consecutiveBlurFrames = 0
+                    }
+                }
+                return
+            }
+
+            consecutiveBlurFrames = 0
+
+            // Doc 21 WP-F: Auto-capture once 2–4 usable frames of the same track exist (≤ 600 ms). No manual retries.
+            if (bundle.trackFrameCount in 2..4) {
+                captureClick()
+            }
+            return
+        }
+        if (state != SessionScreenState.CAPTURING) return
+        if (isValidatingFrame) return
+        if (autoCaptureJob?.isActive == true) return
+
+        val signals = bundle.qualitySignals ?: return
+        val cropBitmap = bundle.alignedCrop ?: return
+        if (signals.faceCount != 1) return
+
+        val config = FaceQualityConfig.calibrationDefaults()
+        val currentSlot = captureStep
+        val expectedPose = when (currentSlot) {
+            0 -> com.attract.attendance.domain.face.ExpectedPose.STRAIGHT
+            1 -> com.attract.attendance.domain.face.ExpectedPose.LEFT
+            else -> com.attract.attendance.domain.face.ExpectedPose.RIGHT
+        }
+
+        val qualityEval = FaceQualityEngine.evaluate(signals, config, expectedPose, anchorStraightYaw)
+        if (qualityEval is QualityResult.Rejected) {
+            val now = System.currentTimeMillis()
+            if (now - lastPoseHintTimeMs > 1000L) {
+                lastPoseHintTimeMs = now
+                val targetName = inlineEnrollmentTarget?.name ?: selectedStudentForEnroll?.name ?: targetStudentForStandalone?.name ?: "Student"
+                val (msgTitle, msgSubtitle) = when (qualityEval.reason) {
+                    com.attract.attendance.domain.face.QualityReason.DARK -> AttendanceStrings.QUALITY_DARK_TITLE to AttendanceStrings.QUALITY_DARK_SUBTITLE
+                    com.attract.attendance.domain.face.QualityReason.OVEREXPOSED -> AttendanceStrings.QUALITY_OVEREXPOSED_TITLE to AttendanceStrings.QUALITY_OVEREXPOSED_SUBTITLE
+                    com.attract.attendance.domain.face.QualityReason.BLUR -> AttendanceStrings.QUALITY_BLUR_TITLE to AttendanceStrings.QUALITY_BLUR_SUBTITLE
+                    com.attract.attendance.domain.face.QualityReason.TOO_SMALL -> AttendanceStrings.QUALITY_TOO_SMALL_TITLE to AttendanceStrings.QUALITY_TOO_SMALL_SUBTITLE
+                    com.attract.attendance.domain.face.QualityReason.OFF_CENTER -> AttendanceStrings.QUALITY_OFF_CENTER_TITLE to AttendanceStrings.QUALITY_OFF_CENTER_SUBTITLE
+                    com.attract.attendance.domain.face.QualityReason.POSE_NOT_STRAIGHT -> AttendanceStrings.ENROLL_STEP1_TITLE to AttendanceStrings.ENROLL_STEP1_SUBTITLE
+                    com.attract.attendance.domain.face.QualityReason.POSE_NOT_LEFT -> AttendanceStrings.ENROLL_STEP2_TITLE to AttendanceStrings.ENROLL_STEP2_SUBTITLE
+                    com.attract.attendance.domain.face.QualityReason.POSE_NOT_RIGHT -> AttendanceStrings.ENROLL_STEP3_TITLE to AttendanceStrings.ENROLL_STEP3_SUBTITLE
+                    com.attract.attendance.domain.face.QualityReason.POSE -> AttendanceStrings.QUALITY_POSE_TITLE to AttendanceStrings.QUALITY_POSE_SUBTITLE
+                    else -> "Hold steady in good lighting" to null
+                }
+                statusMessage = msgTitle
+                statusSubtitle = msgSubtitle
+            }
+            return
+        }
+
+        isValidatingFrame = true
+        autoCaptureJob = scope.launch {
+            try {
+                val embedding = withContext(Dispatchers.IO) {
+                    com.attract.attendance.domain.face.EmbeddingEngine.extractEmbedding(context, cropBitmap)
+                }
+
+                if (currentSlot > 0 && enrollmentSlotEmbeddings.isNotEmpty()) {
+                    val straightEmbedding = enrollmentSlotEmbeddings[0]
+                    val sim = com.attract.attendance.domain.face.IdentityScorer.cosineSimilarity(straightEmbedding, embedding)
+                    if (sim < com.attract.attendance.domain.face.BiometricModelProfile.CURRENT.continuityThreshold) {
+                        statusMessage = "Person swap suspected"
+                        statusSubtitle = "Hold steady and retake pose"
+                        isValidatingFrame = false
+                        return@launch
+                    }
+                }
+
+                capturedPoseBitmaps = capturedPoseBitmaps + cropBitmap
+                capturedYawDegrees = capturedYawDegrees + signals.yawDegrees
+                capturedQualityScores = capturedQualityScores + (qualityEval as QualityResult.Accepted).score
+                enrollmentSlotEmbeddings = enrollmentSlotEmbeddings + embedding
+
+                if (currentSlot == 0) {
+                    anchorStraightYaw = signals.yawDegrees
+                    captureStep = 1
+                    collectedFrames = 1
+                    statusMessage = AttendanceStrings.ENROLL_STEP2_TITLE
+                    statusSubtitle = AttendanceStrings.ENROLL_STEP2_SUBTITLE
+                    delay(500)
+                    isValidatingFrame = false
+                } else if (currentSlot == 1) {
+                    captureStep = 2
+                    collectedFrames = 2
+                    statusMessage = AttendanceStrings.ENROLL_STEP3_TITLE
+                    statusSubtitle = AttendanceStrings.ENROLL_STEP3_SUBTITLE
+                    delay(500)
+                    isValidatingFrame = false
+                } else {
+                    captureStep = 3
+                    collectedFrames = 3
+                    state = SessionScreenState.PROCESSING
+                    statusMessage = AttendanceStrings.ENROLL_SAVING_TITLE
+                    statusSubtitle = AttendanceStrings.ENROLL_SAVING_SUBTITLE
+                    if (inlineEnrollmentTarget != null) {
+                        completeInlineEnrollment()
+                    } else if (isStandaloneMode) {
+                        completeStandaloneEnrollment()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Auto-capture failed", e)
+                isValidatingFrame = false
             }
         }
     }

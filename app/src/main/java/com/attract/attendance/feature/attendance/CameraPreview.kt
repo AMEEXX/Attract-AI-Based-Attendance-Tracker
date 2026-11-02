@@ -408,7 +408,8 @@ fun CameraPreview(
                         alignedCrop = alignedFace,
                         fusedCrop = fusedFace ?: alignedFace,
                         wideCrop = wideFace,
-                        meshResult = mesh
+                        meshResult = mesh,
+                        trackFrameCount = temporalCropBuffer.size()
                     )
 
                     mainExecutor.execute {
