@@ -238,6 +238,7 @@ For in-depth design rationale, mathematical models, and subsystem specifications
 | 📄 **[12 Liveness & Anti-Spoof (docs/12-lld-liveness-and-anti-spoof-engine.md)](docs/12-lld-liveness-and-anti-spoof-engine.md)** | Presentation attack detection, temporal motion analysis, and eye-state safety. |
 | 📄 **[13 Security & Lockdown (docs/13-lld-lockdown-authentication-and-security.md)](docs/13-lld-lockdown-authentication-and-security.md)** | Android Screen Pinning (Lock Task), teacher PIN hashing (Argon2/PBKDF2), and action grants. |
 | 📄 **[16 Multiframe Verification (docs/16-lld-adaptive-multiframe-verification.md)](docs/16-lld-adaptive-multiframe-verification.md)** | Sequential multiframe evidence fusion and attempt budget policy. |
+| 📄 **[19 Face-ID-grade Recognition, Liveness & Low-Light Plan (docs/19-faceid-grade-recognition-liveness-lowlight-plan.md)](docs/19-faceid-grade-recognition-liveness-lowlight-plan.md)** | RGB-only plan: low-light camera/enhancement, MediaPipe 3D pose, PAD CNN, parallax + screen-flash liveness, adaptive templates. |
 | 📄 **[Sample Data Guide (sample-data/README.md)](sample-data/README.md)** | CSV roster formatting and import guide. |
 | 📄 **[Developer Scripts (scripts/README.md)](scripts/README.md)** | Tool catalog for model testing, database diagnostics, and automation. |
 

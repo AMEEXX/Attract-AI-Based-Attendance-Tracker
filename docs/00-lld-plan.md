@@ -44,6 +44,7 @@ LLD-11 is deliberately approved after enrollment and liveness because its accept
 | [13](13-lld-lockdown-authentication-and-security.md) | Lockdown / Authentication / Security | Planned | 01, 02 |
 | [14](14-lld-reporting-export-backup-and-data-lifecycle.md) | Reporting / Export / Backup / Data Lifecycle | Partially implemented | 02, 05 |
 | [16](16-lld-adaptive-multiframe-verification.md) | Adaptive 1→2→3 Frame Verification | Implemented (fusion switch pending calibration D-16a) | 08–12 |
+| [19](19-faceid-grade-recognition-liveness-lowlight-plan.md) | Face-ID-grade Recognition, Anti-Spoofing & Low-Light Plan | Proposed (implementation plan, WP0–WP11) | 08–12, 16, 18 |
 
 ## Build environment notes
 
