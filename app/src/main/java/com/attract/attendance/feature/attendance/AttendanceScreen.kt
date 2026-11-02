@@ -40,6 +40,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateIntAsState
 import com.attract.attendance.ui.components.biometric.ScreenFlashOverlay
 import com.attract.attendance.domain.face.CameraTuning
+import com.attract.attendance.platform.camera.CameraCaptureController
 import com.attract.attendance.domain.face.HeadPose
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -1532,15 +1533,18 @@ fun AttendanceScreen(
                 contentAlignment = Alignment.Center
             ) {
                 if (hasCameraPermission) {
+                    val cameraCaptureController = remember { CameraCaptureController() }
                     CameraPreview(
                         modifier = Modifier.fillMaxSize(),
+                        cameraCaptureController = cameraCaptureController,
                         onFrameBundleAnalyzed = { bundle ->
                             latestFrameBundle = bundle
-                            val luma = bundle.qualitySignals?.brightness ?: 100f
+                            val signals = bundle.qualitySignals
+                            val luma = if (signals != null && signals.faceLuma >= 0f) signals.faceLuma else signals?.brightness ?: 100f
                             isScreenFlashActive = CameraTuning.shouldUseScreenFlash(
                                 faceLuma = luma,
-                                evIndex = 0,
-                                evMax = 2,
+                                evIndex = cameraCaptureController.exposureCompensationIndex.value,
+                                evMax = 4,
                                 currentlyActive = isScreenFlashActive
                             )
                             processAutoCaptureFrame(bundle)

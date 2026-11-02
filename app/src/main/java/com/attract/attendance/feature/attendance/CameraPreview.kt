@@ -35,6 +35,10 @@ import com.attract.attendance.domain.face.PoseSource
 import com.attract.attendance.domain.face.YoloFaceDetector
 import com.attract.attendance.platform.camera.CameraCaptureController
 import com.attract.attendance.platform.face.FaceMeshEngine
+import android.content.Context
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
+import androidx.camera.core.FocusMeteringAction
 import android.hardware.camera2.CaptureRequest
 import android.os.Build
 import android.util.Range
@@ -45,8 +49,10 @@ import java.io.ByteArrayOutputStream
 import java.util.concurrent.Executors
 
 @OptIn(ExperimentalCamera2Interop::class)
-private fun <T> Camera2Interop.Extender<T>.lowLightFriendly() {
-    setCaptureRequestOption(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Range(10, 30))
+private fun <T> Camera2Interop.Extender<T>.lowLightFriendly(supportedFpsRange: IntRange?) {
+    if (supportedFpsRange != null) {
+        setCaptureRequestOption(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Range(supportedFpsRange.first, supportedFpsRange.last))
+    }
     setCaptureRequestOption(CaptureRequest.NOISE_REDUCTION_MODE, CaptureRequest.NOISE_REDUCTION_MODE_HIGH_QUALITY)
     setCaptureRequestOption(CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE, CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_OFF)
     if (Build.VERSION.SDK_INT >= 35) {
@@ -95,7 +101,31 @@ fun CameraPreview(
 
             var activeCamera: androidx.camera.core.Camera? = null
             var lastExposureAdjustTimeMs = 0L
+            var lastAeMeteringTimeMs = 0L
             var lastAnalyzedTimestampMs = 0L
+
+            val supportedFpsRange: IntRange? = try {
+                val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as? CameraManager
+                val targetFacing = if (cameraSelector == CameraSelector.DEFAULT_FRONT_CAMERA) {
+                    CameraCharacteristics.LENS_FACING_FRONT
+                } else {
+                    CameraCharacteristics.LENS_FACING_BACK
+                }
+                var ranges: List<IntRange> = emptyList()
+                cameraManager?.cameraIdList?.forEach { id ->
+                    val chars = cameraManager.getCameraCharacteristics(id)
+                    if (chars.get(CameraCharacteristics.LENS_FACING) == targetFacing) {
+                        val available = chars.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES)
+                        if (available != null) {
+                            ranges = available.map { it.lower..it.upper }
+                            return@forEach
+                        }
+                    }
+                }
+                CameraTuning.chooseAeFpsRange(ranges)
+            } catch (_: Throwable) {
+                null
+            }
 
             val resolutionSelector = ResolutionSelector.Builder()
                 .setResolutionStrategy(
@@ -110,7 +140,7 @@ fun CameraPreview(
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .setResolutionSelector(resolutionSelector)
                 .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
-            Camera2Interop.Extender(imageAnalysisBuilder).lowLightFriendly()
+            Camera2Interop.Extender(imageAnalysisBuilder).lowLightFriendly(supportedFpsRange)
             val imageAnalysis = imageAnalysisBuilder.build()
 
             imageAnalysis.setAnalyzer(analysisExecutor) { imageProxy ->
@@ -221,23 +251,6 @@ fun CameraPreview(
                     val noiseSigma = lumaAndNoise.noiseSigma
                     val blurVariance = computeBitmapLaplacianVariance(frameBitmap, box)
 
-                    if (now - lastExposureAdjustTimeMs >= 500L) {
-                        lastExposureAdjustTimeMs = now
-                        activeCamera?.let { cam ->
-                            try {
-                                val exp = cam.cameraInfo.exposureState
-                                if (exp.isExposureCompensationSupported) {
-                                    val range = exp.exposureCompensationRange
-                                    val currentIdx = exp.exposureCompensationIndex
-                                    val nextIdx = CameraTuning.nextExposureIndex(brightness, currentIdx, range.lower..range.upper)
-                                    if (nextIdx != currentIdx) {
-                                        cam.cameraControl.setExposureCompensationIndex(nextIdx)
-                                    }
-                                }
-                            } catch (_: Throwable) {}
-                        }
-                    }
-
                     // FaceAligner produces 112x112 canonical ArcFace aligned face bitmap
                     val alignedFace = FaceAligner.align(frameBitmap, primaryFace.landmarks)
 
@@ -248,6 +261,45 @@ fun CameraPreview(
                     val cropNoiseSigma = CropMetrics.computeNoiseSigma(cropPixels)
                     val leveledCrop = CropMetrics.applyLevels(cropPixels)
                     val cropSharpness = CropMetrics.computeCropSharpness(leveledCrop)
+
+                    // Doc 21 WP-E (1): Face-metered AE re-issued every 1.5s on primary face center
+                    if (now - lastAeMeteringTimeMs >= 1500L) {
+                        lastAeMeteringTimeMs = now
+                        activeCamera?.let { cam ->
+                            try {
+                                if (previewView.width > 0 && previewView.height > 0) {
+                                    val isFrontCamera = (cameraSelector == CameraSelector.DEFAULT_FRONT_CAMERA)
+                                    val u = (box.left + box.right) / 2f / frameBitmap.width.toFloat()
+                                    val v = (box.top + box.bottom) / 2f / frameBitmap.height.toFloat()
+                                    val previewX = if (isFrontCamera) (1f - u) * previewView.width else u * previewView.width
+                                    val previewY = v * previewView.height
+                                    val point = previewView.meteringPointFactory.createPoint(previewX, previewY)
+                                    val action = FocusMeteringAction.Builder(point, FocusMeteringAction.FLAG_AE)
+                                        .setAutoCancelDuration(2, java.util.concurrent.TimeUnit.SECONDS)
+                                        .build()
+                                    cam.cameraControl.startFocusAndMetering(action)
+                                }
+                            } catch (_: Throwable) {}
+                        }
+                    }
+
+                    // Doc 21 WP-E (1): EV compensation loop targeting cropFaceLuma 110±20
+                    if (now - lastExposureAdjustTimeMs >= 500L) {
+                        lastExposureAdjustTimeMs = now
+                        activeCamera?.let { cam ->
+                            try {
+                                val exp = cam.cameraInfo.exposureState
+                                if (exp.isExposureCompensationSupported) {
+                                    val range = exp.exposureCompensationRange
+                                    val currentIdx = exp.exposureCompensationIndex
+                                    val nextIdx = CameraTuning.nextExposureIndex(cropFaceLuma, currentIdx, range.lower..range.upper)
+                                    if (nextIdx != currentIdx) {
+                                        cam.cameraControl.setExposureCompensationIndex(nextIdx)
+                                    }
+                                }
+                            } catch (_: Throwable) {}
+                        }
+                    }
 
                     // Inter-ocular distance in pixels between eye landmarks
                     val leftEye = primaryFace.landmarks.getOrNull(0)
@@ -386,7 +438,7 @@ fun CameraPreview(
                     onProviderInitialized?.invoke(cameraProvider)
 
                     val previewBuilder = Preview.Builder().setResolutionSelector(resolutionSelector)
-                    Camera2Interop.Extender(previewBuilder).lowLightFriendly()
+                    Camera2Interop.Extender(previewBuilder).lowLightFriendly(supportedFpsRange)
                     val preview = previewBuilder.build().also {
                         it.surfaceProvider = previewView.surfaceProvider
                     }
