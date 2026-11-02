@@ -1,0 +1,14 @@
+# python tools/biometric_eval/exp5_lowlight.py 60   (2026-11-02, sandbox CPU, shipped TFLite models, BGR ArcFace input)
+# 52 LFW identities enrolled (normal light, 480x640 portrait frame); probe = a DIFFERENT photo of the same person.
+# gateMain = current main FaceQualityEngine gate (raw-frame Laplacian variance >= 60, brightness >= 40, |yaw|<=12, |pitch|<=15)
+# gateNew  = proposed gate (contrast-normalised sharpness on aligned 112 crop, DARK only if face luma < 12, pose 25 deg)
+# padFP    = genuine faces wrongly rejected by current PresentationAttackDetector; padFPNew = proposed noise-compensated gate
+# gen_acc  = genuine cosine >= 0.50 (acceptThreshold);  far = max impostor cosine >= 0.50 (wrong student)
+# (dim_motion condition cut by the 580 s sandbox timeout; motion covered by exp6)
+condition     det  gateMain gateNew padFP padFPNew | gen_acc raw / gamma / levels / gamma+CLAHE / avg4 / avg4+levels | FAR (all variants)
+normal        40   32       40      0     0        | 0.900 / 0.900 / 0.850 / 0.825 / 0.875 / 0.850                    | 0.000
+dim           45    0       45      0     0        | 0.800 / 0.822 / 0.867 / 0.778 / 0.867 / 0.867                    | 0.000
+very_dim      27    0       26      0     0        | 0.630 / 0.593 / 0.704 / 0.593 / 0.815 / 0.852                    | 0.000
+backlit       41    0       41      1     0        | 0.732 / 0.732 / 0.781 / 0.756 / 0.781 / 0.854                    | 0.000
+backlit_hard  31    0       31      1     0        | 0.484 / 0.548 / 0.581 / 0.452 / 0.516 / 0.742                    | 0.000
+gateMain reject reasons: dim BLUR 39/45, very_dim BLUR 24, backlit BLUR 35/41, backlit_hard BLUR 25/31
