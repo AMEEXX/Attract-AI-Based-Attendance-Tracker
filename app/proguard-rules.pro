@@ -68,3 +68,11 @@
 # 8. Kotlin Coroutines & AndroidX
 -dontwarn kotlinx.coroutines.**
 -keep class androidx.biometric.** { *; }
+
+# 9. MediaPipe Tasks Vision & AutoValue
+-keep class com.google.mediapipe.tasks.vision.** { *; }
+-keep class com.google.mediapipe.framework.** { *; }
+-dontwarn com.google.mediapipe.**
+-dontwarn javax.lang.model.**
+-dontwarn com.google.auto.value.**
+-dontwarn autovalue.shaded.**
