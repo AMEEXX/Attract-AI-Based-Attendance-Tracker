@@ -164,7 +164,7 @@ class AdaptiveVerificationEngine(
                 observation.embedding == null -> "NO_EMBEDDING"
                 else -> if (isReplay) "STATIC_REPLAY" else "OTHER"
             }
-            val msg = "FRAME ${analyses.size + 1}: usable=false reason=$why faces=${observation.signals.faceCount} yaw=${observation.signals.yawDegrees} pitch=${observation.signals.pitchDegrees} blur=${observation.signals.blurVariance} bright=${observation.signals.brightness}"
+            val msg = "FRAME ${analyses.size + 1}: usable=false reason=$why faces=${observation.signals.faceCount} yaw=${observation.signals.yawDegrees} pitch=${observation.signals.pitchDegrees} blur=${observation.signals.blurVariance} bright=${observation.signals.brightness} sharp=${observation.signals.cropSharpness} luma=${observation.signals.faceLuma}"
             try { android.util.Log.i("ATTRACT_RECOGNITION", msg) } catch (_: Throwable) { println("[ATTRACT_RECOGNITION] $msg") }
             EvidenceFusionStrategy.FrameAnalysis(observation, usable = false)
         }

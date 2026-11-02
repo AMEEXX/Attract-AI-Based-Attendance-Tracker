@@ -20,6 +20,9 @@ class FaceQualityEngineTest {
         centerY: Float = 0.5f,
         blurVariance: Float = 1000f,
         brightness: Float = 128f,
+        cropSharpness: Float = -1f,
+        faceLuma: Float = -1f,
+        interOcularPx: Float = -1f,
     ) = FaceQualitySignals(
         faceCount = faceCount,
         yawDegrees = yawDegrees,
@@ -32,6 +35,9 @@ class FaceQualityEngineTest {
         centerY = centerY,
         blurVariance = blurVariance,
         brightness = brightness,
+        cropSharpness = cropSharpness,
+        faceLuma = faceLuma,
+        interOcularPx = interOcularPx,
     )
 
     private fun rejectedReason(result: QualityResult): QualityReason? =
@@ -181,5 +187,51 @@ class FaceQualityEngineTest {
         val v2 = FaceQualityEngine.evaluate(signals(), config.copy(version = 2, minBlurVariance = 100f))
         assertEquals(1, (v1 as QualityResult.Accepted).configVersion)
         assertEquals(2, (v2 as QualityResult.Accepted).configVersion)
+    }
+
+    @Test
+    fun darkSharpCrop_withV4Config_isAccepted() {
+        val v4 = FaceQualityConfig.v4Defaults()
+        // Dark face (luma 25, well above minFaceLuma 12), with good sharpness (0.20 > 0.09)
+        val sig = signals(
+            faceLuma = 25f,
+            cropSharpness = 0.20f,
+            leftEyeOpenProbability = 0.8f,
+            rightEyeOpenProbability = 0.8f,
+            interOcularPx = 60f,
+        )
+        val result = FaceQualityEngine.evaluate(sig, v4)
+        assertTrue("Dark (luma 25) sharp crop should be accepted", result is QualityResult.Accepted)
+    }
+
+    @Test
+    fun lowCropSharpness_withV4Config_isRejectedAsBlur() {
+        val v4 = FaceQualityConfig.v4Defaults()
+        // Crop sharpness 0.05 is below minCropSharpness 0.09
+        val sig = signals(
+            faceLuma = 120f,
+            cropSharpness = 0.05f,
+            leftEyeOpenProbability = 0.8f,
+            rightEyeOpenProbability = 0.8f,
+            interOcularPx = 60f,
+        )
+        val result = FaceQualityEngine.evaluate(sig, v4)
+        assertEquals(QualityReason.BLUR, rejectedReason(result))
+    }
+
+    @Test
+    fun smallFaceRatio_withSufficientInterOcularDistance_isAccepted() {
+        val v4 = FaceQualityConfig.v4Defaults()
+        // 720p frame: faceRatio might be small (e.g. 0.04 < 0.06), but interOcularPx is 60 px (>= 28 px)
+        val sig = signals(
+            faceRatio = 0.04f,
+            interOcularPx = 60f,
+            cropSharpness = 0.20f,
+            faceLuma = 100f,
+            leftEyeOpenProbability = 0.8f,
+            rightEyeOpenProbability = 0.8f,
+        )
+        val result = FaceQualityEngine.evaluate(sig, v4)
+        assertTrue("Sufficient inter-ocular distance (60px) should accept 720p frame despite small faceRatio", result is QualityResult.Accepted)
     }
 }

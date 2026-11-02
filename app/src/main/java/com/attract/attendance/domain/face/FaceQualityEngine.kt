@@ -22,7 +22,11 @@ object FaceQualityEngine {
         if (!signals.isFinite) return QualityResult.Rejected(QualityReason.NO_FACE)
         if (signals.faceCount == 0) return QualityResult.Rejected(QualityReason.NO_FACE)
         if (signals.faceCount > 1) return QualityResult.Rejected(QualityReason.MULTIPLE_FACES)
-        if (signals.faceRatio < config.minFaceRatio) return QualityResult.Rejected(QualityReason.TOO_SMALL)
+        if (signals.interOcularPx >= 0f) {
+            if (signals.interOcularPx < config.minInterOcularPx) return QualityResult.Rejected(QualityReason.TOO_SMALL)
+        } else {
+            if (signals.faceRatio < config.minFaceRatio) return QualityResult.Rejected(QualityReason.TOO_SMALL)
+        }
         if (!isInFrame(signals, config)) return QualityResult.Rejected(QualityReason.OFF_CENTER)
         if (abs(signals.rollDegrees) > config.maxRollDegrees) {
             return QualityResult.Rejected(QualityReason.POSE)
@@ -39,16 +43,27 @@ object FaceQualityEngine {
             }
             return QualityResult.Rejected(reason)
         }
-        val effectiveMinBlur = if (config.version >= 4) {
-            config.minBlurVariance * (signals.brightness / 110f).coerceIn(0.5f, 1.0f)
+        if (signals.cropSharpness >= 0f) {
+            if (signals.cropSharpness < config.minCropSharpness) return QualityResult.Rejected(QualityReason.BLUR)
         } else {
-            config.minBlurVariance
+            val effectiveMinBlur = if (config.version >= 4) {
+                config.minBlurVariance * (signals.brightness / 110f).coerceIn(0.5f, 1.0f)
+            } else {
+                config.minBlurVariance
+            }
+            if (signals.blurVariance < effectiveMinBlur) return QualityResult.Rejected(QualityReason.BLUR)
         }
-        if (signals.blurVariance < effectiveMinBlur) return QualityResult.Rejected(QualityReason.BLUR)
-        if (signals.brightness < config.minBrightness || (config.version >= 4 && signals.noiseSigma > 18f && signals.brightness < 55f)) {
-            return QualityResult.Rejected(QualityReason.DARK)
+
+        if (signals.faceLuma >= 0f) {
+            if (signals.faceLuma < config.minFaceLuma) return QualityResult.Rejected(QualityReason.DARK)
+            if (signals.faceLuma > config.maxFaceLuma) return QualityResult.Rejected(QualityReason.OVEREXPOSED)
+        } else {
+            if (signals.brightness < config.minBrightness || (config.version >= 4 && signals.noiseSigma > 18f && signals.brightness < 55f)) {
+                return QualityResult.Rejected(QualityReason.DARK)
+            }
+            if (signals.brightness > config.maxBrightness) return QualityResult.Rejected(QualityReason.OVEREXPOSED)
         }
-        if (signals.brightness > config.maxBrightness) return QualityResult.Rejected(QualityReason.OVEREXPOSED)
+
         if (config.requireEyes && !eyesClear(signals, config.minEyeOpenProbability)) {
             return QualityResult.Rejected(QualityReason.EYES_UNCLEAR)
         }
@@ -108,9 +123,16 @@ object FaceQualityEngine {
         val yawDeviation = abs(signals.yawDegrees - targetYaw)
         val poseScore = (1f - max(yawDeviation, abs(signals.pitchDegrees)) / config.maxPoseDegrees)
             .coerceIn(0f, 1f)
-        val sharpnessScore = (signals.blurVariance / config.targetBlurVariance).coerceIn(0f, 1f)
-        val lightingScore = (1f - abs(signals.brightness - config.idealBrightness) / config.maxBrightnessDeviation)
-            .coerceIn(0f, 1f)
+        val sharpnessScore = if (signals.cropSharpness >= 0f) {
+            (signals.cropSharpness / 0.30f).coerceIn(0f, 1f)
+        } else {
+            (signals.blurVariance / config.targetBlurVariance).coerceIn(0f, 1f)
+        }
+        val lightingScore = if (signals.faceLuma >= 0f) {
+            (1f - abs(signals.faceLuma - config.idealBrightness) / config.maxBrightnessDeviation).coerceIn(0f, 1f)
+        } else {
+            (1f - abs(signals.brightness - config.idealBrightness) / config.maxBrightnessDeviation).coerceIn(0f, 1f)
+        }
         val framingScore = (1f - max(abs(signals.centerX - 0.5f), abs(signals.centerY - 0.5f)) * 2f)
             .coerceIn(0f, 1f)
         val eyeScore = averageEyeOpenProbability(signals) ?: 1f

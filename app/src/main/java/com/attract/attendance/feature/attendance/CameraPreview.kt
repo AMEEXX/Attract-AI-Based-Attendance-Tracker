@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.attract.attendance.domain.face.CropMetrics
 import com.attract.attendance.domain.face.FaceAligner
 import com.attract.attendance.domain.face.FaceBox
 import com.attract.attendance.domain.face.FaceQualitySignals
@@ -236,6 +237,26 @@ fun CameraPreview(
                         }
                     }
 
+                    // FaceAligner produces 112x112 canonical ArcFace aligned face bitmap
+                    val alignedFace = FaceAligner.align(frameBitmap, primaryFace.landmarks)
+
+                    // Doc 21 WP-A / WP-B: compute crop-level metrics on the 112x112 aligned face crop
+                    val cropPixels = IntArray(CropMetrics.CROP_SIZE * CropMetrics.CROP_SIZE)
+                    alignedFace.getPixels(cropPixels, 0, CropMetrics.CROP_SIZE, 0, 0, CropMetrics.CROP_SIZE, CropMetrics.CROP_SIZE)
+                    val cropFaceLuma = CropMetrics.computeFaceLuma(cropPixels)
+                    val cropNoiseSigma = CropMetrics.computeNoiseSigma(cropPixels)
+                    val leveledCrop = CropMetrics.applyLevels(cropPixels)
+                    val cropSharpness = CropMetrics.computeCropSharpness(leveledCrop)
+
+                    // Inter-ocular distance in pixels between eye landmarks
+                    val leftEye = primaryFace.landmarks.getOrNull(0)
+                    val rightEye = primaryFace.landmarks.getOrNull(1)
+                    val interOcularPx = if (leftEye != null && rightEye != null) {
+                        val dx = leftEye.x - rightEye.x
+                        val dy = leftEye.y - rightEye.y
+                        kotlin.math.sqrt(dx * dx + dy * dy)
+                    } else -1f
+
                     // Run MediaPipe FaceMesh when available
                     val mesh = if (FaceMeshEngine.isAvailable) {
                         FaceMeshEngine.detect(frameBitmap)
@@ -255,8 +276,11 @@ fun CameraPreview(
                             blurVariance = blurVariance,
                             brightness = brightness,
                             landmarkMinConf = primaryFace.minLandmarkConfidence,
-                            noiseSigma = noiseSigma,
-                            poseSource = PoseSource.MESH
+                            noiseSigma = cropNoiseSigma,
+                            poseSource = PoseSource.MESH,
+                            cropSharpness = cropSharpness,
+                            faceLuma = cropFaceLuma,
+                            interOcularPx = interOcularPx,
                         )
                     } else {
                         FaceQualitySignals(
@@ -272,13 +296,13 @@ fun CameraPreview(
                             blurVariance = blurVariance,
                             brightness = brightness,
                             landmarkMinConf = primaryFace.minLandmarkConfidence,
-                            noiseSigma = noiseSigma,
-                            poseSource = PoseSource.YOLO_RATIO
+                            noiseSigma = cropNoiseSigma,
+                            poseSource = PoseSource.YOLO_RATIO,
+                            cropSharpness = cropSharpness,
+                            faceLuma = cropFaceLuma,
+                            interOcularPx = interOcularPx,
                         )
                     }
-
-                    // FaceAligner produces 112x112 canonical ArcFace aligned face bitmap
-                    val alignedFace = FaceAligner.align(frameBitmap, primaryFace.landmarks)
 
                     // Wide crop (160x160) for presentation attack detection (WP1.3)
                     val wideCropRect = PadCrop.box(

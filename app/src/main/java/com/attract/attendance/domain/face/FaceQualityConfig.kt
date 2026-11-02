@@ -23,6 +23,10 @@ data class FaceQualityConfig(
     val maxPitchDegrees: Float = 20f,
     val maxRollDegrees: Float = 35f,
     val maxAttendanceYawDegrees: Float = 35f,
+    val minCropSharpness: Float = 0.09f,
+    val minFaceLuma: Float = 12f,
+    val maxFaceLuma: Float = 235f,
+    val minInterOcularPx: Float = 28f,
     val scoreWeights: QualityScoreWeights,
 ) {
     init {
@@ -56,6 +60,10 @@ data class FaceQualityConfig(
         fun calibrationDefaults() = FaceQualityConfig(
             version = 1,
             minFaceRatio = 0.10f,
+            minInterOcularPx = 28f,
+            minCropSharpness = 0.09f,
+            minFaceLuma = 12f,
+            maxFaceLuma = 235f,
             maxPoseDegrees = 15f,
             minPitchDegrees = -25f,
             maxPitchDegrees = 20f,
@@ -85,7 +93,11 @@ data class FaceQualityConfig(
 
         fun v4Defaults() = FaceQualityConfig(
             version = 4,
-            minFaceRatio = 0.08f,
+            minFaceRatio = 0.06f,
+            minInterOcularPx = 28f,
+            minCropSharpness = 0.09f,
+            minFaceLuma = 12f,
+            maxFaceLuma = 235f,
             maxPoseDegrees = 25f,
             minPitchDegrees = -25f,
             maxPitchDegrees = 20f,

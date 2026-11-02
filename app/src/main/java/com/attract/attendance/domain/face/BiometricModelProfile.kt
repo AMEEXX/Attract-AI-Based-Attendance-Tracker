@@ -29,7 +29,7 @@ data class BiometricModelProfile(
     val normalizationScale: Float = 128.0f,
     val embeddingDim: Int = 512,
     val alignmentVersion: String = "similarity_5point_v1",
-    val qualityConfigId: String = "quality_v3",
+    val qualityConfigId: String = "quality_v4",
     val livenessPolicyId: String = "liveness_v4",
     val livenessPolicy: LivenessPolicy = LivenessPolicy(),
     val flags: BiometricFeatureFlags = BiometricFeatureFlags.CURRENT,
