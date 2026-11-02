@@ -182,7 +182,7 @@ interface StudentDao {
         """
         UPDATE students 
         SET enrollment_status = 'ENROLLED', enrolled_at = COALESCE(enrolled_at, :now), updated_at = :now 
-        WHERE id IN (SELECT DISTINCT student_id FROM face_templates) 
+        WHERE id IN (SELECT DISTINCT student_id FROM face_templates WHERE active = 1) 
           AND archived = 0
         """
     )

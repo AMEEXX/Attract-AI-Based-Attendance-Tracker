@@ -841,21 +841,21 @@ class AttractRepository(
     }
 
     /**
-     * Restores all enrolled face templates and reactivates student enrollment statuses.
-     * Ensures upgrade or recovery never loses previous biometric enrollment data.
+     * Synchronizes student enrollment statuses with active face templates.
+     * Ensures students with valid active templates are marked ENROLLED across upgrades,
+     * without reactivating intentionally cleared or incompatible templates.
      */
     suspend fun restoreAllEnrolledFaceTemplates(): Int = runCatching {
         database.withTransaction {
-            val reactivated = templates.reactivateAll()
             val now = nowMillis()
             val restoredStudents = students.restoreEnrolledWithTemplates(now)
-            if (reactivated > 0 || restoredStudents > 0) {
+            if (restoredStudents > 0) {
                 android.util.Log.i(
                     "ATTRACT_FACE",
-                    "Restored face data: reactivated $reactivated templates, restored $restoredStudents enrolled students.",
+                    "Synchronized face status: verified $restoredStudents enrolled students with active templates.",
                 )
             }
-            reactivated
+            restoredStudents
         }
     }.getOrDefault(0)
 
@@ -908,7 +908,7 @@ class AttractRepository(
             val student = students.find(studentId)
                 ?: return@withTransaction CommandResult.Failure(AppError.NotFound)
             val now = nowMillis()
-            templates.deactivateForStudent(studentId)
+            templates.deleteForStudent(studentId)
             students.update(
                 student.copy(
                     enrollmentStatus = EnrollmentStatus.NOT_ENROLLED,
@@ -991,6 +991,7 @@ class AttractRepository(
                     }
 
                     val now = nowMillis()
+                    templates.deleteForStudent(studentId)
                     val templateIds = mutableListOf<Long>()
 
                     batch.samples.forEach { sample ->
@@ -1134,8 +1135,8 @@ class AttractRepository(
                         return@withTransaction com.attract.attendance.domain.face.EnrollmentResult.Ineligible("Student is archived")
                     }
 
-                    // Deactivate existing templates for this student (handles both re-enrollment and repair)
-                    templates.deactivateForStudent(studentId)
+                    // Delete existing templates for this student (handles both re-enrollment and repair)
+                    templates.deleteForStudent(studentId)
 
                     val now = nowMillis()
                     val templateIds = mutableListOf<Long>()
@@ -1232,7 +1233,7 @@ class AttractRepository(
                 val student = students.find(studentId)
                     ?: return@withTransaction com.attract.attendance.domain.face.EnrollmentResult.Failed("Student not found")
                 val now = nowMillis()
-                templates.deactivateForStudent(studentId)
+                templates.deleteForStudent(studentId)
                 val templateIds = mutableListOf<Long>()
 
                 batch.samples.forEach { sample ->
@@ -1304,7 +1305,7 @@ class AttractRepository(
             // Per LLD-10 re-enrollment: replace old templates Ã¢â‚¬â€ deactivate stale rows so
             // outdated embeddings never participate in future matches. This also replaces
             // stale-dimension (e.g. 32-D legacy) templates with current 192-D format.
-            templates.deactivateForStudent(studentId)
+            templates.deleteForStudent(studentId)
             floatsList.forEachIndexed { index, floats ->
                 val (blob, cryptoVersion) = com.attract.attendance.data.security.TemplateEnvelopeCodec.encode(
                     cipher = embeddingCipher,

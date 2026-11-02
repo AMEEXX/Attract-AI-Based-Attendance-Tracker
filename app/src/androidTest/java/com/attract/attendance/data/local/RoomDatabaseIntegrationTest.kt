@@ -120,4 +120,51 @@ class RoomDatabaseIntegrationTest {
         val activeClasses = all.filter { !it.archived }
         assertTrue(activeClasses.none { it.id == classId })
     }
+
+    @Test
+    fun resetStudentBiometricData_deletesTemplates_and_restoreDoesNotResurrect() = runBlocking {
+        val teacherId = database.teacherDao().insert(TeacherEntity(displayName = "Teacher", pinHash = "hash", createdAt = 1000L, updatedAt = 1000L))
+        val classId = database.classDao().insert(ClassSectionEntity(teacherId = teacherId, name = "Physics", subject = null, section = null, semesterBatch = null, requiredAttendancePercent = 75, createdAt = 1000L, updatedAt = 1000L))
+
+        // Student 1: Ayush (will be reset)
+        val ayushId = database.studentDao().insert(
+            StudentEntity(classId = classId, name = "Ayush Singh", rollNumber = "PHY-01", serialNumber = null, enrollmentStatus = EnrollmentStatus.ENROLLED, enrolledAt = 1000L, createdAt = 1000L, updatedAt = 1000L)
+        )
+        database.faceTemplateDao().insert(
+            FaceTemplateEntity(studentId = ayushId, encryptedEmbedding = byteArrayOf(1, 2, 3), cryptoVersion = 1, modelVersion = "1.0", qualityScore = 0.9f, capturedAt = 1000L, source = "ENROLLMENT", active = true)
+        )
+
+        // Student 2: Bob (remains enrolled)
+        val bobId = database.studentDao().insert(
+            StudentEntity(classId = classId, name = "Bob", rollNumber = "PHY-02", serialNumber = null, enrollmentStatus = EnrollmentStatus.ENROLLED, enrolledAt = 1000L, createdAt = 1000L, updatedAt = 1000L)
+        )
+        database.faceTemplateDao().insert(
+            FaceTemplateEntity(studentId = bobId, encryptedEmbedding = byteArrayOf(4, 5, 6), cryptoVersion = 1, modelVersion = "1.0", qualityScore = 0.9f, capturedAt = 1000L, source = "ENROLLMENT", active = true)
+        )
+
+        // Reset Ayush: delete templates and set NOT_ENROLLED
+        database.faceTemplateDao().deleteForStudent(ayushId)
+        val ayush = database.studentDao().find(ayushId)!!
+        database.studentDao().update(ayush.copy(enrollmentStatus = EnrollmentStatus.NOT_ENROLLED, enrolledAt = null, updatedAt = 2000L))
+
+        // Verify Ayush templates are gone
+        val ayushTemplates = database.faceTemplateDao().forStudent(ayushId)
+        assertEquals(0, ayushTemplates.size)
+
+        // Bob templates are intact
+        val bobTemplates = database.faceTemplateDao().forStudent(bobId)
+        assertEquals(1, bobTemplates.size)
+
+        // Run startup sync / restore
+        database.studentDao().restoreEnrolledWithTemplates(3000L)
+
+        // Ayush must still be NOT_ENROLLED!
+        val ayushAfter = database.studentDao().find(ayushId)!!
+        assertEquals(EnrollmentStatus.NOT_ENROLLED, ayushAfter.enrollmentStatus)
+        assertEquals(null, ayushAfter.enrolledAt)
+
+        // Bob must still be ENROLLED!
+        val bobAfter = database.studentDao().find(bobId)!!
+        assertEquals(EnrollmentStatus.ENROLLED, bobAfter.enrollmentStatus)
+    }
 }
