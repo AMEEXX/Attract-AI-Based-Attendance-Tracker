@@ -88,6 +88,7 @@ fun CameraPreview(
         try {
             FaceMeshEngine.init(context)
             val tracker = FaceTracker()
+            val temporalCropBuffer = com.attract.attendance.domain.face.TemporalCropBuffer(maxCapacity = 4)
             val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
             val mainExecutor = ContextCompat.getMainExecutor(context)
             val analysisExecutor = Executors.newSingleThreadExecutor()
@@ -330,6 +331,22 @@ fun CameraPreview(
                         }
                     } else null
 
+                    // Doc 21 WP-C: maintain 4-frame temporal buffer and fuse crops along identity track
+                    temporalCropBuffer.add(cropPixels, nowNanos, faceBoxes[0])
+                    val fusedPixels = temporalCropBuffer.getFusedCrop(
+                        frameMeanLuma = brightness,
+                        faceLuma = cropFaceLuma
+                    )
+                    val fusedFace = if (fusedPixels.isNotEmpty()) {
+                        try {
+                            val fb = Bitmap.createBitmap(CropMetrics.CROP_SIZE, CropMetrics.CROP_SIZE, Bitmap.Config.ARGB_8888)
+                            fb.setPixels(fusedPixels, 0, CropMetrics.CROP_SIZE, 0, 0, CropMetrics.CROP_SIZE, CropMetrics.CROP_SIZE)
+                            fb
+                        } catch (_: Throwable) {
+                            null
+                        }
+                    } else null
+
                     val bundle = FrameBundle(
                         frameId = frameId,
                         timestampNanos = nowNanos,
@@ -337,6 +354,7 @@ fun CameraPreview(
                         detections = detections,
                         qualitySignals = liveSignals,
                         alignedCrop = alignedFace,
+                        fusedCrop = fusedFace ?: alignedFace,
                         wideCrop = wideFace,
                         meshResult = mesh
                     )

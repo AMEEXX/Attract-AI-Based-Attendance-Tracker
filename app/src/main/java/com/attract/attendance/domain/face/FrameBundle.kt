@@ -17,6 +17,7 @@ data class FrameBundle(
     val detections: List<YoloFaceDetector.DetectedFace> = emptyList(),
     val qualitySignals: FaceQualitySignals? = null,
     val alignedCrop: Bitmap? = null,
+    val fusedCrop: Bitmap? = null,
     val wideCrop: Bitmap? = null,
     val padCrops: Pair<IntArray, IntArray>? = null,
     val meshResult: FaceMeshResult? = null,

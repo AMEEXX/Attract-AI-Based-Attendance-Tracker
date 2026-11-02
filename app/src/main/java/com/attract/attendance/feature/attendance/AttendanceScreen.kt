@@ -1214,7 +1214,7 @@ fun AttendanceScreen(
                 val signalsNow = lastQualitySignals
                 val liveNow = lastFrameLive
                 val scoreNow = lastFrameQualityScore
-                val cropBitmap = frameBitmap
+                val cropBitmap = latestFrameBundle?.fusedCrop ?: frameBitmap
                 if (signalsNow == null || cropBitmap == null) {
                     statusMessage = AttendanceStrings.QUALITY_NO_FACE_TITLE
                     statusSubtitle = AttendanceStrings.QUALITY_NO_FACE_SUBTITLE

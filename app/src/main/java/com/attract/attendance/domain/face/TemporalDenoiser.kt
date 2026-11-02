@@ -87,4 +87,77 @@ object TemporalDenoiser {
 
         return result
     }
+
+    /**
+     * Fuses multiple temporal crops and applies robust auto-levels when illumination is degraded.
+     * Doc 21 WP-C: Apply levels() only when faceLuma < 90 or face is backlit (frameMeanLuma - faceLuma > 50).
+     */
+    fun fuse(
+        crops: List<IntArray>,
+        frameMeanLuma: Float,
+        faceLuma: Float,
+        width: Int = 112,
+        height: Int = 112,
+    ): IntArray {
+        val averaged = denoise(crops, width, height)
+        if (averaged.isEmpty()) return averaged
+        val isBacklit = (frameMeanLuma - faceLuma) > 50f
+        return if (faceLuma < 90f || isBacklit) {
+            CropMetrics.applyLevels(averaged)
+        } else {
+            averaged
+        }
+    }
+}
+
+/**
+ * Ring buffer of the last 4 aligned face crops along the same identity track.
+ * Cleared when track changes (IoU < 0.5) or time delta > 600 ms (Doc 21 WP-C).
+ */
+class TemporalCropBuffer(
+    val maxCapacity: Int = 4,
+    val ttlNanos: Long = 600_000_000L, // 600 ms
+    val minIouThreshold: Float = 0.5f,
+) {
+    data class Entry(
+        val cropPixels: IntArray,
+        val timestampNanos: Long,
+        val faceBox: FaceBox,
+    )
+
+    private val entries = ArrayDeque<Entry>(maxCapacity)
+
+    @Synchronized
+    fun add(cropPixels: IntArray, timestampNanos: Long, faceBox: FaceBox) {
+        val last = entries.lastOrNull()
+        if (last != null) {
+            val dt = timestampNanos - last.timestampNanos
+            val iou = last.faceBox.iou(faceBox)
+            if (dt > ttlNanos || iou < minIouThreshold) {
+                entries.clear()
+            }
+        }
+        if (entries.size >= maxCapacity) {
+            entries.removeFirst()
+        }
+        entries.addLast(Entry(cropPixels.copyOf(), timestampNanos, faceBox))
+    }
+
+    @Synchronized
+    fun getFusedCrop(frameMeanLuma: Float, faceLuma: Float): IntArray {
+        if (entries.isEmpty()) return IntArray(0)
+        val crops = entries.map { it.cropPixels }
+        return TemporalDenoiser.fuse(crops, frameMeanLuma, faceLuma)
+    }
+
+    @Synchronized
+    fun getCrops(): List<IntArray> = entries.map { it.cropPixels.copyOf() }
+
+    @Synchronized
+    fun size(): Int = entries.size
+
+    @Synchronized
+    fun clear() {
+        entries.clear()
+    }
 }
