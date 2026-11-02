@@ -22,15 +22,25 @@ data class PresentationAttackSignals(
      * re-photographed sharply show abnormally flat local texture.
      */
     val centerTextureStdDev: Float,
+    val noiseSigma: Float = 0f,
 ) {
+    /**
+     * Noise-compensated high frequency energy (Doc 21 WP-D):
+     * Expected |Laplacian| contribution of white noise of sigma ns is ~ 0.8 * sqrt(20) * ns ≈ 3.6 * ns.
+     * hfeCompensated = max(0, hfe * 255 - 3.6 * noiseSigma) / 255
+     */
+    val hfeCompensated: Float
+        get() = maxOf(0f, highFrequencyEnergy * 255f - 3.6f * noiseSigma) / 255f
+
     val isFinite: Boolean
-        get() = listOf(highFrequencyEnergy, specularHighlightRatio, centerTextureStdDev).all { it.isFinite() }
+        get() = listOf(highFrequencyEnergy, specularHighlightRatio, centerTextureStdDev, noiseSigma).all { it.isFinite() }
 
     companion object {
         val Unavailable = PresentationAttackSignals(
             highFrequencyEnergy = 0f,
             specularHighlightRatio = 0f,
             centerTextureStdDev = Float.MAX_VALUE,
+            noiseSigma = 0f,
         )
     }
 }

@@ -38,13 +38,37 @@ object PresentationAttackAnalyzer {
 
             val highFrequencyEnergy = meanAbsoluteLaplacian(gray)
             val centerTextureStdDev = centerStdDev(gray)
+            val noiseSigma = computeNoiseSigma(gray)
 
             PresentationAttackSignals(
                 highFrequencyEnergy = highFrequencyEnergy,
                 specularHighlightRatio = highlightPixels.toFloat() / gray.size,
                 centerTextureStdDev = centerTextureStdDev,
+                noiseSigma = noiseSigma,
             )
         }.getOrNull()
+    }
+
+    private val SQRT_PI_OVER_2_DIV_6 = (sqrt(Math.PI / 2.0) / 6.0).toFloat()
+
+    /** Immerkaer noise sigma estimator on the 96x96 gray downsample (Doc 21 WP-D). */
+    private fun computeNoiseSigma(gray: FloatArray): Float {
+        var absSum = 0.0
+        var count = 0
+        for (y in 1 until ANALYSIS_SIZE - 1) {
+            val prev = (y - 1) * ANALYSIS_SIZE
+            val curr = y * ANALYSIS_SIZE
+            val next = (y + 1) * ANALYSIS_SIZE
+            for (x in 1 until ANALYSIS_SIZE - 1) {
+                val res = (gray[prev + x - 1] - 2f * gray[prev + x] + gray[prev + x + 1]) +
+                    (-2f * gray[curr + x - 1] + 4f * gray[curr + x] - 2f * gray[curr + x + 1]) +
+                    (gray[next + x - 1] - 2f * gray[next + x] + gray[next + x + 1])
+                absSum += abs(res)
+                count++
+            }
+        }
+        if (count == 0) return 0f
+        return ((absSum / count).toFloat()) * SQRT_PI_OVER_2_DIV_6
     }
 
     /** Mean |Laplacian| normalized to 0..1 — moiré/interference energy indicator. */

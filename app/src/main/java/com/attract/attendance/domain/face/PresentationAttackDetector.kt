@@ -32,8 +32,8 @@ object PresentationAttackDetector {
     ): LivenessResult {
         if (signals == null || !signals.isFinite) return LivenessResult.Passed
 
-        // Screen-replay gate: moiré/interference energy from re-photographed displays.
-        if (signals.highFrequencyEnergy > thresholds.maxHighFrequencyEnergy) {
+        // Screen-replay gate: moiré/interference energy from re-photographed displays (noise compensated, Doc 21 WP-D)
+        if (signals.hfeCompensated > thresholds.maxHighFrequencyEnergy) {
             return LivenessResult.Rejected(
                 LivenessReason.SCREEN_REPLAY_SUSPECTED,
                 "Screen detected — please present your live face directly to the camera.",
@@ -48,10 +48,8 @@ object PresentationAttackDetector {
             )
         }
 
-        // Printed-photo gate: sharp overall frame but abnormally flat central texture.
-        if (signals.centerTextureStdDev < thresholds.printFlatTextureStdDev &&
-            blurVariance < thresholds.printMaxBlurVariance
-        ) {
+        // Printed-photo gate: flat local texture without blur condition (Doc 21 WP-D)
+        if (signals.centerTextureStdDev < thresholds.printFlatTextureStdDev) {
             return LivenessResult.Rejected(
                 LivenessReason.PRINT_PHOTO_SUSPECTED,
                 "Photo detected — please present your live face directly to the camera.",

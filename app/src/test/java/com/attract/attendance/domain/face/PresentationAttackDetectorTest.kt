@@ -10,10 +10,12 @@ class PresentationAttackDetectorTest {
         highFrequencyEnergy: Float,
         specularHighlightRatio: Float,
         centerTextureStdDev: Float,
+        noiseSigma: Float = 0f,
     ) = PresentationAttackSignals(
         highFrequencyEnergy = highFrequencyEnergy,
         specularHighlightRatio = specularHighlightRatio,
         centerTextureStdDev = centerTextureStdDev,
+        noiseSigma = noiseSigma,
     )
 
     @Test
@@ -38,6 +40,14 @@ class PresentationAttackDetectorTest {
     }
 
     @Test
+    fun screenReplay_withHighNoiseSigma_compensatedHfePassesGenuineDimFace() {
+        // High raw HFE (0.25 > 0.22 threshold), but noiseSigma = 5.0f from ISP/ISO in dim room
+        // hfeCompensated = max(0, 0.25*255 - 3.6*5.0)/255 = (63.75 - 18.0)/255 = 45.75/255 ≈ 0.179 < 0.22
+        val sig = signals(highFrequencyEnergy = 0.25f, specularHighlightRatio = 0.01f, centerTextureStdDev = 20f, noiseSigma = 5.0f)
+        assertEquals(LivenessResult.Passed, PresentationAttackDetector.analyze(sig, blurVariance = 500f))
+    }
+
+    @Test
     fun screenGlare_specularHighlights_rejectedAsScreenReplay() {
         // 0.15 passes with recalibrated 0.25 threshold
         assertEquals(LivenessResult.Passed, PresentationAttackDetector.analyze(signals(0.05f, 0.15f, 20f), blurVariance = 500f))
@@ -49,17 +59,11 @@ class PresentationAttackDetectorTest {
     }
 
     @Test
-    fun printedPhoto_flatSharpTexture_rejectedAsPrintPhoto() {
-        // Sharp frame overall (blur < 120) but abnormally flat central texture — print signature.
-        val result = PresentationAttackDetector.analyze(signals(0.05f, 0.01f, 3f), blurVariance = 100f)
+    fun printedPhoto_flatTexture_rejectedAsPrintPhoto() {
+        // Flat central texture (2.0 < 3.0 threshold) rejects as PRINT without requiring a blur condition (Doc 21 WP-D)
+        val result = PresentationAttackDetector.analyze(signals(0.05f, 0.01f, 2.0f), blurVariance = 500f)
         assertTrue(result is LivenessResult.Rejected)
         assertEquals(LivenessReason.PRINT_PHOTO_SUSPECTED, (result as LivenessResult.Rejected).reason)
-    }
-
-    @Test
-    fun flatTextureButBlurryFrame_notPrintRejected_blurGateOwnsThatCase() {
-        // A blurry flat crop is handled by the BLUR quality gate, not the print gate.
-        assertEquals(LivenessResult.Passed, PresentationAttackDetector.analyze(signals(0.05f, 0.01f, 3f), blurVariance = 500f))
     }
 
     @Test

@@ -17,6 +17,7 @@ class LivenessOrchestrator(
 ) {
     private val meshHistory = mutableListOf<FaceMeshResult>()
     private val padScores = mutableListOf<Float>()
+    private val recentPixelPadReasons = mutableListOf<LivenessReason?>()
     private var activeChallenge: ChallengeController? = null
     private var activeChallengeResult: Boolean? = null
     private var flashScore: Float? = null
@@ -37,6 +38,11 @@ class LivenessOrchestrator(
             padScores.add(padScore)
             if (padScores.size > 10) padScores.removeAt(0)
         }
+
+        val pixRes = PresentationAttackDetector.analyze(patSignals, signals.blurVariance)
+        val reason = (pixRes as? LivenessResult.Rejected)?.reason
+        recentPixelPadReasons.add(reason)
+        if (recentPixelPadReasons.size > 3) recentPixelPadReasons.removeAt(0)
 
         // Active challenge progression if running
         val challenge = activeChallenge
@@ -61,9 +67,15 @@ class LivenessOrchestrator(
         signals: FaceQualitySignals,
         patSignals: PresentationAttackSignals?,
     ): Pair<LivenessRisk, LivenessResult> {
-        // 1. Pixel-level analysis (legacy gate)
-        val pixelResult = PresentationAttackDetector.analyze(patSignals, signals.blurVariance)
-        val pixelVeto = (pixelResult as? LivenessResult.Rejected)?.reason
+        // 1. Pixel-level analysis: Require same PAD reason on >= 2 of last 3 frames (Doc 21 WP-D)
+        val currentTrip = (PresentationAttackDetector.analyze(patSignals, signals.blurVariance) as? LivenessResult.Rejected)?.reason
+        if (recentPixelPadReasons.isEmpty() || recentPixelPadReasons.size < 3) {
+            recentPixelPadReasons.add(currentTrip)
+        }
+        val pixelVeto = recentPixelPadReasons.filterNotNull()
+            .groupBy { it }
+            .filter { it.value.size >= 2 }
+            .keys.firstOrNull()
 
         // 2. Median PAD score
         val medianPad = if (padScores.isNotEmpty()) {
@@ -125,6 +137,7 @@ class LivenessOrchestrator(
     fun reset() {
         meshHistory.clear()
         padScores.clear()
+        recentPixelPadReasons.clear()
         activeChallenge = null
         activeChallengeResult = null
         flashScore = null

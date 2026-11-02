@@ -5,10 +5,10 @@ package com.attract.attendance.domain.face
  */
 data class LivenessPolicy(
     val id: String = "liveness_v4",
-    // Legacy pixel gates — now only veto STRONG signatures, measured on the WIDE crop (WP1.3)
-    val maxHighFrequencyEnergy: Float = 0.28f,
+    // Legacy pixel gates — now only veto STRONG signatures, measured on the WIDE crop (WP1.3 / Doc 21 WP-D)
+    val maxHighFrequencyEnergy: Float = 0.22f,
     val maxSpecularHighlightRatio: Float = 0.25f,
-    val printFlatTextureStdDev: Float = 4.0f,
+    val printFlatTextureStdDev: Float = 3.0f,
     val printMaxBlurVariance: Float = 200f,
     // WP6 PAD CNN
     val padLiveAccept: Float = 0.80f,     // >= : LOW risk contribution
