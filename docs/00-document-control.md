@@ -85,3 +85,8 @@ Only one LLD is drafted at a time in the listed approval order. A later LLD may 
   - Noise-compensated PAD pixel gates: High-frequency moiré energy compensated for ISP noise ($\text{hfeCompensated} = \max(0, \text{hfe} \times 255 - 3.6 \times \sigma_{\text{noise}}) / 255$), relaxed thresholds (0.22/0.25), and mandatory 2-of-3 temporal confirmation.
   - Camera hardware tuning: Dynamic AE target FPS selection from `CameraCharacteristics` via `CameraTuning.chooseAeFpsRange()`, face-metered AE with `FLAG_AE` re-issued every 1.5s on face center, and EV compensation loop.
   - UX: Guidance priority (`NO_FACE > MULTIPLE > TOO_SMALL > POSE > DARK > BLUR`), 3-frame blur hysteresis, string rename to "Hold the phone still for a moment", and live attendance auto-capture (2–4 usable frames on track <= 600ms).
+
+- **Doc 22 Backlight False Rejects & Laptop-Photo Replay Acceptance Plan (2026-11-03)**:
+  - Root cause audit of dev liveness pipeline: identified that `specularHighlightRatio` is computed over wide 2.7x crop (mostly background), causing sun-lit white walls and window backlight to trip "Screen glare detected".
+  - Proved root cause of laptop/phone photo acceptance: static planar presentation attacks lack yaw rotation, resulting in `depthInconclusive=true`, which mapped to `MEDIUM -> Passed`.
+  - Checkpoint 2 empirical validation (Exp 7 & Exp 8): verified 100% false glare reject on bright backgrounds using 2.7x crop vs 0% on inner 1.0x face crop; verified MediaPipe 3D homography residual separates real 3D turns (residual 0.060–0.154) from planar photos (residual 0.004–0.021, AUC=0.998).

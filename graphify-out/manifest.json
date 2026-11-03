@@ -1770,9 +1770,9 @@
     "semantic_hash": ""
   },
   "docs/00-document-control.md": {
-    "mtime": 1793684578.119285,
-    "seen": 1793685061.1209247,
-    "ast_hash": "42239c43cfcb89d021136266be5d7db8",
+    "mtime": 1793708876.5902662,
+    "seen": 1793708924.3947875,
+    "ast_hash": "430ee670af193e6876fec77c110830a6",
     "semantic_hash": ""
   },
   "docs/00-fix-plan-device-parity-pose-antispoof.md": {
@@ -2121,6 +2121,12 @@
     "mtime": 1793687960.0,
     "seen": 1793691794.0915632,
     "ast_hash": "fd091c4aa0db47721efdc203c8776814",
+    "semantic_hash": ""
+  },
+  "docs/22-backlight-false-spoof-and-screen-replay-acceptance-plan.md": {
+    "mtime": 1793708789.2046402,
+    "seen": 1793708924.3948488,
+    "ast_hash": "b5f6dc0b33e849261fecd0ddc7159dbd",
     "semantic_hash": ""
   }
 }
