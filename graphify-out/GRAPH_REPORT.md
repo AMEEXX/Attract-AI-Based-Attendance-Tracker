@@ -1,17 +1,17 @@
 # Graph Report - Attract - Face Based Attendance Tracker  (2026-11-03)
 
 ## Corpus Check
-- 326 files · ~351,606 words
+- 326 files · ~351,604 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 23 file(s) not represented in the graph (top: .xml 8, (none) 3, .bat 3)
 
 ## Summary
-- 3625 nodes · 9129 edges · 228 communities (177 shown, 51 thin omitted)
+- 3625 nodes · 9130 edges · 229 communities (182 shown, 47 thin omitted)
 - Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS · INFERRED: 858 edges (avg confidence: 0.89)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e2549bfa`
+- Built from commit: `f584a027`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -34,9 +34,9 @@
 - AttendanceScreen.kt
 - app_pipeline.py
 - AttendanceStatus
-- AttractRepository
+- CommandResult
 - EvidenceFusionStrategy
-- AttendanceScreen
+- AuthenticationCallback
 - StudentEntity
 - TemplateCompatibility
 - AuthResult
@@ -52,12 +52,12 @@
 - AttractViewModel
 - Motion.kt
 - .extractEmbedding
-- Flow
+- AttractRepository
 - .evaluate
 - .runPipeline
-- context
+- DriveAuthManager.kt
 - RosterStudent
-- EncryptedEmbedding
+- AesGcmEmbeddingCipher
 - simulate_classroom.py
 - 8. Ordered implementation work packages
 - TemplateMigrationAndroidTest
@@ -65,7 +65,7 @@
 - 20 — "Face-ID-grade" Recognition, Anti-Spoofing & Low-Light Plan (RGB-only)
 - DriveServiceHelper.kt
 - BackupExporter
-- FakeSecurityEventLogger
+- EncryptedEmbedding
 - OcrImportSheet.kt
 - .calibrationDefaults
 - FrameObservation
@@ -104,7 +104,7 @@
 - .runFullLfwThreeFrameBenchmark
 - AppThemeMode
 - KeystoreEmbeddingCipher.kt
-- BiometricTeacherAuthenticator.kt
+- FakeSecurityEventLogger
 - CropMetricsTest
 - ClassSectionEntity
 - sqrt
@@ -129,7 +129,7 @@
 - DriveSyncStatus
 - GalleryLoadResult
 - FrameBundle
-- BiometricTeacherAuthenticator
+- BiometricTeacherAuthenticator.kt
 - AttractApplication.kt
 - RollStatus
 - FlashLivenessTestTest
@@ -156,18 +156,18 @@
 - 21 — Why recognition got WORSE after doc 20, and the measured fix (low light, backlight, "Too blurry", "Screen detected")
 - FallbackAttendanceAndroidTest
 - LowLightEnhancer
-- 00 — Spec-Driven Master Implementation Plan & Build Stability Guide
+- Historical Build Failures & Root-Cause Resolutions
 - 06-lld-live-attendance-session-engine.md
 - 18 — Attendance Pipeline: Measured Root Causes and Rebuild Plan
 - Attract — Face-Based Attendance Tracker
-- androidx
+- AesGcmEmbeddingCipher.kt
 - AppLog
 - DriveBackupPreferences
 - CsvRosterImporter
 - EnrollmentResult
 - 🔬 Test System Classification
 - ValidationException
-- Fix Plan — Device Parity, 3-Pose Capture Enforcement, Anti-Spoof Validation
+- LockTaskControllerImpl
 - .`R05 reproduction - finished engine throws IllegalStateException if called before reset`
 - LLD-04 — CSV/XLSX Roster Import
 - LLD-13 — Lockdown, Authentication & Security
@@ -189,18 +189,18 @@
 - .hasBlink
 - .evaluate
 - PresentationAttackAnalyzer.kt
-- 00-master-implementation-plan.md
+- 00 — Spec-Driven Master Implementation Plan & Build Stability Guide
 - 3. Schema
 - LLD-14 — Reporting, Export, Backup & Data Lifecycle
 - LLD-16 — Adaptive 1→2→3 Frame Biometric Verification
 - 1. Classroom Roster Template (`student_roster.csv`)
 - .isAcceptableSupportPose
-- StartupCoordinator
+- FakeTeacherDao
 - GeminiRosterExtractorTest
 - LLD-07 — Session Recovery
 - 5. Implementation plan
 - Typical Workflows
-- DatabaseConstraintsTest
+- .importRoster
 - WP5.3 Enrollment: add a "phone-low" template, and adaptive template updates
 - 3. Root causes in detail
 - .realHumanBiometricRecognitionAndImposterEvaluation
@@ -241,6 +241,7 @@
 - textrecognition
 - textrecognizeroptions
 - tornado_websocket
+- Round 2 — Master Bug Fixes (v3 Plan)
 
 ## God Nodes (most connected - your core abstractions)
 1. `assertTrue()` - 244 edges
@@ -269,7 +270,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (228 total, 51 thin omitted)
+## Communities (229 total, 47 thin omitted)
 
 ### Community 0 - "FakeSessionDao"
 Cohesion: 0.08
@@ -296,7 +297,7 @@ Cohesion: 0.27
 Nodes (3): EnrollmentSample, EnrollmentAndDuplicateTest, FloatArray
 
 ### Community 6 - "FakeSessionDao"
-Cohesion: 0.12
+Cohesion: 0.11
 Nodes (3): FakeSessionDao, com, Flow
 
 ### Community 7 - "CalendarScreen.kt"
@@ -339,17 +340,17 @@ Nodes (39): dataclasses, Image, tflite_runtime_interpreter, align(), brightness_
 Cohesion: 0.06
 Nodes (29): AttendanceStatus, ABSENT, PRESENT, AttendanceStudent, EnrollmentStatus, ENROLLED, NOT_ENROLLED, REENROLL_REQUIRED (+21 more)
 
-### Community 18 - "AttractRepository"
-Cohesion: 0.08
-Nodes (14): CommandResult, Failure, T, Success, AttractRepository, ByteArray, CharArray, StaleTemplateReport (+6 more)
+### Community 18 - "CommandResult"
+Cohesion: 0.13
+Nodes (5): CommandResult, Failure, T, Success, ByteArray
 
 ### Community 19 - "EvidenceFusionStrategy"
 Cohesion: 0.19
 Nodes (11): EvidenceFusion, EvidenceFusionStrategy, EvidenceFusionStrategy, EvidenceFusionStrategy, EvidenceFusionStrategy, EvidenceFusionStrategy, EvidenceFusionStrategy, EvidenceFusionStrategy (+3 more)
 
-### Community 20 - "AttendanceScreen"
-Cohesion: 0.10
-Nodes (11): AttendanceScreen(), AuthenticationCallback, AuthenticationCallback, AuthenticationCallback, BiometricPrompt, Modifier, 10. Definition of done, LLD-15 Navigation Addendum (+3 more)
+### Community 20 - "AuthenticationCallback"
+Cohesion: 0.22
+Nodes (4): AuthenticationCallback, AuthenticationCallback, AuthenticationCallback, BiometricPrompt
 
 ### Community 22 - "TemplateCompatibility"
 Cohesion: 0.14
@@ -396,8 +397,8 @@ Cohesion: 0.08
 Nodes (24): Acquiring, Ambiguous, AssistedActionSelection, AwaitingTeacherApproval, DuplicateChecking, Ended, EnrollmentCapture, EnrollmentCommitting (+16 more)
 
 ### Community 33 - "AttractViewModel"
-Cohesion: 0.12
-Nodes (5): AttractViewModel, ClassWorkspace, FaceAttendance, ByteArray, Uri
+Cohesion: 0.11
+Nodes (7): AttractViewModel, ClassWorkspace, FaceAttendance, ByteArray, Uri, resolveStorageErrorMessage(), toUserMessage()
 
 ### Community 34 - "Motion.kt"
 Cohesion: 0.11
@@ -407,25 +408,25 @@ Nodes (19): GlowButtonState, ERROR, READY, SUBMIT, SUCCESS, WARNING, GlowCapture
 Cohesion: 0.12
 Nodes (15): CameraProcessingAndMlIntegrationTest, Context, RealImageRecognitionTest, Context, SyntheticImageStressTest, EmbeddingEngine, Bitmap, ByteBuffer (+7 more)
 
-### Community 36 - "Flow"
-Cohesion: 0.20
-Nodes (3): ActiveSessionSummary, TeacherProfile, Flow
+### Community 36 - "AttractRepository"
+Cohesion: 0.11
+Nodes (9): ActiveSessionSummary, TeacherProfile, AttractRepository, CharArray, Flow, StaleTemplateReport, AttendanceScreen(), Modifier (+1 more)
 
 ### Community 38 - ".runPipeline"
 Cohesion: 0.16
 Nodes (6): FullBiometricPipelineIntegrationTest, Context, ByteArray, FloatArray, TemplateMatcher, TemplateMatcherTest
 
-### Community 39 - "context"
-Cohesion: 0.15
-Nodes (10): apiexception, DriveAuthManager, authorizationrequest, AuthorizationResult, context, googlesignin, identity, Intent (+2 more)
+### Community 39 - "DriveAuthManager.kt"
+Cohesion: 0.17
+Nodes (9): apiexception, DriveAuthManager, authorizationrequest, AuthorizationResult, googlesignin, identity, Intent, intentsenderrequest (+1 more)
 
 ### Community 40 - "RosterStudent"
 Cohesion: 0.23
 Nodes (9): RosterStudent, Engine, CLOUD, NONE, Bitmap, Context, Uri, OcrRosterParser (+1 more)
 
-### Community 41 - "EncryptedEmbedding"
-Cohesion: 0.08
-Nodes (14): AesGcmEmbeddingCipher, ByteArray, SecretKey, EmbeddingCipher, ByteArray, EncryptedEmbedding, EmbeddingCipherTest, EncryptedEmbeddingCipher (+6 more)
+### Community 41 - "AesGcmEmbeddingCipher"
+Cohesion: 0.13
+Nodes (5): AesGcmEmbeddingCipher, ByteArray, SecretKey, EmbeddingCipherTest, InvalidatedKeyTest
 
 ### Community 42 - "simulate_classroom.py"
 Cohesion: 0.16
@@ -434,6 +435,10 @@ Nodes (19): EnrollmentBatchValidator.validate; each arg = (emb, yaw)., validate_
 ### Community 43 - "8. Ordered implementation work packages"
 Cohesion: 0.05
 Nodes (37): 10. Diagnostics and deployment checklist, 11. Validation commands and handoff instructions, 1. Executive diagnosis, 2.1 What was actually verified, 2.2 Actual asset contracts, 2. Evidence and audit limits, 3.1 Reproducible explanations, not guesses, 3. Confirmed defect register (+29 more)
+
+### Community 44 - "TemplateMigrationAndroidTest"
+Cohesion: 0.17
+Nodes (6): androidx, ByteArray, Callback, TemplateMigrationAndroidTest, Callback, Callback
 
 ### Community 45 - "AttractRepository.kt"
 Cohesion: 0.05
@@ -451,9 +456,9 @@ Nodes (9): DriveServiceHelper, bytearraycontent, bytearrayoutputstream, Drive, d
 Cohesion: 0.19
 Nodes (6): ReportingAndExportE2EAndroidTest, BackupExporter, BackupFaceTemplate, BackupSnapshot, T, Uri
 
-### Community 49 - "FakeSecurityEventLogger"
-Cohesion: 0.29
-Nodes (3): FakeSecurityEventLogger, SessionTamperMonitorTest, TestLockTaskController
+### Community 49 - "EncryptedEmbedding"
+Cohesion: 0.21
+Nodes (4): EmbeddingCipher, ByteArray, EncryptedEmbedding, ByteArray
 
 ### Community 50 - "OcrImportSheet.kt"
 Cohesion: 0.09
@@ -483,6 +488,10 @@ Nodes (4): Parsed, RepairedRow, RollNumberRepair, Template
 Cohesion: 0.10
 Nodes (15): AttendanceExporter, Uri, ClassReportStudentRow, SessionExportRow, AttendanceExporterTest, FinalizeFaceSessionCommandTest, NormalizeRollNumberTest, ValidatorsTest (+7 more)
 
+### Community 57 - "FaceTemplateDao"
+Cohesion: 0.10
+Nodes (3): FaceTemplateDao, FaceTemplateEntity, FloatArray
+
 ### Community 58 - ".loadGallery"
 Cohesion: 0.23
 Nodes (9): AlreadyPresent, Failed, FallbackMarkResult, com, Marked, NoActiveSession, StudentNotEligible, StudentNotFound (+1 more)
@@ -500,16 +509,16 @@ Cohesion: 0.21
 Nodes (5): AttendancePercentage, AttendanceRules, AttendanceRulesTest, AttendanceRulesIntegrationFunctionalTest, FT-05: `AttendanceRulesIntegrationFunctionalTest`
 
 ### Community 62 - ".decode"
-Cohesion: 0.20
-Nodes (8): FloatArray, ByteArray, FloatArray, TemplateEnvelopeCodec, ByteArray, FloatArray, TemplateEnvelopeCodecTest, XorCipher
+Cohesion: 0.31
+Nodes (6): ByteArray, FloatArray, TemplateEnvelopeCodec, FloatArray, TemplateEnvelopeCodecTest, XorCipher
 
 ### Community 63 - "sys"
 Cohesion: 0.15
 Nodes (14): hashlib, download_file(), main(), inspect_model(), Read-only Room proof report for the phone acceptance DB pull., rows(), sqlite3, sys (+6 more)
 
 ### Community 64 - "LockTaskControllerImpl.kt"
-Cohesion: 0.14
-Nodes (13): activity, activitymanager, Flow, LockTaskController, Locked, LockTaskState, Unlocked, Flow (+5 more)
+Cohesion: 0.15
+Nodes (11): activity, activitymanager, Flow, LockTaskController, Locked, LockTaskState, Unlocked, Flow (+3 more)
 
 ### Community 65 - ".align"
 Cohesion: 0.33
@@ -520,8 +529,8 @@ Cohesion: 0.22
 Nodes (10): AdaptiveVerificationEngine, Ambiguous, Diagnostics, Error, Final, Match, NeedMoreFrames, Outcome (+2 more)
 
 ### Community 67 - "AttractViewModel.kt"
-Cohesion: 0.10
-Nodes (18): Flow, Job, StateFlow, ViewModel, resolveStorageErrorMessage(), toUserMessage(), CalendarState, CalendarViewModel (+10 more)
+Cohesion: 0.11
+Nodes (16): Flow, Job, StateFlow, ViewModel, CalendarState, CalendarViewModel, StateFlow, ViewModel (+8 more)
 
 ### Community 68 - "Stage 3 — System Integration Testing (Instrumented on Device/Emulator)"
 Cohesion: 0.25
@@ -541,7 +550,7 @@ Nodes (11): AppScreen, CreateClass, Dashboard, Loading, ManualAttendance, Onboar
 
 ### Community 73 - "SessionTamperMonitor"
 Cohesion: 0.14
-Nodes (11): Job, SessionTamperMonitor, TamperEvent, Flow, assharedflow, async, coroutinescope, mutablesharedflow (+3 more)
+Nodes (13): Job, SessionTamperMonitor, TamperEvent, Flow, SessionTamperMonitorTest, TestLockTaskController, assharedflow, async (+5 more)
 
 ### Community 74 - "FaceMeshResult"
 Cohesion: 0.13
@@ -560,8 +569,8 @@ Cohesion: 0.16
 Nodes (26): WP-B — Exact algorithms (pure Kotlin, `domain/face/CropMetrics.kt`, operating on the 112×112 ARGB `IntArray`), time, apply_gamma(), camera(), clahe_luma(), crop_sharpness(), face_mask(), gamma_for() (+18 more)
 
 ### Community 78 - "BackupScheduler.kt"
-Cohesion: 0.17
-Nodes (10): BackupScheduler, Context, constraints, existingperiodicworkpolicy, existingworkpolicy, networktype, onetimeworkrequestbuilder, periodicworkrequestbuilder (+2 more)
+Cohesion: 0.22
+Nodes (8): constraints, existingperiodicworkpolicy, existingworkpolicy, networktype, onetimeworkrequestbuilder, periodicworkrequestbuilder, timeunit, workmanager
 
 ### Community 79 - "ChallengeController"
 Cohesion: 0.15
@@ -588,24 +597,24 @@ Cohesion: 0.36
 Nodes (5): ImageRecord, Bitmap, Context, Rect, LfwThreeFrameBenchmarkTest
 
 ### Community 86 - "AppThemeMode"
-Cohesion: 0.16
-Nodes (10): T, Factory, SharedPreferences, StateFlow, ThemeRepository, AppThemeMode, DARK, LIGHT (+2 more)
+Cohesion: 0.15
+Nodes (11): T, Factory, SharedPreferences, StateFlow, ThemeRepository, AppThemeMode, DARK, LIGHT (+3 more)
 
 ### Community 87 - "KeystoreEmbeddingCipher.kt"
-Cohesion: 0.17
-Nodes (11): KeyInvalidatedException, KeystoreEmbeddingCipher, ByteArray, SecretKey, TemplateUnavailableException, gcmparameterspec, keygenparameterspec, keyproperties (+3 more)
+Cohesion: 0.18
+Nodes (10): KeyInvalidatedException, KeystoreEmbeddingCipher, ByteArray, SecretKey, TemplateUnavailableException, keygenparameterspec, keyproperties, keystore (+2 more)
 
-### Community 88 - "BiometricTeacherAuthenticator.kt"
-Cohesion: 0.24
-Nodes (7): SecurityEvent, SecurityEventLogger, SecurityEventLoggerImpl, build, countdownlatch, executor, requiresapi
+### Community 88 - "FakeSecurityEventLogger"
+Cohesion: 0.26
+Nodes (4): SecurityEvent, SecurityEventLogger, SecurityEventLoggerImpl, FakeSecurityEventLogger
 
 ### Community 89 - "CropMetricsTest"
 Cohesion: 0.21
 Nodes (6): CropMetrics, FloatArray, IntArray, CropMetricsTest, IntArray, 16. Face Quality
 
 ### Community 90 - "ClassSectionEntity"
-Cohesion: 0.14
-Nodes (5): RoomDatabaseIntegrationTest, ClassDao, DashboardClassRow, ClassSectionEntity, IT-01: Room Database Integration Tests
+Cohesion: 0.13
+Nodes (5): DatabaseConstraintsTest, ClassDao, DashboardClassRow, ClassSectionEntity, 8. Tests
 
 ### Community 91 - "sqrt"
 Cohesion: 0.15
@@ -660,8 +669,8 @@ Cohesion: 0.18
 Nodes (11): LivenessEngineTest, Files, Fix design, Issue C — Enforce Straight → Left → Right pose sequence with full per-frame anti-spoof validation, Root cause, Tests, WP1.1 Strip non-spoof gates out of `LivenessEngine`, WP1.3 Run pixel statistics on the right crop (+3 more)
 
 ### Community 106 - "TeacherEntity"
-Cohesion: 0.24
-Nodes (3): TeacherDao, TeacherEntity, FakeTeacherDao
+Cohesion: 0.15
+Nodes (4): RoomDatabaseIntegrationTest, TeacherDao, TeacherEntity, IT-01: Room Database Integration Tests
 
 ### Community 108 - "ImageDegradationValidationTest"
 Cohesion: 0.16
@@ -676,16 +685,16 @@ Cohesion: 0.29
 Nodes (6): DriveAccountInfo, DriveSyncStatus, Error, Idle, Success, Syncing
 
 ### Community 111 - "GalleryLoadResult"
-Cohesion: 0.33
-Nodes (5): EmptyHealthy, GalleryHealthSummary, GalleryLoadResult, Ready, Unavailable
+Cohesion: 0.25
+Nodes (7): EmptyHealthy, GalleryHealthSummary, GalleryLoadResult, NeedsRepair, Ready, Unavailable, 3.4 RC-4 (P0): the student flow has dead ends that look like "not enrolled"
 
 ### Community 112 - "FrameBundle"
 Cohesion: 0.16
 Nodes (10): FrameBundle, AutoCaptureController, AutoCaptureState, LIVENESS, RECOGNISING, RESULT, SEARCHING, TRACKING (+2 more)
 
-### Community 113 - "BiometricTeacherAuthenticator"
-Cohesion: 0.22
-Nodes (5): BiometricTeacherAuthenticator, AuthenticationCallback, AuthenticationCallback, BiometricPrompt, CharArray
+### Community 113 - "BiometricTeacherAuthenticator.kt"
+Cohesion: 0.15
+Nodes (9): BiometricTeacherAuthenticator, AuthenticationCallback, AuthenticationCallback, BiometricPrompt, CharArray, build, countdownlatch, executor (+1 more)
 
 ### Community 114 - "AttractApplication.kt"
 Cohesion: 0.38
@@ -771,9 +780,9 @@ Nodes (11): 1. The root cause in one paragraph, 21 — Why recognition got WORSE
 Cohesion: 0.33
 Nodes (3): IntArray, LowLightEnhancer, LowLightEnhancerTest
 
-### Community 140 - "00 — Spec-Driven Master Implementation Plan & Build Stability Guide"
-Cohesion: 0.18
-Nodes (11): 00 — Spec-Driven Master Implementation Plan & Build Stability Guide, Failure Case 1 — `checkDebugAarMetadata` failed with 12 dependency errors, Failure Case 2 — `BiometricTeacherAuthenticator.kt` compilation errors, Failure Case 3 — `PrerequisitesCheckerTest.kt` suspend function compilation error, Historical Build Failures & Root-Cause Resolutions, Part 1 — Comprehensive Build Failure & Solution Logbook (Foolproof Developer Guide), Part 2 — Locked Build Environment Specifications, Part 3 — Complete LLD Implementation Audit Status (+3 more)
+### Community 140 - "Historical Build Failures & Root-Cause Resolutions"
+Cohesion: 0.33
+Nodes (6): Failure Case 1 — `checkDebugAarMetadata` failed with 12 dependency errors, Failure Case 2 — `BiometricTeacherAuthenticator.kt` compilation errors, Failure Case 3 — `PrerequisitesCheckerTest.kt` suspend function compilation error, Historical Build Failures & Root-Cause Resolutions, Part 1 — Comprehensive Build Failure & Solution Logbook (Foolproof Developer Guide), Step-by-Step Build Setup Instructions (Mandatory Pre-requisite)
 
 ### Community 141 - "06-lld-live-attendance-session-engine.md"
 Cohesion: 0.18
@@ -787,17 +796,17 @@ Nodes (9): 0. TL;DR, 10. Limits of this analysis (honest), 18 — Attendance Pip
 Cohesion: 0.18
 Nodes (11): 1. Executive Summary, 2. Technology Stack & Ecosystem, 3. End-to-End System Architecture, 5. Biometric Specification & Model Profile, 6. Repository Layout, 7. Quick Start & Building, 9. License, Attract — Face-Based Attendance Tracker (+3 more)
 
-### Community 147 - "androidx"
-Cohesion: 0.27
-Nodes (4): androidx, Callback, Callback, Callback
+### Community 147 - "AesGcmEmbeddingCipher.kt"
+Cohesion: 0.23
+Nodes (7): EncryptedEmbeddingCipher, ByteArray, SecretKey, cipher, gcmparameterspec, keygenerator, secretkeyspec
 
 ### Community 148 - "AppLog"
 Cohesion: 0.20
 Nodes (3): AppLog, firebasecrashlytics, log
 
 ### Community 149 - "DriveBackupPreferences"
-Cohesion: 0.33
-Nodes (3): DriveBackupPreferences, SharedPreferences, Context
+Cohesion: 0.21
+Nodes (5): BackupScheduler, Context, DriveBackupPreferences, SharedPreferences, Context
 
 ### Community 150 - "CsvRosterImporter"
 Cohesion: 0.29
@@ -815,9 +824,9 @@ Nodes (9): Unknown, 1. `SYNTHETIC_IMAGE_TEST` (Synthetic Image Stress Suite), 2.
 Cohesion: 0.20
 Nodes (9): IllegalArgumentException, ValidationException, Objective, SEC-01: Security Log Audit (Manual Review), SEC-02: Formula Injection Guard (Unit + Manual Review), SEC-03: Template & Crypto Boundary (Review + Instrumented), SEC-04: Full Regression Test Gate (Automated — Pre-Release Mandatory), Stage 4 — Security & Regression Testing (+1 more)
 
-### Community 154 - "Fix Plan — Device Parity, 3-Pose Capture Enforcement, Anti-Spoof Validation"
-Cohesion: 0.20
-Nodes (9): Started, Acceptance criteria, Doc Gap Closure (already applied to docs/), Files, Fix Plan — Device Parity, 3-Pose Capture Enforcement, Anti-Spoof Validation, Implementation order, Issue A — Screen pinning reports failure on physical device, works on emulator, Root cause (+1 more)
+### Community 154 - "LockTaskControllerImpl"
+Cohesion: 0.17
+Nodes (11): Started, LockTaskControllerImpl, Acceptance criteria, Doc Gap Closure (already applied to docs/), Files, Fix design, Fix Plan — Device Parity, 3-Pose Capture Enforcement, Anti-Spoof Validation, Implementation order (+3 more)
 
 ### Community 156 - "LLD-04 — CSV/XLSX Roster Import"
 Cohesion: 0.20
@@ -887,9 +896,9 @@ Nodes (5): Ambiguous, FloatArray, Match, NoTemplatesAvailable, RecognitionOutcom
 Cohesion: 0.46
 Nodes (3): Bitmap, FloatArray, PresentationAttackAnalyzer
 
-### Community 176 - "00-master-implementation-plan.md"
-Cohesion: 0.25
-Nodes (7): Phase 1: Foundation Reset, Phase 2: Calendar & UI Polish, Phase 3: AI Face Attendance Engine, Phase 4: Face Recognition Pipeline, Phase 5: Face Enrollment, Phase 6: Liveness & Anti-Spoof, Phase 7: Polish & Integration Testing
+### Community 176 - "00 — Spec-Driven Master Implementation Plan & Build Stability Guide"
+Cohesion: 0.15
+Nodes (12): 00 — Spec-Driven Master Implementation Plan & Build Stability Guide, Part 2 — Locked Build Environment Specifications, Part 3 — Complete LLD Implementation Audit Status, Part 4 — Consolidated Quality & Testing Pipeline, Phase 1: Foundation Reset, Phase 2: Calendar & UI Polish, Phase 3: AI Face Attendance Engine, Phase 4: Face Recognition Pipeline (+4 more)
 
 ### Community 177 - "3. Schema"
 Cohesion: 0.25
@@ -911,6 +920,10 @@ Nodes (7): 1. Classroom Roster Template (`student_roster.csv`), 2. Usage Instruc
 Cohesion: 0.29
 Nodes (6): Safety invariants (S1–S5), WP5.1 `FaceQualityConfig` version 4 (degree-true thresholds), WP5.2 Attendance no longer needs a straight first frame, WP5.4 Track-fused embedding and optional flip test-time augmentation, WP5.5 Recalibrate thresholds for the new pose range, WP5 — Pose-tolerant quality and stronger recognition
 
+### Community 182 - "FakeTeacherDao"
+Cohesion: 0.54
+Nodes (3): StartupCoordinator, FakeTeacherDao, StartupCoordinatorTest
+
 ### Community 184 - "LLD-07 — Session Recovery"
 Cohesion: 0.29
 Nodes (6): Algorithm, Components and lifecycle, Definition of done, Goal, LLD-07 — Session Recovery, Tests
@@ -922,6 +935,10 @@ Nodes (7): 5. Implementation plan, WP-A — Clean slate: remove all existing dat
 ### Community 186 - "Typical Workflows"
 Cohesion: 0.29
 Nodes (6): 1. Download & Verify Models, 2. Inspect Model Tensors, 3. Launch Development Emulator, Developer & Diagnostic Utilities (`scripts/`), Tool Catalog, Typical Workflows
+
+### Community 187 - ".importRoster"
+Cohesion: 0.27
+Nodes (4): 6.1 Mock class (already built, `tools/biometric_eval/simulate_classroom.py`), 6.2 Seeding a phone/emulator with the same mock class, 6.3 Calibrating on your own phone (required before release), 6. Mock data, on-device test harness, and calibration on the phone
 
 ### Community 188 - "WP5.3 Enrollment: add a "phone-low" template, and adaptive template updates"
 Cohesion: 0.33
@@ -979,20 +996,24 @@ Nodes (3): 6.1 Teacher World, 6.2 Student Attendance World, 6. Navigation Archit
 Cohesion: 0.67
 Nodes (3): 73. Technical Spikes, Spike A — Screen Pinning, Spike B — Face Pipeline
 
+### Community 228 - "Round 2 — Master Bug Fixes (v3 Plan)"
+Cohesion: 0.33
+Nodes (4): 10. Definition of done, LLD-15 Navigation Addendum, Attract — LLD-15: Bug Fixes & UX Refinements (Round 1), Round 2 — Master Bug Fixes (v3 Plan)
+
 ## Knowledge Gaps
 - **609 isolated node(s):** `NOT_ENROLLED`, `ENROLLED`, `REENROLL_REQUIRED`, `PRESENT`, `ABSENT` (+604 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1127 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **51 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **47 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `assertTrue()` connect `assertTrue` to `FakeSessionDao`, `FT-01: `SecurityPipelineFunctionalTest``, `EnrollmentAndDuplicateTest`, `AppObservability`, `FallbackAttendanceAndroidTest`, `LowLightEnhancer`, `.analyze`, `test`, `FullWorkflowAcceptanceTest.kt`, `AttendanceStatus`, `EvidenceFusionStrategy`, `TemplateCompatibility`, `AdaptiveVerificationEngineTest`, `StudentTemplatePair`, `.`R05 reproduction - finished engine throws IllegalStateException if called before reset``, `.extractEmbedding`, `.evaluate`, `.runPipeline`, `EncryptedEmbedding`, `FrameTimingGuard`, `TemplateMigrationAndroidTest`, `.hasBlink`, `20 — "Face-ID-grade" Recognition, Anti-Spoofing & Low-Light Plan (RGB-only)`, `BackupExporter`, `.calibrationDefaults`, `FrameObservation`, `YoloFaceDetector`, `FaceQualitySignals`, `GeminiRosterExtractorTest`, `Unit Test Suite Assessment (107 Tests, 100% Pass)`, `RollNumberRepair`, `StartupCoordinator`, `.isEligible`, `.realHumanBiometricRecognitionAndImposterEvaluation`, `.decode`, `AdaptiveVerificationEngine`, `ExportAndBackupFunctionalTest`, `FaceMeshResult`, `AttractViewModelTest`, `.run`, `.runFullLfwThreeFrameBenchmark`, `CropMetricsTest`, `ClassSectionEntity`, `.l2Normalize`, `TeacherAuthorizationGrant`, `FaceBox`, `.runAdaptiveStrategyBenchmark`, `.check`, `PoseEstimatorTest`, `ImageDegradationValidationTest`, `Pipeline Details`, `FlashLivenessTestTest`, `TemporalCropBuffer`, `Result`, `13. File checklist (new or changed)`?**
+- **Why does `assertTrue()` connect `assertTrue` to `FakeSessionDao`, `FT-01: `SecurityPipelineFunctionalTest``, `EnrollmentAndDuplicateTest`, `AppObservability`, `FallbackAttendanceAndroidTest`, `LowLightEnhancer`, `.analyze`, `test`, `FullWorkflowAcceptanceTest.kt`, `AttendanceStatus`, `EvidenceFusionStrategy`, `TemplateCompatibility`, `AdaptiveVerificationEngineTest`, `StudentTemplatePair`, `.`R05 reproduction - finished engine throws IllegalStateException if called before reset``, `.extractEmbedding`, `.evaluate`, `.runPipeline`, `AesGcmEmbeddingCipher`, `FrameTimingGuard`, `TemplateMigrationAndroidTest`, `.hasBlink`, `20 — "Face-ID-grade" Recognition, Anti-Spoofing & Low-Light Plan (RGB-only)`, `BackupExporter`, `.calibrationDefaults`, `FrameObservation`, `YoloFaceDetector`, `FaceQualitySignals`, `GeminiRosterExtractorTest`, `Unit Test Suite Assessment (107 Tests, 100% Pass)`, `RollNumberRepair`, `FakeTeacherDao`, `.isEligible`, `.realHumanBiometricRecognitionAndImposterEvaluation`, `.decode`, `AdaptiveVerificationEngine`, `ExportAndBackupFunctionalTest`, `FaceMeshResult`, `AttractViewModelTest`, `.run`, `.runFullLfwThreeFrameBenchmark`, `CropMetricsTest`, `.l2Normalize`, `TeacherAuthorizationGrant`, `FaceBox`, `.runAdaptiveStrategyBenchmark`, `.check`, `TeacherEntity`, `PoseEstimatorTest`, `ImageDegradationValidationTest`, `Pipeline Details`, `FlashLivenessTestTest`, `TemporalCropBuffer`, `Result`, `13. File checklist (new or changed)`?**
   _High betweenness centrality (0.113) - this node is a cross-community bridge._
-- **Why does `AttractRepository` connect `AttractRepository` to `AttendanceSessionEntity`, `FallbackAttendanceAndroidTest`, `test`, `FullWorkflowAcceptanceTest.kt`, `AttendanceScreen.kt`, `AttendanceStatus`, `AttendanceScreen`, `.extractEmbedding`, `Flow`, `TemplateMigrationAndroidTest`, `AttractRepository.kt`, `.calibrationDefaults`, `FrameObservation`, `.loadGallery`, `.decode`, `AttractViewModel.kt`, `ClassSectionEntity`, `DriveBackupWorker.kt`, `AttractApplication.kt`?**
-  _High betweenness centrality (0.064) - this node is a cross-community bridge._
+- **Why does `AttractRepository` connect `AttractRepository` to `AttendanceSessionEntity`, `FallbackAttendanceAndroidTest`, `test`, `FullWorkflowAcceptanceTest.kt`, `AttendanceScreen.kt`, `AttendanceStatus`, `CommandResult`, `.extractEmbedding`, `TemplateMigrationAndroidTest`, `AttractRepository.kt`, `.calibrationDefaults`, `FrameObservation`, `FaceTemplateDao`, `.loadGallery`, `.importRoster`, `AttractViewModel.kt`, `ClassSectionEntity`, `Round 2 — Master Bug Fixes (v3 Plan)`, `DriveBackupWorker.kt`, `AttractApplication.kt`?**
+  _High betweenness centrality (0.063) - this node is a cross-community bridge._
 - **Why does `16. Face Quality` connect `CropMetricsTest` to `exp5_lowlight.py`, `00-main-sdd.md`?**
-  _High betweenness centrality (0.053) - this node is a cross-community bridge._
+  _High betweenness centrality (0.052) - this node is a cross-community bridge._
 - **Are the 240 inferred relationships involving `assertTrue()` (e.g. with `.enrollReal()` and `.expectSuccess()`) actually correct?**
   _`assertTrue()` has 240 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `NOT_ENROLLED`, `ENROLLED`, `REENROLL_REQUIRED` to the rest of the system?**

@@ -1907,11 +1907,11 @@ class AttractRepository(
                         active = true
                     )
                 )
-                android.util.Log.i("ATTRACT_FACE", "Auto-updated template for student $studentId (bucket=$poseBucket, quality=$qualityScore, sim=$maxSimToEnrolled)")
+                AppLog.i("ATTRACT_FACE", "Auto-updated template for student $studentId (bucket=$poseBucket)")
             }
             true
         } catch (e: Throwable) {
-            android.util.Log.w("ATTRACT_FACE", "maybeAutoUpdateTemplate skipped due to: ${e.message}")
+            AppLog.w("ATTRACT_FACE", "maybeAutoUpdateTemplate skipped due to: ${e.message}")
             false
         }
     }
