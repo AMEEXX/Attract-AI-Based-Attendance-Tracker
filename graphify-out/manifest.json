@@ -1248,142 +1248,142 @@
     "semantic_hash": "6e6b3418ba0790162e198cf173ec84ba"
   },
   "tools/biometric_eval/app_pipeline.py": {
-    "mtime": 1791364953.798488,
-    "seen": 1791384744.071572,
-    "ast_hash": "8638958ba1172bbbfe074350578be9e3",
-    "semantic_hash": "8638958ba1172bbbfe074350578be9e3"
+    "mtime": 1793686310.0,
+    "seen": 1793691794.0915196,
+    "ast_hash": "b0d3f1a91503bb4acd253b3a3a3d78d8",
+    "semantic_hash": ""
   },
   "tools/biometric_eval/build_feature_cache.py": {
-    "mtime": 1791364953.8025146,
-    "seen": 1791384744.0715728,
-    "ast_hash": "aca54a9d374ca0864d76c8badfdadc03",
-    "semantic_hash": "aca54a9d374ca0864d76c8badfdadc03"
+    "mtime": 1793686310.0,
+    "seen": 1793691794.0915222,
+    "ast_hash": "781f13c1e7d878197dd2ec8c7fb22041",
+    "semantic_hash": ""
   },
   "tools/biometric_eval/calibrate.py": {
-    "mtime": 1791364953.8093705,
-    "seen": 1791384744.0715735,
-    "ast_hash": "d0fe53a815c5d045c44617e768ea235a",
-    "semantic_hash": "d0fe53a815c5d045c44617e768ea235a"
+    "mtime": 1793686310.0,
+    "seen": 1793691794.091524,
+    "ast_hash": "941a6b993595b926181e51d2436b0a19",
+    "semantic_hash": ""
   },
   "tools/biometric_eval/exp1_pose_sweep.py": {
-    "mtime": 1791364953.8168194,
-    "seen": 1791384744.0715742,
-    "ast_hash": "3ba9ffc873b94dc42de03b90da5abcd1",
-    "semantic_hash": "3ba9ffc873b94dc42de03b90da5abcd1"
+    "mtime": 1793686310.0,
+    "seen": 1793691794.0915253,
+    "ast_hash": "8b0f8f8fa255eff0f39725422b351094",
+    "semantic_hash": ""
   },
   "tools/biometric_eval/exp1b_quality_gates.py": {
-    "mtime": 1791364953.8209856,
-    "seen": 1791384744.071575,
-    "ast_hash": "579506858e8883cd754aa8acc3d1fb92",
-    "semantic_hash": "579506858e8883cd754aa8acc3d1fb92"
+    "mtime": 1793686310.0,
+    "seen": 1793691794.0915272,
+    "ast_hash": "4de37a9c4dbc2377f5d4a37f2266ac42",
+    "semantic_hash": ""
   },
   "tools/biometric_eval/exp2_embedding_sanity.py": {
-    "mtime": 1791364953.8244655,
-    "seen": 1791384744.0715759,
-    "ast_hash": "7df9a16d9945f0bf511f4687fcb5837c",
-    "semantic_hash": "7df9a16d9945f0bf511f4687fcb5837c"
+    "mtime": 1793686310.0,
+    "seen": 1793691794.0915284,
+    "ast_hash": "cec3fa3659d50c35cbe1adf6ceb5ad18",
+    "semantic_hash": ""
   },
   "tools/biometric_eval/exp2b_center_face.py": {
-    "mtime": 1791364953.8298683,
-    "seen": 1791384744.0715766,
-    "ast_hash": "01dc063ed79bca7fd3f376fc4ba77f4d",
-    "semantic_hash": "01dc063ed79bca7fd3f376fc4ba77f4d"
+    "mtime": 1793686310.0,
+    "seen": 1793691794.09153,
+    "ast_hash": "add309b61f76fa2ab2fd3ebd8177d8e7",
+    "semantic_hash": ""
   },
   "tools/biometric_eval/exp3_pose_estimators.py": {
-    "mtime": 1791364953.8328211,
-    "seen": 1791384744.0715773,
-    "ast_hash": "4b1dc2c1df0fd5bfa83f4bfe2a921b0f",
-    "semantic_hash": "4b1dc2c1df0fd5bfa83f4bfe2a921b0f"
+    "mtime": 1793686310.0,
+    "seen": 1793691794.0915322,
+    "ast_hash": "7f7d6cf78f005fba4c692991d738f39f",
+    "semantic_hash": ""
   },
   "tools/biometric_eval/exp4_turn_templates.py": {
-    "mtime": 1791364953.8356383,
-    "seen": 1791384744.071578,
-    "ast_hash": "8c0e34c43fbe4ec2f3a46f09a5e6ee74",
-    "semantic_hash": "8c0e34c43fbe4ec2f3a46f09a5e6ee74"
+    "mtime": 1793686310.0,
+    "seen": 1793691794.0915337,
+    "ast_hash": "34e430c365d3c3530e5af6dd94a8eb4f",
+    "semantic_hash": ""
   },
   "tools/biometric_eval/extract_datasets.py": {
-    "mtime": 1791364953.8371382,
-    "seen": 1791384744.071579,
-    "ast_hash": "70e74e6608dfd27da4a079e47a0725ea",
-    "semantic_hash": "70e74e6608dfd27da4a079e47a0725ea"
+    "mtime": 1793686310.0,
+    "seen": 1793691794.0915434,
+    "ast_hash": "6e067efd5cb276cbc903e98e104038eb",
+    "semantic_hash": ""
   },
   "tools/biometric_eval/results/calibration_report.json": {
-    "mtime": 1791364953.840335,
-    "seen": 1791384744.0715797,
-    "ast_hash": "a21d2342064cda93e13b05c4076a0456",
-    "semantic_hash": "a21d2342064cda93e13b05c4076a0456"
+    "mtime": 1793686310.0,
+    "seen": 1793691794.0915456,
+    "ast_hash": "115318ff67f56086be98b4bad9d89a67",
+    "semantic_hash": ""
   },
   "tools/biometric_eval/results/classroom_simulation.json": {
-    "mtime": 1791364953.8453145,
-    "seen": 1791384744.0715804,
-    "ast_hash": "d097cc28bd40d9f53634b850d2fd58ef",
-    "semantic_hash": "d097cc28bd40d9f53634b850d2fd58ef"
+    "mtime": 1793686310.0,
+    "seen": 1793691794.0915482,
+    "ast_hash": "9313f80b3fe24bb62afeb219fcef4493",
+    "semantic_hash": ""
   },
   "tools/biometric_eval/results/exp1_pose_sweep.json": {
-    "mtime": 1791364953.8501933,
-    "seen": 1791384744.0715811,
-    "ast_hash": "4d5033a8a8e762f383c5b61e2f3d6513",
-    "semantic_hash": "4d5033a8a8e762f383c5b61e2f3d6513"
+    "mtime": 1793686310.0,
+    "seen": 1793691794.09155,
+    "ast_hash": "37b70dda90f111c4954702b00796165b",
+    "semantic_hash": ""
   },
   "tools/biometric_eval/results/exp1b_quality_gates.json": {
-    "mtime": 1791364953.8536544,
-    "seen": 1791384744.0715823,
-    "ast_hash": "ed35e6976058f58ac956ee646d9c7b73",
-    "semantic_hash": "ed35e6976058f58ac956ee646d9c7b73"
+    "mtime": 1793686310.0,
+    "seen": 1793691794.091552,
+    "ast_hash": "074ac1fb6f8173cc5ea513d0979302f2",
+    "semantic_hash": ""
   },
   "tools/biometric_eval/results/exp2_embedding_sanity.json": {
-    "mtime": 1791364953.8595269,
-    "seen": 1791384744.071583,
-    "ast_hash": "f9344f983248f9727d6b634dcc6aab83",
-    "semantic_hash": "f9344f983248f9727d6b634dcc6aab83"
+    "mtime": 1793686310.0,
+    "seen": 1793691794.0915537,
+    "ast_hash": "e5af6d23be8092b6e239a4d07018ffdf",
+    "semantic_hash": ""
   },
   "tools/biometric_eval/results/exp2b_center_face.json": {
-    "mtime": 1791364953.8640962,
-    "seen": 1791384744.0715837,
-    "ast_hash": "98d063e6fccad17f5f50a4111e51fa9f",
-    "semantic_hash": "98d063e6fccad17f5f50a4111e51fa9f"
+    "mtime": 1793686310.0,
+    "seen": 1793691794.0915549,
+    "ast_hash": "c32fc71b322d75e11542f277dce586b3",
+    "semantic_hash": ""
   },
   "tools/biometric_eval/results/exp3_pose_estimators.json": {
-    "mtime": 1791364953.869705,
-    "seen": 1791384744.0715845,
-    "ast_hash": "7c36ff37a0ad7153f903f652a39bacbb",
-    "semantic_hash": "7c36ff37a0ad7153f903f652a39bacbb"
+    "mtime": 1793686310.0,
+    "seen": 1793691794.0915568,
+    "ast_hash": "ba03d3b492f7b7d61e31b994afbd52be",
+    "semantic_hash": ""
   },
   "tools/biometric_eval/results/exp4_turn_templates.json": {
-    "mtime": 1791364953.8722088,
-    "seen": 1791384744.0715852,
-    "ast_hash": "cbd2f71fc91bb090192cf9202efada0c",
-    "semantic_hash": "cbd2f71fc91bb090192cf9202efada0c"
+    "mtime": 1793686310.0,
+    "seen": 1793691794.0915587,
+    "ast_hash": "a648e6a8ad6c04a66088bf1f8fa95ea6",
+    "semantic_hash": ""
   },
   "tools/biometric_eval/results/policy_confirm_sweep.json": {
-    "mtime": 1791364953.8830168,
-    "seen": 1791384744.0715861,
-    "ast_hash": "909d0774366e9d174a83d1e24966f128",
-    "semantic_hash": "909d0774366e9d174a83d1e24966f128"
+    "mtime": 1793686310.0,
+    "seen": 1793691794.0915642,
+    "ast_hash": "4cc7de097e13dfab4a340713a8f4c616",
+    "semantic_hash": ""
   },
   "tools/biometric_eval/results/policy_sweep.json": {
-    "mtime": 1791364953.8879569,
-    "seen": 1791384744.0715868,
-    "ast_hash": "e30ba0a9e1f5b72c2f682564038a951d",
-    "semantic_hash": "e30ba0a9e1f5b72c2f682564038a951d"
+    "mtime": 1793686310.0,
+    "seen": 1793691794.0915656,
+    "ast_hash": "66b5e8095a9e39a5e446afc6cd3e1491",
+    "semantic_hash": ""
   },
   "tools/biometric_eval/results/proposed_config.json": {
-    "mtime": 1791364953.8953464,
-    "seen": 1791384744.0715876,
-    "ast_hash": "ffdb7c304003784ead965b5b8bd3234a",
-    "semantic_hash": "ffdb7c304003784ead965b5b8bd3234a"
+    "mtime": 1793686310.0,
+    "seen": 1793691794.0915666,
+    "ast_hash": "2386b2ca7901195a7fad51d613fe4d70",
+    "semantic_hash": ""
   },
   "tools/biometric_eval/simulate_classroom.py": {
-    "mtime": 1791364953.9045286,
-    "seen": 1791384744.0715883,
-    "ast_hash": "754ed4a007d39bbac03bad46dff553b0",
-    "semantic_hash": "754ed4a007d39bbac03bad46dff553b0"
+    "mtime": 1793686310.0,
+    "seen": 1793691794.0915675,
+    "ast_hash": "e664080f7313b18d500acd44fe1f53e1",
+    "semantic_hash": ""
   },
   "tools/biometric_eval/sweep_policy.py": {
-    "mtime": 1791364953.919953,
-    "seen": 1791384744.0715892,
-    "ast_hash": "7a23eb8a70303c5de53b23dfeadead97",
-    "semantic_hash": "7a23eb8a70303c5de53b23dfeadead97"
+    "mtime": 1793686310.0,
+    "seen": 1793691794.091569,
+    "ast_hash": "f1e9ad9f08b51aabbe40d310eab3d256",
+    "semantic_hash": ""
   },
   "app/google-services.json": {
     "mtime": 1791553313.91898,
@@ -1716,27 +1716,27 @@
     "semantic_hash": ""
   },
   "tools/biometric_eval/exp5_lowlight.py": {
-    "mtime": 1793630535.6263387,
-    "seen": 1793685061.1209044,
-    "ast_hash": "f9fb3fcdc770c47d3eff97d64f10742b",
+    "mtime": 1793686321.0,
+    "seen": 1793691794.0915346,
+    "ast_hash": "1226eb638b51128f281169a4f0631578",
     "semantic_hash": ""
   },
   "tools/biometric_eval/exp6_gates.py": {
-    "mtime": 1793630535.6273398,
-    "seen": 1793685061.1209052,
-    "ast_hash": "0ebaa3205b2ba635e191d26d35d11119",
+    "mtime": 1793686321.0,
+    "seen": 1793691794.0915363,
+    "ast_hash": "3500e72acacc0954de58bfeaa997b514",
     "semantic_hash": ""
   },
   "tools/biometric_eval/results/exp5_lowlight.json": {
-    "mtime": 1793630535.6283386,
-    "seen": 1793685061.1209147,
-    "ast_hash": "a057567d49c53ddcf7b3e03cf1ee2c41",
+    "mtime": 1793686321.0,
+    "seen": 1793691794.09156,
+    "ast_hash": "ecfac0f9d147801f599a9920cebb0f97",
     "semantic_hash": ""
   },
   "tools/biometric_eval/results/exp6_gates.json": {
-    "mtime": 1793630535.6328561,
-    "seen": 1793685061.1209154,
-    "ast_hash": "0a350f7e9bc5a59cb44ba3a2cd61844c",
+    "mtime": 1793686321.0,
+    "seen": 1793691794.091561,
+    "ast_hash": "d2ae323f67650267838f9246db7c1e9e",
     "semantic_hash": ""
   },
   ".github/workflows/ci.yml": {
@@ -1956,21 +1956,21 @@
     "semantic_hash": ""
   },
   "tools/biometric_eval/README.md": {
-    "mtime": 1791364953.7954733,
-    "seen": 1793685061.120947,
-    "ast_hash": "87d321d48296e7802a9bda6fc3d3a694",
+    "mtime": 1793686310.0,
+    "seen": 1793691794.0916262,
+    "ast_hash": "7097c79c8b36cd0744d65ca8552f0c49",
     "semantic_hash": ""
   },
   "tools/biometric_eval/results/exp5_lowlight_run_60ids.txt": {
-    "mtime": 1793630535.631856,
-    "seen": 1793685061.1209476,
-    "ast_hash": "bc6f987a7760da98e4504e98d3c98285",
+    "mtime": 1793686321.0,
+    "seen": 1793691794.0916276,
+    "ast_hash": "96573766bd1ab13c207dda092e5ea0ae",
     "semantic_hash": ""
   },
   "tools/biometric_eval/results/final_simulation.txt": {
-    "mtime": 1791364953.8781133,
-    "seen": 1793685061.1209483,
-    "ast_hash": "5223944b6657d0eef792b2fcc0be2742",
+    "mtime": 1793686310.0,
+    "seen": 1793691794.0916297,
+    "ast_hash": "941509db43698c3ce250a0ca13afd231",
     "semantic_hash": ""
   },
   "Glossy Blue Raised-Arm Emblem.png": {
@@ -2091,6 +2091,36 @@
     "mtime": 1791576009.9467146,
     "seen": 1793685061.1209714,
     "ast_hash": "3aeed79f44799814b04580f84960f76d",
+    "semantic_hash": ""
+  },
+  "tools/biometric_eval/exp7_pad_backlight.py": {
+    "mtime": 1793691707.0376124,
+    "seen": 1793691794.0915384,
+    "ast_hash": "7b56369621dc369fb29944996342db61",
+    "semantic_hash": ""
+  },
+  "tools/biometric_eval/exp8_parallax_3d.py": {
+    "mtime": 1793687931.0,
+    "seen": 1793691794.0915403,
+    "ast_hash": "7b582f29200bd2a54e2976b3c207c3c5",
+    "semantic_hash": ""
+  },
+  "tools/biometric_eval/exp9_real_replay_videos.py": {
+    "mtime": 1793688161.0,
+    "seen": 1793691794.0915415,
+    "ast_hash": "55c54c2506fc8a2539209bbfc5224225",
+    "semantic_hash": ""
+  },
+  "tools/biometric_eval/results/exp7_pad_backlight.json": {
+    "mtime": 1793688514.0,
+    "seen": 1793691794.091562,
+    "ast_hash": "f88b3af36310874a66b3780e6f8c1ca9",
+    "semantic_hash": ""
+  },
+  "tools/biometric_eval/results/exp8_parallax_3d.json": {
+    "mtime": 1793687960.0,
+    "seen": 1793691794.0915632,
+    "ast_hash": "fd091c4aa0db47721efdc203c8776814",
     "semantic_hash": ""
   }
 }
