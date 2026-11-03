@@ -7,8 +7,17 @@ Branch: `genspark_ai_developer_backlight_spoof`.
 | # | Item | State |
 |---|---|---|
 | 0.1 | Code audit of dev liveness path | DONE (see §1) |
-| 0.2 | Experiments (backlight FP, planar-vs-3D parallax, PAD CNN) | TODO |
-| 0.3 | Final implementation plan | TODO |
+| 0.2 | Experiments (backlight FP, planar-vs-3D parallax, PAD CNN) | DONE exp7/exp8 (§2) |
+| 0.3 | exp10 — validate PROPOSED policy (inner-face pixel PAD + MiniFASNet + mandatory 3D) | IN PROGRESS (session 2) |
+| 0.4 | Kotlin WP-A..WP-E implementation + JVM test gates | IN PROGRESS (session 2) |
+| 0.5 | Final implementation plan / agent runbook (§4) | IN PROGRESS (session 2) |
+
+### Session-2 resume notes (toolchain, no Android SDK in sandbox)
+- kotlinc 2.0.21 + junit 4.13.2 + hamcrest are downloaded to `scratch/tk/` (git-ignored). Re-create with:
+  `mkdir -p scratch/tk && cd scratch/tk && curl -sLO https://github.com/JetBrains/kotlin/releases/download/v2.0.21/kotlin-compiler-2.0.21.zip && unzip -q kotlin-compiler-2.0.21.zip && curl -sL -o junit.jar https://repo1.maven.org/maven2/junit/junit/4.13.2/junit-4.13.2.jar && curl -sL -o hamcrest.jar https://repo1.maven.org/maven2/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar`
+- Python: `pip install ai-edge-litert pyarrow opencv-python pillow numpy`; LFW parquet -> `.datasets/lfw.parquet`
+  (`https://huggingface.co/datasets/bitmind/lfw/resolve/main/data/train-00000-of-00001.parquet`), subset extractor `scratch/extract_lfw_subset.py`.
+- silentface.tflite I/O verified: input `[1,3,80,80]` float32 NCHW, **BGR**, raw 0..255; output `[1,3]` (softmax index 1 = live).
 
 ## 1. Audit findings on dev (f85e7a8)
 1. `AttendanceScreen.captureClick` → `livenessOrchestrator.onFrame(signals, patSignals, mesh, padScore = null)`.
