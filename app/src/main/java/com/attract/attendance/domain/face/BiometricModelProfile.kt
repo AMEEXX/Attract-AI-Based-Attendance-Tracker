@@ -30,7 +30,7 @@ data class BiometricModelProfile(
     val embeddingDim: Int = 512,
     val alignmentVersion: String = "similarity_5point_v1",
     val qualityConfigId: String = "quality_v4",
-    val livenessPolicyId: String = "liveness_v4",
+    val livenessPolicyId: String = "liveness_v5_doc22",
     val livenessPolicy: LivenessPolicy = LivenessPolicy(),
     val flags: BiometricFeatureFlags = BiometricFeatureFlags.CURRENT,
     val acceptThreshold: Float = 0.50f,

@@ -23,6 +23,12 @@ data class PresentationAttackSignals(
      */
     val centerTextureStdDev: Float,
     val noiseSigma: Float = 0f,
+    /**
+     * Doc 22 WP-B: MiniFASNetV2 (silentface.tflite) live probability for this frame, measured on the 2.7x
+     * wide crop (softmax index 1). Null when the model is unavailable. The pixel statistics above are
+     * measured on the INNER 1.0x face crop; this score is the only field that comes from the wide crop.
+     */
+    val padScore: Float? = null,
 ) {
     /**
      * Noise-compensated high frequency energy (Doc 21 WP-D):

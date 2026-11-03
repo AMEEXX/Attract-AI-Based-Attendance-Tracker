@@ -1029,9 +1029,8 @@ fun AttendanceScreen(
         val livenessEval = if (isEnrollmentMode) {
             LivenessEngine.check(signals, lastQualitySignals, patSignals)
         } else {
-            livenessOrchestrator.onFrame(signals, patSignals, bundle?.meshResult, null)
-            val (risk, eval) = livenessOrchestrator.evaluate(signals, patSignals)
-            eval
+            livenessOrchestrator.onFrame(signals, patSignals, bundle?.meshResult, trackId = bundle?.trackId)
+            livenessOrchestrator.evaluate(signals).result
         }
         if (livenessEval is LivenessResult.Rejected) {
             statusMessage = when (livenessEval.reason) {
@@ -1384,8 +1383,7 @@ fun AttendanceScreen(
                     val livenessReCheck = if (isEnroll) {
                         LivenessEngine.check(currentSignals)
                     } else {
-                        val (risk, eval) = livenessOrchestrator.evaluate(currentSignals, null)
-                        eval
+                        livenessOrchestrator.evaluate(currentSignals).result
                     }
                     if (livenessReCheck is LivenessResult.Rejected) {
                         state = SessionScreenState.CAPTURING

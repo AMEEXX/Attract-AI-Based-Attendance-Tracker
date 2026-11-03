@@ -31,6 +31,10 @@ object ParallaxDepthTest {
         val poseDeltaDeg: Float = 0f,
     )
 
+    /** Doc 22 WP-E: angular separation of two frames = max(|Δyaw|, |Δpitch|). Nodding counts as much as turning. */
+    fun poseDelta(a: FaceMeshResult, b: FaceMeshResult): Float =
+        maxOf(abs(a.yawDeg - b.yawDeg), abs(a.pitchDeg - b.pitchDeg))
+
     /**
      * Maps a median parallax residual (normalised by IOD) to a 0..1 depth score.
      * residual == minParallaxResidual  -> exactly 0.50 (the LOW-risk "live" boundary used by RiskFusion)
@@ -50,13 +54,13 @@ object ParallaxDepthTest {
             return Result(depthScore = null, depthInconclusive = true)
         }
 
-        // Search for a pair with sufficient angular delta
+        // Search for the pair with the largest angular delta = max(|Δyaw|, |Δpitch|)
         var bestPair: Pair<FaceMeshResult, FaceMeshResult>? = null
         var maxDelta = 0f
 
         for (i in frames.indices) {
             for (j in i + 1 until frames.size) {
-                val delta = abs(frames[i].yawDeg - frames[j].yawDeg)
+                val delta = poseDelta(frames[i], frames[j])
                 if (delta > maxDelta) {
                     maxDelta = delta
                     bestPair = Pair(frames[i], frames[j])
@@ -72,7 +76,7 @@ object ParallaxDepthTest {
         val frameB = bestPair.second
 
         if (frameA.landmarks.size < 478 || frameB.landmarks.size < 478) {
-            return Result(depthScore = null, depthInconclusive = true)
+            return Result(depthScore = null, depthInconclusive = true, poseDeltaDeg = maxDelta)
         }
 
         // Inter-Ocular Distance (IOD) on destination frame (landmarks 33 and 263)
@@ -83,14 +87,14 @@ object ParallaxDepthTest {
         ).toDouble()
 
         if (iod < 1e-4) {
-            return Result(depthScore = null, depthInconclusive = true)
+            return Result(depthScore = null, depthInconclusive = true, poseDeltaDeg = maxDelta)
         }
 
         val srcAnchors = HOMOGRAPHY_ANCHORS.map { frameA.landmarks[it] }
         val dstAnchors = HOMOGRAPHY_ANCHORS.map { frameB.landmarks[it] }
 
         val h = Homography.solve4Points(srcAnchors, dstAnchors)
-            ?: return Result(depthScore = null, depthInconclusive = true)
+            ?: return Result(depthScore = null, depthInconclusive = true, poseDeltaDeg = maxDelta)
 
         // Compute residuals across all 33 stable points
         val residuals = mutableListOf<Float>()
