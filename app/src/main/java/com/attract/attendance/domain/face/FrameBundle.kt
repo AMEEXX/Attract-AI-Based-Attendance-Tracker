@@ -21,6 +21,11 @@ data class FrameBundle(
     val wideCrop: Bitmap? = null,
     val padCrops: Pair<IntArray, IntArray>? = null,
     val meshResult: FaceMeshResult? = null,
+    /**
+     * Doc 22: presentation-attack signals for THIS frame. Pixel statistics are measured on the INNER 1.0x
+     * aligned face crop; [PresentationAttackSignals.padScore] is MiniFASNetV2 on the 2.7x wide crop.
+     */
+    val patSignals: PresentationAttackSignals? = null,
     val trackFrameCount: Int = 1,
     val error: String? = null,
 ) {

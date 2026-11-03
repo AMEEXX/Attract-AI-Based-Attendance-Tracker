@@ -116,6 +116,9 @@ import kotlinx.coroutines.withContext
 
 private const val TAG = "AttendanceScreen"
 
+/** Doc 22 WP-C: pause auto-capture after a HIGH (spoof) liveness verdict so the message stays readable. */
+private const val LIVENESS_REJECT_COOLDOWN_MS = 1500L
+
 enum class SessionScreenState {
     READY,
     CAPTURING,
@@ -299,6 +302,9 @@ fun AttendanceScreen(
     var showEnrollBottomSheet by remember { mutableStateOf(false) }
     var selectedStudentForEnroll by remember(targetStudentForStandalone) { mutableStateOf<StudentSummary?>(targetStudentForStandalone) }
     val livenessOrchestrator = remember { com.attract.attendance.domain.face.liveness.LivenessOrchestrator() }
+    // Doc 22 WP-C: after a HIGH (spoof) verdict the orchestrator is reset; auto-capture pauses briefly so the
+    // rejection message stays readable before evidence is rebuilt from fresh frames.
+    var livenessCooldownUntilMs by remember { mutableLongStateOf(0L) }
     var isScreenFlashActive by remember { mutableStateOf(false) }
 
     // R04/R05: attempt tokens, feedback job tracking, and active teacher authorization grant
@@ -1022,22 +1028,51 @@ fun AttendanceScreen(
             return
         }
 
-        // Presentation-attack signals (LLD-12 / doc-20 WP1.3) computed on the wide crop
-        val patCrop = bundle?.wideCrop ?: frameBitmap
-        val patSignals = PresentationAttackAnalyzer.analyze(patCrop)
+        // Doc 22 WP-A/WP-B: presentation-attack signals were computed per preview frame in CameraPreview
+        // (pixel stats on the INNER 1.0x aligned crop, MiniFASNetV2 on the 2.7x wide crop). Fallback: inner crop.
+        val patSignals = bundle?.patSignals ?: PresentationAttackAnalyzer.analyze(frameBitmap, null)
 
+        // Live attendance: history is fed ONLY from the preview callback (single source, Doc 22 WP-C);
+        // here we just read the fused verdict. Enrollment keeps the single-frame LivenessEngine check.
         val livenessEval = if (isEnrollmentMode) {
             LivenessEngine.check(signals, lastQualitySignals, patSignals)
         } else {
-            livenessOrchestrator.onFrame(signals, patSignals, bundle?.meshResult, trackId = bundle?.trackId)
-            livenessOrchestrator.evaluate(signals).result
+            val verdict = livenessOrchestrator.evaluate(signals)
+            AppLog.i(
+                TAG,
+                "[LIVENESS] risk=${verdict.risk} guidance=${verdict.guidance} pad=${verdict.evidence.padScore} " +
+                    "depth=${verdict.evidence.depthScore} inconclusive=${verdict.evidence.depthInconclusive} " +
+                    "poseDelta=${verdict.depth.poseDeltaDeg} residual=${verdict.depth.residual} " +
+                    "pixelVeto=${verdict.evidence.legacyPixelVeto} frames=${verdict.evidence.trackFrames}"
+            )
+            if (verdict.risk == com.attract.attendance.domain.face.liveness.LivenessRisk.HIGH) {
+                livenessOrchestrator.reset()
+                livenessCooldownUntilMs = System.currentTimeMillis() + LIVENESS_REJECT_COOLDOWN_MS
+            }
+            verdict.result
         }
         if (livenessEval is LivenessResult.Rejected) {
+            if (livenessEval.reason == com.attract.attendance.domain.face.LivenessReason.ACTIVE_CHECK_REQUIRED) {
+                // NOT a spoof verdict: guide the student (small head turn / random challenge) and keep previewing.
+                val challenge = livenessOrchestrator.currentChallenge
+                statusMessage = if (challenge == null) {
+                    AttendanceStrings.LIVENESS_TURN_HEAD_TITLE
+                } else {
+                    AttendanceStrings.LIVENESS_CHALLENGE_TITLE
+                }
+                statusSubtitle = if (challenge == null) {
+                    AttendanceStrings.LIVENESS_TURN_HEAD_SUBTITLE
+                } else {
+                    livenessEval.message
+                }
+                isValidatingFrame = false
+                return
+            }
             statusMessage = when (livenessEval.reason) {
-                com.attract.attendance.domain.face.LivenessReason.SCREEN_REPLAY_SUSPECTED -> "Screen replay detected"
-                com.attract.attendance.domain.face.LivenessReason.PRINT_PHOTO_SUSPECTED -> "Printed photo detected"
-                com.attract.attendance.domain.face.LivenessReason.INSUFFICIENT_VARIANCE -> "Liveness check failed — static image"
-                else -> "Liveness check failed"
+                com.attract.attendance.domain.face.LivenessReason.SCREEN_REPLAY_SUSPECTED -> AttendanceStrings.LIVENESS_SCREEN_TITLE
+                com.attract.attendance.domain.face.LivenessReason.PRINT_PHOTO_SUSPECTED -> AttendanceStrings.LIVENESS_PRINT_TITLE
+                com.attract.attendance.domain.face.LivenessReason.INSUFFICIENT_VARIANCE -> AttendanceStrings.LIVENESS_STATIC_TITLE
+                else -> AttendanceStrings.LIVENESS_SPOOF_TITLE
             }
             statusSubtitle = livenessEval.message
             isValidatingFrame = false
@@ -1190,6 +1225,7 @@ fun AttendanceScreen(
             if (state != SessionScreenState.CAPTURING) return
             if (isValidatingFrame) return
             if (autoCaptureJob?.isActive == true) return
+            if (System.currentTimeMillis() < livenessCooldownUntilMs) return
 
             val signals = bundle.qualitySignals
             if (signals == null || signals.faceCount == 0) {
@@ -1632,6 +1668,25 @@ fun AttendanceScreen(
                                 evMax = 4,
                                 currentlyActive = isScreenFlashActive
                             )
+                            // Doc 22 WP-C: feed the liveness orchestrator from EVERY analysed preview frame (single
+                            // source of history) so 3D head-turn parallax, the 3-frame PAD median and the 2-of-3 pixel
+                            // veto accumulate BEFORE capture. Live attendance only; enrollment has its own checks.
+                            val isEnrollmentFlow = isStandaloneMode || inlineEnrollmentTarget != null
+                            if (!isEnrollmentFlow &&
+                                (state == SessionScreenState.CAPTURING || state == SessionScreenState.READY)
+                            ) {
+                                if (signals != null && signals.faceCount == 1) {
+                                    livenessOrchestrator.onFrame(
+                                        signals = signals,
+                                        patSignals = bundle.patSignals,
+                                        mesh = bundle.meshResult,
+                                        trackId = bundle.trackId,
+                                    )
+                                } else if (signals != null && signals.faceCount != 1) {
+                                    // Face left the frame or a second face appeared: never carry evidence across.
+                                    livenessOrchestrator.reset()
+                                }
+                            }
                             processAutoCaptureFrame(bundle)
                         },
                         onFrameAnalyzed = { signals, frameBitmap ->
