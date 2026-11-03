@@ -1,70 +1,113 @@
 # LLD-09 — Face Quality Engine
 
-**Status:** Draft — ready for review and freeze
-**Requirements source:** SDD §§15–16, 22, 70–72
+**Status:** Implemented & Verified (Updated 2026-11-02 via Doc 20 & Doc 21)
+**Requirements source:** SDD §§15–16, 22, 70–72, Doc 20 (WP4, WP5), Doc 21 (WP-A, WP-B, WP-F)
 **Depends on:** LLD-08, Decision D-004
 
 ## Goal
 
-Reject unusable observations before liveness or embedding inference and choose diverse high-quality enrollment frames. Quality guidance is helpful, short, and never exposes biometric scores.
+Deterministically reject unusable face observations before liveness or embedding inference and choose high-quality frames. Quality evaluation must be contrast-normalized, resolution-independent, and pure Kotlin (zero `android.*` framework dependencies) for instant JVM testability.
+
+## Architecture & Crop Metrics (Doc 21 WP-B)
+
+Full-frame raw Laplacian variance is fundamentally flawed because it measures contrast $\times$ resolution rather than focus blur: halving the light quarters the variance, and switching to 720p drastically reduces pixel-step gradients.
+
+Doc 21 WP-B introduces `CropMetrics` operating directly on the canonical 112×112 ARGB pixel array (`IntArray`):
+
+```text
+luma(p) = 0.299 R + 0.587 G + 0.114 B                      // Rec.601 float
+ROI     = rows 20..99, cols 16..95                        // 80×80 central facial ROI
+
+faceLuma   = mean(luma over ROI)                          // raw crop central brightness
+
+noiseSigma = sqrt(pi/2) * mean(|r|) / 6                   // Immerkær noise standard deviation
+             where r = conv(Y_roi, [[1,-2,1],[-2,4,-2],[1,-2,1]])
+
+levels(crop):                                             // robust auto-levels
+   lo = P2(luma ROI), hi = P98(luma ROI)                  // 256-bin histogram percentiles
+   if (hi - lo < 8) return crop
+   gain = min(200 / (hi - lo), 4.0)
+   c' = clamp((c - lo) * gain + 28, 0, 255)
+
+cropSharpness:  computed on levels(crop)
+   Y = luma ROI; Y = gaussianBlur(Y, sigma=0.6)           // 5-tap separable kernel
+   L = 4-neighbour Laplacian(Y)
+   cropSharpness = std(L) / (std(Y) + 1e-3)               // contrast-normalized
+```
 
 ## Contract
 
 ```kotlin
 sealed interface QualityResult {
-  data class Accepted(val score: Float, val poseBucket: PoseBucket) : QualityResult
-  data class Rejected(val reason: QualityReason) : QualityResult
+    data class Accepted(val score: Float, val poseBucket: PoseBucket, val configVersion: Int = 4) : QualityResult
+    data class Rejected(val reason: QualityReason) : QualityResult
 }
-enum class QualityReason { NO_FACE, MULTIPLE_FACES, TOO_SMALL, OFF_CENTER, POSE, BLUR, DARK, OVEREXPOSED, EYES_UNCLEAR }
+
+enum class QualityReason {
+    NO_FACE,
+    MULTIPLE_FACES,
+    TOO_SMALL,
+    OFF_CENTER,
+    POSE,
+    POSE_NOT_STRAIGHT,
+    POSE_NOT_LEFT,
+    POSE_NOT_RIGHT,
+    POSE_NOT_DOWN,
+    BLUR,
+    DARK,
+    OVEREXPOSED,
+    EYES_UNCLEAR,
+}
 ```
 
-Hard gates: exactly one face (`faceCount == 1`), minimum face size (`faceRatio >= 0.08`), in-frame bounds (`centerX`, `centerY` within 0.25..0.75 margin), valid crop, and maximum extreme pose (`|pitch| <= 20°`; yaw is gated **per capture step**, see below). Soft signals: blur (`blurVariance >= 20.0`), luminance/histogram (`brightness` within 50.0..220.0), pose, eye-open probability when detector supplies it, and framing. Null/unsupported eye probabilities are “unavailable,” not fake closed eyes; the configured policy decides whether other signals suffice.
+## FaceQualityConfig v4 (`quality_v4`)
 
-## Step-Aware Pose Gating (Straight → Left → Right)
+Version 4 thresholds calibrated from empirical benchmarks on LFW and device simulations:
 
-The global `|yaw| <= 20°` gate applies **only to the STRAIGHT step**. Because enrollment requires genuine profile turns, the POSE hard gate must be evaluated against an explicit per-step expected-yaw window supplied by the caller:
-
-| Capture step | Required ML Kit `headEulerAngleY` window | Reject reason if outside window |
+| Parameter | Value | Purpose |
 |---|---|---|
-| 1 — Straight | `-15° .. +15°` | `POSE_NOT_STRAIGHT` |
-| 2 — Left profile | `-45° .. -20°` (negative yaw = turned left) | `POSE_NOT_LEFT` |
-| 3 — Right profile | `+20° .. +45°` | `POSE_NOT_RIGHT` |
+| `minCropSharpness` | `0.09f` | Contrast-normalized sharpness floor (passes 100% of sharp genuine faces; rejects heavy defocus) |
+| `minFaceLuma` | `12f` | Minimum central face luma (permits dim scenes handled by multi-frame fusion / levels) |
+| `maxFaceLuma` | `235f` | Overexposure ceiling |
+| `minInterOcularPx` | `28f` | Minimum pupil-to-pupil distance in raw pixels (resolution-independent; replaces `faceRatio`) |
+| `straightMaxYawDegrees` | `12.0f` | Frontal yaw gate for enrollment step 1 |
+| `profileMinYawDegrees` | `18.0f` | Minimum turn angle for profile enrollment |
+| `profileMaxYawDegrees` | `40.0f` | Maximum turn angle for profile enrollment |
+| `maxAttendanceYawDegrees` | `30.0f` | Natural yaw tolerance for live attendance |
+| `maxRollDegrees` | `15.0f` | Head tilt limit |
+| `minPitchDegrees` / `maxPitchDegrees` | `-25.0f` / `+20.0f` | Natural chest-height phone hold pitch acceptance |
 
-Rules:
-1. `evaluate(signals, config)` gains an optional `expectedPose: ExpectedPose` parameter (`STRAIGHT | LEFT | RIGHT`). When absent, behavior falls back to the legacy straight-only window (backwards compatible).
-2. All other hard gates (single face, size, framing, blur, brightness, eyes, `|pitch| <= 20°`) apply identically to every step.
-3. A frame captured for step N is validated against step N's window BEFORE the session advances; a passing frame advances the step, a failing frame re-prompts with step-specific guidance (“Turn your head slightly LEFT” / “Turn back to center”). The session NEVER advances on a pose-mismatched frame.
-4. Yaw sign conventions vary across devices/cameras; the adapter layer (LLD-08) normalizes `headEulerAngleY` sign relative to the mirrored preview so LEFT is consistently negative on all devices. Calibration values are versioned in `FaceQualityConfig`.
-5. Duplicate-frame protection: consecutive accepted frames must differ in yaw by at least the step-window separation (>= 15°), preventing three identical frontal frames from satisfying the flow.
+## Evaluation Order & Priority (Doc 21 WP-F)
 
-Configuration is versioned: hard limits, score weights, pose bins, and reject reasons. Values match calibrated production configuration (`FaceQualityConfig.calibrationDefaults()`). The engine returns reason category and score only to face/session internals; UI receives mapped guidance such as “Move closer” or “Move to better lighting.”
+When evaluating a frame, checks execute in strict priority order:
 
-## Per-Frame Quality Gating on CLICK
-1. On each student CLICK, the Quality Engine immediately evaluates brightness luminance, face presence, blur, and pose direction.
-2. If luminance < minThreshold (dark) or no face is detected: Return `QualityResult.Rejected(QualityReason.DARK)`. The UI displays a guidance warning ("Low lighting detected. Move to bright light") and DOES NOT advance the pose step.
-3. The button only unlocks to SUBMIT after all 3 pose steps (Straight, Left, Right) receive `QualityResult.Accepted` against their respective per-step pose windows. A frame is only accepted for the step currently prompted; mismatched poses are rejected with step-specific guidance and do not advance the flow.
+1. **NO_FACE**: `faceCount == 0` or non-finite signals.
+2. **MULTIPLE_FACES**: `faceCount > 1`.
+3. **TOO_SMALL**: `interOcularPx < minInterOcularPx (28px)` (or fallback `faceRatio < 0.08` if inter-ocular distance unavailable).
+4. **OFF_CENTER**: `centerX` or `centerY` outside `0.20..0.80`.
+5. **POSE**: Extreme roll ($> 15^\circ$) or extreme pitch ($< -25^\circ$ or $> +20^\circ$).
+6. **POSE WINDOW**: Evaluated against `ExpectedPose` (`STRAIGHT`, `LEFT`, `RIGHT`, `ANY`). Live attendance uses `ExpectedPose.ANY`.
+7. **BLUR**:
+   - If `cropSharpness >= 0f`: `cropSharpness < minCropSharpness (0.09f)`.
+   - Fallback (legacy callers/tests): `blurVariance < minBlurVariance`.
+8. **LIGHTING**:
+   - If `faceLuma >= 0f`: `faceLuma < minFaceLuma (12f)` $\to$ `DARK`; `faceLuma > maxFaceLuma (235f)` $\to$ `OVEREXPOSED`.
+   - Fallback: `brightness < minBrightness (40f)`.
+9. **EYES_UNCLEAR**: Eye openness evaluated only when eye probabilities are provided by detector/mesh (`requireEyes = false` by default for YOLO).
 
-For 3–5 templates, retain candidates from distinct pose/quality buckets rather than five near-identical consecutive frames. Reject duplicates based on tracking time and perceptual/crop similarity. Stop on the configured count or controlled timeout; timeout asks the student to try again and stores nothing.
+## UX Blur Hysteresis & Feedback
 
-## Build and tests
+- **String Rename:** "Too blurry" is renamed to `"Hold the phone still for a moment"`.
+- **Blur Hysteresis:** Because sensor noise in dim light can transiently affect single-frame sharpness, blur guidance is displayed only when `BLUR` persists for $\ge 3$ consecutive frames.
+- **Dark Lighting:** When `DARK` is detected, screen flash illuminates automatically without disruptive error text.
 
-Implement pixel statistics and detection-signal adapters as pure functions. Validate crop bounds before OpenCV/bitmap work. Use fixture images/synthetic buffers with no retained production face data.
+## Tests
 
-| Scenario                               | Expected result                    |
-| -------------------------------------- | ---------------------------------- |
-| no/multiple faces                      | named rejection                    |
-| small/off-frame face                   | rejected before liveness/model     |
-| blurred/dark/overexposed fixtures      | correct category                   |
-| unsupported eye probability            | safe configured fallback, no crash |
-| similar sequential enrollment frames   | only one retained                  |
-| varied valid pose frames               | distinct buckets selected          |
-| threshold configuration version change | result carries current version |
-| frontal frame offered for LEFT step     | `POSE_NOT_LEFT`, step does not advance |
-| valid left-profile frame for LEFT step  | accepted, advances to RIGHT step      |
-| three identical frontal frames          | duplicate-yaw guard rejects           |
-| yaw sign flipped on another device      | normalized adapter yields same bucket |
-| malformed crop/NaN signal              | safe reject, no native crash       |
+| Test Case | Verification Target |
+|---|---|
+| `CropMetricsTest` (8 tests) | Validates Rec.601 luma, 80×80 ROI bounds, noise sigma, auto-levels histogram stretch, and crop sharpness against mathematical expectations. |
+| `FaceQualityEngineTest` (23 tests) | Tests small face ratio with sufficient inter-ocular distance accepted; low crop sharpness rejected as blur; dark sharp crop accepted; pose steps (straight, left, right); malformed non-finite signals; config versioning. |
 
-## Definition of done
+## Definition of Done
 
-The engine produces deterministic, testable quality outcomes, retains no image data, and sends only useful observations to expensive ML.
+Evaluation is 100% pure Kotlin; quality decisions are independent of camera stream resolution; full-frame Laplacian variance never decides rejection; student guidance is prioritized and debounced.

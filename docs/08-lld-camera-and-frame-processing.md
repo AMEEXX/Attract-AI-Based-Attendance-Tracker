@@ -1,64 +1,79 @@
 # LLD-08 — Camera & Frame Processing
 
-**Status:** Implemented & Fixed (2026-08-23) — face-crop pipeline corrected
-**Requirements source:** SDD §§15–16, 22, 28–29, 71–73
+**Status:** Implemented & Verified (Updated 2026-11-02 via Doc 20 & Doc 21)
+**Requirements source:** SDD §§15–16, 22, 28–29, 71–73, Doc 20 (WP2), Doc 21 (WP-C, WP-E)
 **Depends on:** LLD-01, LLD-06
 
 ## Goal
 
-Provide a smooth front-camera preview and a controlled stream of useful face observations. Camera work must never run expensive ML on every preview frame and must never leak an `ImageProxy`.
+Provide a smooth front-camera preview (1280×720 YUV) and a controlled stream of useful face observations for recognition, quality evaluation, and liveness. Camera work must never run expensive ML on every preview frame, must dynamically adapt exposure to dim and backlit environments, and must never leak an `ImageProxy`.
 
-## Components and ownership
+## Components and Architecture
 
 ```text
-CameraController (platform) → FrameAnalyzer → FaceDetectorAdapter → CandidateSelector
-                                              ↓
-                                      SessionCoordinator event
+CameraX PreviewView + ImageAnalysis (1280×720 YUV, 10–30 fps)
+    │
+    ├── Dynamic AE Target FPS (CameraCharacteristics -> CameraTuning.chooseAeFpsRange)
+    ├── Face-metered AE (startFocusAndMetering with FLAG_AE re-issued every 1.5s on face center)
+    ├── EV Compensation Loop (CameraTuning.nextExposureIndex targeting cropFaceLuma 110±20)
+    └── Screen Flash Overlay (CameraTuning.shouldUseScreenFlash on dim/backlit scenes)
+    │
+    ▼
+YoloFaceDetector (YOLOv8n-face, letterbox mapping, IoU FaceTracker)
+    │
+    ▼
+FaceAligner (5-point similarity transform -> 112×112 canonical aligned crop)
+    │
+    ├── CropMetrics (central 80×80 ROI luma, Immerkær noise sigma, levels stretch, cropSharpness)
+    ├── MediaPipe FaceMeshEngine (478 landmarks, blendshapes, 4×4 pose matrix)
+    └── PadCrop (wide 160×160 crop for PresentationAttackAnalyzer)
+    │
+    ▼
+TemporalCropBuffer (ring buffer of 4 aligned crops, TTL 600ms, IoU tracking)
+    │
+    ▼
+FrameBundle (emitted to AttendanceScreen for auto-capture and liveness orchestration)
 ```
 
-The attendance screen owns a lifecycle-aware `CameraController`; the session coordinator tells it when to bind/unbind. Use CameraX Preview plus ImageAnalysis with `STRATEGY_KEEP_ONLY_LATEST`. The analyzer closes every `ImageProxy` in `finally`, even after cancellation/error.
+The attendance screen owns a lifecycle-aware `CameraPreview`; the session coordinator tells it when to bind/unbind. ImageAnalysis operates with `STRATEGY_KEEP_ONLY_LATEST` and throttles analyzer runs to at most 1 frame per 150ms. The analyzer closes every `ImageProxy` in `finally`, even after cancellation/error.
 
-`FrameCandidate` contains attempt ID, monotonic capture time, orientation/mirroring metadata, face bounding box/tracking ID, and a **short-lived face-cropped pixel buffer** (NOT the full camera frame). It is not persisted or emitted to UI/logging.
+## Pipeline Details
 
-## Pipeline
-
-1. Bind front camera only when session state permits acquisition.
-2. Analyze latest frame using on-device `YOLOv8n-face` (`yolov8n_face.tflite`) TFLite detector.
-3. Reject zero-face frames (emptySignals, null crop) and multiple-face frames (multipleSignals, null crop) explicitly before passing to quality gate.
-4. For exactly one detected face: extract 5 facial landmarks and landmark-derived pose angles, then generate a canonical 112×112 **ArcFace similarity-aligned bitmap** (`FaceAligner.align()`) to pass downstream.
-5. CandidateSelector accepts at most one useful candidate per configurable minimum interval and never starts a second expensive pipeline while one attempt is running.
-6. Close original frame immediately; downstream copies expire on attempt cancellation.
-
-**Critical invariant (updated 2026-10-02):** The `onFrameAnalyzed` callback second parameter is the **112×112 ArcFace aligned face bitmap** (`FaceAligner.align(bitmap, primaryFace.landmarks)`) when exactly one face is detected, `null` otherwise. The full camera frame is NEVER passed downstream. 5-point similarity alignment normalizes roll tilt, eye line horizon, and scale.
-
-## Lifecycle/error behavior
-
-Bind after permission and pinning are ready; unbind on ending, background destruction, camera failure, and configuration recreation before rebinding. Camera unavailable, permission revoked, or no front camera becomes a recoverable session error. Preview may display only the current student; never capture to gallery or save a photo.
-
-## Build steps
-
-1. Create fake FrameSource and transform utility with golden buffers.
-2. Implement CameraX bind/unbind and KEEP_ONLY_LATEST analyzer.
-3. Integrate ML Kit detector adapter and tracking.
-4. Add single-flight CandidateSelector and profiling counters.
-5. Test on target rotation, front camera, low memory, and long sessions.
+1. **Resolution & Format:**
+   Analysis stream uses 1280×720 YUV_420_888 (`ResolutionSelector` with `FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER`), ensuring crisp resolution for face detection and inter-ocular distance measurement.
+2. **Dynamic AE Target FPS Selection (Doc 21 WP-E):**
+   Queries `CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES` for the active lens facing. Uses `CameraTuning.chooseAeFpsRange()` to select an FPS range with lower bound in 7..15 and upper bound $\ge 24$, allowing longer integration times (up to ~100ms) in low-light conditions. Never hard-codes FPS ranges.
+3. **Face-Metered AE & EV Compensation Loop (Doc 21 WP-E):**
+   - When a face is tracked, `startFocusAndMetering` with `FLAG_AE` is re-issued every 1.5s centered on the face box (with X coordinate horizontally mirrored for the front camera).
+   - Every 500ms, an EV adjustment loop evaluates central `cropFaceLuma` against target $110 \pm 20$, stepping EV compensation index up or down by 1 within hardware range limits.
+4. **Screen Flash Assistance:**
+   If `cropFaceLuma < 35` or `< 60` with EV at maximum, `CameraTuning.shouldUseScreenFlash` activates `ScreenFlashOverlay` with hysteresis (deactivating when luma $> 85$).
+5. **Detection & Alignment:**
+   - Detects face with `YoloFaceDetector` (`yolov8n_face.tflite`).
+   - If 0 faces: emits `emptySignals` and null crop.
+   - If > 1 face: emits `multipleSignals` and null crop.
+   - For exactly 1 face: aligns with 5-point similarity transform via `FaceAligner.align()` to 112×112 ArcFace canonical dimensions.
+6. **Multi-Frame Fused Crop Buffer (Doc 21 WP-C):**
+   - `TemporalCropBuffer` retains a ring buffer of the last 4 aligned crops with `timestampNanos` and bounding box.
+   - Clears automatically if track changes (IoU < 0.5) or time delta > 600ms.
+   - Fuses crops via `TemporalDenoiser.fuse()`: drops frames with NCC < 0.92, averages channels, and applies robust auto-levels when dim (`faceLuma < 90`) or backlit (`frameMeanLuma - faceLuma > 50`).
+7. **Downstream Delivery:**
+   `FrameBundle` delivers `alignedCrop`, `fusedCrop`, `wideCrop`, `qualitySignals`, `meshResult`, `trackId`, and `trackFrameCount`. Original frames are immediately closed; raw images are never persisted.
 
 ## Tests
 
-| Scenario                                        | Expected result                                    |
-| ----------------------------------------------- | -------------------------------------------------- |
-| analyzer receives 30fps while inference is busy | only latest useful frame retained; no queue growth |
-| every success/error/cancel path                 | ImageProxy closed exactly once                     |
-| rotation/mirror/crop fixtures                   | face crop maps to expected coordinates             |
-| zero face                                       | emptySignals, null crop — quality gate rejects     |
-| multiple faces                                  | multipleSignals, null crop — quality gate rejects  |
-| single face                                     | face-cropped bitmap passed (not full frame)        |
-| stale track / rapid two people                  | candidate rejected or restart required             |
-| unbind during analysis                          | job cancelled and resources released               |
-| camera permission revocation                    | recoverable guidance, no crash                     |
-| 30-minute simulated session                     | bounded memory/fps and no frame leak               |
+| Scenario | Expected result |
+|---|---|
+| Analyzer receives 30fps while inference is busy | Only latest frame retained; no queue growth |
+| Every success/error/cancel path | ImageProxy closed exactly once in `finally` |
+| Zero face detected | emptySignals, null crop emitted |
+| Multiple faces detected | multipleSignals, null crop emitted |
+| Single face detected | 112×112 aligned face crop and fusedCrop emitted |
+| High noise/low light | Dynamic FPS range chosen; face-metered AE issued every 1.5s |
+| Drifting face track | IoU > 0.5 maintains trackId; jump creates new track |
+| Buffer capacity & TTL | `TemporalCropBuffer` caps at 4 frames; expires after 600ms |
+| Unbind during analysis | Camera unbinds cleanly, resources released |
 
-## Definition of done
+## Definition of Done
 
-Preview remains responsive, heavy processing is single-flight and sampled, **face-crop is applied before any TFLite call**, transformations are tested, and raw frames never persist.
-
+Preview is smooth and responsive; analysis is non-blocking and zero-allocation on the hot path; camera adapts to dim and backlit classrooms; aligned and fused crops are provided cleanly to recognition; raw frames are never persisted.

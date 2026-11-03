@@ -1,59 +1,54 @@
 # StudentTemplatePair
 
-> God node · 41 connections · `app/src/main/java/com/attract/attendance/domain/face/RecognitionDecisionEngine.kt`
+> 18 nodes
 
-**Community:** [Integration & Unit Tests](Integration_&_Unit_Tests.md)
+## Key Concepts
 
-## Connections by Relation
+- **StudentTemplatePair** (43 connections) — `app/src/main/java/com/attract/attendance/domain/face/RecognitionDecisionEngine.kt`
+- **ConsolidatedFaceVerificationPipelineTest** (11 connections) — `app/src/test/java/com/attract/attendance/domain/face/ConsolidatedFaceVerificationPipelineTest.kt`
+- **RecognitionDecisionEngineTest** (9 connections) — `app/src/test/java/com/attract/attendance/domain/face/RecognitionDecisionEngineTest.kt`
+- **.testEndToEndSimulationAndInvariants()** (8 connections) — `app/src/test/java/com/attract/attendance/domain/face/ConsolidatedFaceVerificationPipelineTest.kt`
+- **.testEmbeddingMatchingAndRosterIsolation()** (6 connections) — `app/src/test/java/com/attract/attendance/domain/face/ConsolidatedFaceVerificationPipelineTest.kt`
+- **.testLivenessSystematicCombinations()** (6 connections) — `app/src/test/java/com/attract/attendance/domain/face/ConsolidatedFaceVerificationPipelineTest.kt`
+- **.createSignals()** (5 connections) — `app/src/test/java/com/attract/attendance/domain/face/ConsolidatedFaceVerificationPipelineTest.kt`
+- **.generateSyntheticEmbedding()** (5 connections) — `app/src/test/java/com/attract/attendance/domain/face/ConsolidatedFaceVerificationPipelineTest.kt`
+- **.testMalformedBiometricInputs()** (5 connections) — `app/src/test/java/com/attract/attendance/domain/face/ConsolidatedFaceVerificationPipelineTest.kt`
+- **.testPoseSequencingAndDiversity()** (5 connections) — `app/src/test/java/com/attract/attendance/domain/face/ConsolidatedFaceVerificationPipelineTest.kt`
+- **.testQualityBoundaryMatrix()** (4 connections) — `app/src/test/java/com/attract/attendance/domain/face/ConsolidatedFaceVerificationPipelineTest.kt`
+- **.hashCode()** (3 connections) — `app/src/main/java/com/attract/attendance/domain/face/RecognitionDecisionEngine.kt`
+- **.closeScores_returnsAmbiguous()** (3 connections) — `app/src/test/java/com/attract/attendance/domain/face/RecognitionDecisionEngineTest.kt`
+- **.highMatch_returnsMatch()** (3 connections) — `app/src/test/java/com/attract/attendance/domain/face/RecognitionDecisionEngineTest.kt`
+- **.lowSimilarity_returnsUnknown()** (2 connections) — `app/src/test/java/com/attract/attendance/domain/face/RecognitionDecisionEngineTest.kt`
+- **.equals()** (1 connections) — `app/src/main/java/com/attract/attendance/domain/face/RecognitionDecisionEngine.kt`
+- **.noTemplates_returnsNoTemplatesAvailable()** (1 connections) — `app/src/test/java/com/attract/attendance/domain/face/RecognitionDecisionEngineTest.kt`
+- **FloatArray** (1 connections)
 
-### calls
-- .engine() `INFERRED`
-- .recognitionDiagnosticsAndMatrix() `EXTRACTED`
-- .runFullLfwThreeFrameBenchmark() `INFERRED`
-- .runPipeline() `INFERRED`
-- .`R05 reproduction - finished engine throws IllegalStateException if called before reset`() `INFERRED`
-- .realHumanBiometricRecognitionAndImposterEvaluation() `INFERRED`
-- .template() `INFERRED`
-- .testEndToEndSimulationAndInvariants() `INFERRED`
-- .`all fusion strategies preserve strong single-frame match`() `INFERRED`
-- .terminalEngineCannotBeReused_andMustBeClearedBeforeNewAttempt() `EXTRACTED`
-- .testEmbeddingMatchingAndRosterIsolation() `INFERRED`
-- .`no truncation or padding conversion exists for stale vectors`() `INFERRED`
-- .`no compatible templates fails fast to unknown`() `INFERRED`
-- .testMalformedBiometricInputs() `INFERRED`
-- .`R03 reproduction - candidate identical to existing student must be flagged as duplicate`() `INFERRED`
-- .`R06 reproduction - associate keeps last template score while grouped max keeps highest`() `INFERRED`
-- .duplicateChecker_matchingExistingStudent_returnsSuspicious() `INFERRED`
-- .realImageTest_multiPoseRecognitionFlow() `INFERRED`
-- .realImposterTest_verifiesCrossIdentityRejection() `INFERRED`
-- .duplicateChecker_selfExclusionForReEnrollment_returnsClear() `INFERRED`
-- *…and 3 more `calls` connection(s) not listed (lowest-degree first to go)*
+## Relationships
 
-### contains
-- RecognitionDecisionEngine.kt `EXTRACTED`
+- [RecognitionDecisionEngine](RecognitionDecisionEngine.md) (12 shared connections)
+- [assertTrue](assertTrue.md) (8 shared connections)
+- [.evaluate](evaluate.md) (5 shared connections)
+- [TemplateCompatibility](TemplateCompatibility.md) (3 shared connections)
+- [FullWorkflowAcceptanceTest.kt](FullWorkflowAcceptanceTest.kt.md) (3 shared connections)
+- [AdaptiveVerificationEngineTest](AdaptiveVerificationEngineTest.md) (3 shared connections)
+- [.`R05 reproduction - finished engine throws IllegalStateException if called before reset`](`R05_reproduction_-_finished_engine_throws_IllegalStateException_if_called_before_reset`.md) (3 shared connections)
+- [test](test.md) (2 shared connections)
+- [.runPipeline](runPipeline.md) (2 shared connections)
+- [.extractEmbedding](extractEmbedding.md) (2 shared connections)
+- [EnrollmentAndDuplicateTest](EnrollmentAndDuplicateTest.md) (2 shared connections)
+- [FaceQualitySignals](FaceQualitySignals.md) (2 shared connections)
 
-### imports
-- FullWorkflowAcceptanceTest.kt `EXTRACTED`
-- RecognitionPathDiagnosticTest.kt `EXTRACTED`
-- CoordinatorAndAuthTest.kt `EXTRACTED`
+## Source Files
 
-### method
-- .hashCode() `EXTRACTED`
-- .equals() `EXTRACTED`
+- `app/src/main/java/com/attract/attendance/domain/face/RecognitionDecisionEngine.kt`
+- `app/src/test/java/com/attract/attendance/domain/face/ConsolidatedFaceVerificationPipelineTest.kt`
+- `app/src/test/java/com/attract/attendance/domain/face/RecognitionDecisionEngineTest.kt`
 
-### references
-- .fuse() `EXTRACTED`
-- .fuse() `EXTRACTED`
-- .evaluate() `EXTRACTED`
-- .checkDuplicate() `EXTRACTED`
-- .fuse() `EXTRACTED`
-- .fuse() `EXTRACTED`
-- .fuse() `EXTRACTED`
-- .scoreGroupedMax() `EXTRACTED`
-- .partition() `EXTRACTED`
-- .fuse() `EXTRACTED`
-- .fuse() `EXTRACTED`
-- .fuse() `EXTRACTED`
+## Audit Trail
+
+- EXTRACTED: 55 (60%)
+- INFERRED: 37 (40%)
+- AMBIGUOUS: 0 (0%)
 
 ---
 

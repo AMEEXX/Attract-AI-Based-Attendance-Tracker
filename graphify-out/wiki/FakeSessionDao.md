@@ -1,72 +1,79 @@
 # FakeSessionDao
 
-> God node · 61 connections · `app/src/sharedTest/java/com/attract/attendance/test/FakeDaos.kt`
+> 86 nodes
 
-**Community:** [Quality & Adaptive Verification](Quality_&_Adaptive_Verification.md)
+## Key Concepts
 
-## Connections by Relation
+- **FakeSessionDao** (61 connections) — `app/src/sharedTest/java/com/attract/attendance/test/FakeDaos.kt`
+- **FakeAttendanceRecordDao** (60 connections) — `app/src/sharedTest/java/com/attract/attendance/test/FakeDaos.kt`
+- **FakeStudentDao** (58 connections) — `app/src/sharedTest/java/com/attract/attendance/test/FakeDaos.kt`
+- **RecordPresentCommand** (31 connections) — `app/src/main/java/com/attract/attendance/domain/RecordPresentCommand.kt`
+- **FakeDeviceSecurityChecker** (31 connections) — `app/src/sharedTest/java/com/attract/attendance/lockdown/domain/FakeDeviceSecurityChecker.kt`
+- **StudentSummary** (29 connections) — `app/src/main/java/com/attract/attendance/core/model/AttendanceModels.kt`
+- **FakeLockTaskController** (29 connections) — `app/src/sharedTest/java/com/attract/attendance/lockdown/domain/FakeLockTaskController.kt`
+- **SessionCoordinator** (28 connections) — `app/src/main/java/com/attract/attendance/domain/session/SessionCoordinator.kt`
+- **FakeTeacherAuthenticator** (26 connections) — `app/src/sharedTest/java/com/attract/attendance/lockdown/domain/FakeTeacherAuthenticator.kt`
+- **LiveSessionFunctionalTest.kt** (26 connections) — `app/src/test/java/com/attract/attendance/functional/LiveSessionFunctionalTest.kt`
+- **SessionStateMachineComprehensiveFunctionalTest.kt** (26 connections) — `app/src/test/java/com/attract/attendance/functional/SessionStateMachineComprehensiveFunctionalTest.kt`
+- **SessionRecoveryE2EAndroidTest.kt** (22 connections) — `app/src/androidTest/java/com/attract/attendance/feature/recovery/SessionRecoveryE2EAndroidTest.kt`
+- **FinalizeFaceSessionCommand** (21 connections) — `app/src/main/java/com/attract/attendance/domain/FinalizeFaceSessionCommand.kt`
+- **FaceSessionE2EAndroidTest.kt** (21 connections) — `app/src/androidTest/java/com/attract/attendance/feature/session/FaceSessionE2EAndroidTest.kt`
+- **SessionRecoveryFunctionalTest.kt** (21 connections) — `app/src/test/java/com/attract/attendance/functional/SessionRecoveryFunctionalTest.kt`
+- **FT-04: `SessionStateMachineComprehensiveFunctionalTest`** (16 connections) — `docs/00-master-implementation-plan.md`
+- **SessionRecoveryManager** (13 connections) — `app/src/main/java/com/attract/attendance/domain/session/SessionRecoveryManager.kt`
+- **SessionStateMachineComprehensiveFunctionalTest** (12 connections) — `app/src/test/java/com/attract/attendance/functional/SessionStateMachineComprehensiveFunctionalTest.kt`
+- **SessionCoordinatorTest** (11 connections) — `app/src/test/java/com/attract/attendance/domain/session/SessionCoordinatorTest.kt`
+- **.processRelaunch_activeSessionDetected_recoveryManagerResumes()** (11 connections) — `app/src/androidTest/java/com/attract/attendance/feature/recovery/SessionRecoveryE2EAndroidTest.kt`
+- **.liveSession_fullLifecycle_startRecognizeRecordAndFinalize()** (11 connections) — `app/src/test/java/com/attract/attendance/functional/LiveSessionFunctionalTest.kt`
+- **.crashRecovery_activeSessionFound_resumesSessionWhenAuthAndSecurityPass()** (11 connections) — `app/src/test/java/com/attract/attendance/functional/SessionRecoveryFunctionalTest.kt`
+- **.crashRecovery_endSession_finalizesActiveSession()** (11 connections) — `app/src/test/java/com/attract/attendance/functional/SessionRecoveryFunctionalTest.kt`
+- **AuthMethod** (10 connections) — `app/src/main/java/com/attract/attendance/lockdown/domain/LockdownModels.kt`
+- **.endSession_authenticated_finalizesAndReleasesLockTask()** (10 connections) — `app/src/test/java/com/attract/attendance/domain/session/SessionRecoveryManagerTest.kt`
+- *... and 61 more nodes in this community*
 
-### calls
-- .processRelaunch_activeSessionDetected_recoveryManagerResumes() `EXTRACTED`
-- .crashRecovery_activeSessionFound_resumesSessionWhenAuthAndSecurityPass() `EXTRACTED`
-- .resumeSession_authenticatedAndSecurityReady_returnsSuccess() `EXTRACTED`
-- .liveSession_fullLifecycle_startRecognizeRecordAndFinalize() `EXTRACTED`
-- .crashRecovery_endSession_finalizesActiveSession() `EXTRACTED`
-- .endSession_authenticated_finalizesAndReleasesLockTask() `EXTRACTED`
-- .resumeSession_authFailed_returnsAuthFailed() `EXTRACTED`
-- .crashRecovery_noActiveSession_returnsNoActiveSession() `EXTRACTED`
-- .sessionCoordinator_teacherAssistanceWithGrant() `EXTRACTED`
-- .endAuthSucceeds_finalizationPersistsThenEnds() `EXTRACTED`
-- .sessionCheckIn_faceRecognized_attendanceMarked() `EXTRACTED`
-- .execute_partialAbsentScenario_somePresentRestNeedAbsentFinalization() `EXTRACTED`
-- .execute_unrecordedStudentsAreMarkedAbsentAndSessionEnded() `EXTRACTED`
-- .sessionCoordinator_deterministicRetryTransitions() `EXTRACTED`
-- .endRequestedAndAuthSuccess_transitionsToEnded() `EXTRACTED`
-- .fullCheckInFlow_recordsPresentAndTransitionsToSuccessFeedback() `EXTRACTED`
-- .staleAttemptIdEvent_isDiscarded() `EXTRACTED`
-- .startReady_transitionsToReadyState() `EXTRACTED`
-- .twoRetryExhaustion_triggersTeacherAssistancePath() `EXTRACTED`
-- .endAuthFails_sessionRemainsActive() `EXTRACTED`
-- *…and 10 more `calls` connection(s) not listed (lowest-degree first to go)*
+## Relationships
 
-### contains
-- FakeDaos.kt `EXTRACTED`
+- [AttendanceSessionEntity](AttendanceSessionEntity.md) (54 shared connections)
+- [test](test.md) (39 shared connections)
+- [assertTrue](assertTrue.md) (36 shared connections)
+- [AuthResult](AuthResult.md) (23 shared connections)
+- [AttendanceStatus](AttendanceStatus.md) (22 shared connections)
+- [StudentEntity](StudentEntity.md) (17 shared connections)
+- [AttractRepository.kt](AttractRepository.kt.md) (16 shared connections)
+- [FT-01: `SecurityPipelineFunctionalTest`](FT-01-_`SecurityPipelineFunctionalTest`.md) (14 shared connections)
+- [Unit Test Suite Assessment (107 Tests, 100% Pass)](Unit_Test_Suite_Assessment_107_Tests,_100__Pass.md) (11 shared connections)
+- [SessionState](SessionState.md) (8 shared connections)
+- [FullWorkflowAcceptanceTest.kt](FullWorkflowAcceptanceTest.kt.md) (6 shared connections)
+- [QualityResult](QualityResult.md) (5 shared connections)
 
-### implements
-- SessionDao `EXTRACTED`
+## Source Files
 
-### imports
-- SessionRecoveryManagerTest.kt `EXTRACTED`
-- LiveSessionFunctionalTest.kt `EXTRACTED`
-- SessionStateMachineComprehensiveFunctionalTest.kt `EXTRACTED`
-- CoordinatorAndAuthTest.kt `EXTRACTED`
-- SessionCoordinatorTest.kt `EXTRACTED`
-- SessionRecoveryE2EAndroidTest.kt `EXTRACTED`
-- FaceSessionE2EAndroidTest.kt `EXTRACTED`
-- SessionRecoveryFunctionalTest.kt `EXTRACTED`
-- FinalizeFaceSessionCommandTest.kt `EXTRACTED`
-- RecordPresentCommandTest.kt `EXTRACTED`
+- `app/src/androidTest/java/com/attract/attendance/feature/recovery/SessionRecoveryE2EAndroidTest.kt`
+- `app/src/androidTest/java/com/attract/attendance/feature/session/FaceSessionE2EAndroidTest.kt`
+- `app/src/main/java/com/attract/attendance/core/model/AttendanceModels.kt`
+- `app/src/main/java/com/attract/attendance/domain/FinalizeFaceSessionCommand.kt`
+- `app/src/main/java/com/attract/attendance/domain/RecordPresentCommand.kt`
+- `app/src/main/java/com/attract/attendance/domain/session/SessionCoordinator.kt`
+- `app/src/main/java/com/attract/attendance/domain/session/SessionRecoveryManager.kt`
+- `app/src/main/java/com/attract/attendance/domain/session/SessionState.kt`
+- `app/src/main/java/com/attract/attendance/lockdown/domain/LockdownModels.kt`
+- `app/src/sharedTest/java/com/attract/attendance/lockdown/domain/FakeDeviceSecurityChecker.kt`
+- `app/src/sharedTest/java/com/attract/attendance/lockdown/domain/FakeLockTaskController.kt`
+- `app/src/sharedTest/java/com/attract/attendance/lockdown/domain/FakeTeacherAuthenticator.kt`
+- `app/src/sharedTest/java/com/attract/attendance/test/FakeDaos.kt`
+- `app/src/test/java/com/attract/attendance/domain/FinalizeFaceSessionCommandTest.kt`
+- `app/src/test/java/com/attract/attendance/domain/RecordPresentCommandTest.kt`
+- `app/src/test/java/com/attract/attendance/domain/session/CoordinatorAndAuthTest.kt`
+- `app/src/test/java/com/attract/attendance/domain/session/SessionCoordinatorTest.kt`
+- `app/src/test/java/com/attract/attendance/domain/session/SessionRecoveryManagerTest.kt`
+- `app/src/test/java/com/attract/attendance/functional/LiveSessionFunctionalTest.kt`
+- `app/src/test/java/com/attract/attendance/functional/SessionRecoveryFunctionalTest.kt`
 
-### method
-- .observeActiveForClass() `EXTRACTED`
-- .observeActiveSummaryForClass() `EXTRACTED`
-- .observeEndedForClass() `EXTRACTED`
-- .observeSessionsForDate() `EXTRACTED`
-- .activeFaceSession() `EXTRACTED`
-- .activeForClass() `EXTRACTED`
-- .all() `EXTRACTED`
-- .find() `EXTRACTED`
-- .insert() `EXTRACTED`
-- .insertAll() `EXTRACTED`
-- .findStaleActiveSessions() `EXTRACTED`
-- .finish() `EXTRACTED`
-- .observeSessionDaysForMonth() `EXTRACTED`
-- .observeEndedSessionCountForClass() `EXTRACTED`
-- .latestIdForClass() `EXTRACTED`
-- .reactivate() `EXTRACTED`
-- .deleteEnded() `EXTRACTED`
-- .deleteActiveFaceSessionsForClass() `EXTRACTED`
-- .deleteAllActiveFaceSessions() `EXTRACTED`
+## Audit Trail
+
+- EXTRACTED: 496 (85%)
+- INFERRED: 87 (15%)
+- AMBIGUOUS: 0 (0%)
 
 ---
 

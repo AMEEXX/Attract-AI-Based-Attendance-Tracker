@@ -1,4 +1,4 @@
-﻿# 00  —  Document Control and Waterfall Delivery Plan
+# 00  —  Document Control and Waterfall Delivery Plan
 
 **Project:** Attract  —  Face-Based Attendance Tracker  
 **Status:** Active  
@@ -69,3 +69,19 @@ Only one LLD is drafted at a time in the listed approval order. A later LLD may 
   - PHASE 1 instrumentation added: ATTRACT_RECOGNITION logs per-frame usability/rejection reason, embedding dim/norm, gallery size, incompatible-filter count, per-template top1/top2/margin, threshold comparison, final decision (JVM-safe).
   - RecognitionPathDiagnosticTest (emulator, real JPEGs -> real pipeline): clean DB, production enrollment for AMIT/B/C, Room table verified (1 template each, 192-D, mobilefacenet_192d_v2), gallery class-scoping verified, SAME-image cosine=1.0, DIFFERENT-image genuine top1 correct with sims 0.53–0.77 and margins 0.48–0.61, impostor sims 0.07–0.08, adaptive Match framesUsed=1 -> markRecognizedPresent -> AI_RECOGNITION row + AlreadyPresent duplicate guard. ALL MATRIX ROWS PASS on API-35 AND Android 16.
   - ROOT CAUSE CLASSIFICATION (phone symptom): Category K/A — biometric path objectively sound; phone behavior matches ZERO persisted templates at recognition time (pre-fix DB pull: 0 templates/0 sessions), i.e., enrollment never completed/stored. Post-enrollment template-count log added to make any recurrence instantly visible. Fallback/session logic untouched; thresholds unchanged.
+
+- **Doc 20 Face-ID Grade Recognition, Anti-Spoofing & Low-Light Pipeline (2026-11-02)**:
+  - Upgraded detection from ML Kit to YOLOv8n-face (letterbox mapping, IoU tracking).
+  - Integrated MediaPipe FaceLandmarker (478 landmarks, blendshapes, canonical head pose from 4x4 matrix).
+  - Upgraded embedding engine to ArcFace 512-D BGR (`arcface512_bgr_noseyaw_v5`, accept=0.50, margin=0.08, confirmBelow=0.60).
+  - Implemented multi-layered anti-spoofing architecture: MiniFASNet CNN PAD, Motion-Parallax 3D depth test (`ParallaxDepthTest`), Blink detection (`BlinkDetector`), Photometric Screen Flash test (`FlashLivenessTest`), and multi-factor risk fusion (`RiskFusion`, `LivenessOrchestrator`).
+  - Implemented camera low-light foundation: CameraX 1280x720 YUV analysis stream, EV compensation, and screen flash overlay.
+  - ProGuard/R8 rules added for MediaPipe Tasks Vision and shaded AutoValue (commit `39a221b`).
+
+- **Doc 21 Low-Light Blur Gate, PAD False-Positive Fix & UX Overhaul (2026-11-02)**:
+  - Pure Kotlin `CropMetrics`: Rec.601 ROI luma, Immerkær noise sigma, percentile auto-levels (P2..P98 stretch), and contrast-normalized `cropSharpness` (separable 5-tap Gaussian + 4-neighbour Laplacian).
+  - Quality Gate v4: Replaced resolution-sensitive full-frame Laplacian variance with `cropSharpness >= 0.09f`, `faceLuma` in 12..235, and `interOcularPx >= 28f` (resolution-independent size gate).
+  - Multi-frame fused embedding: `TemporalDenoiser` / `TemporalCropBuffer` (ring buffer of 4 aligned crops, TTL 600ms, IoU tracking, levels applied on dim/backlit scenes). Strict prohibition of CLAHE on ArcFace input.
+  - Noise-compensated PAD pixel gates: High-frequency moiré energy compensated for ISP noise ($\text{hfeCompensated} = \max(0, \text{hfe} \times 255 - 3.6 \times \sigma_{\text{noise}}) / 255$), relaxed thresholds (0.22/0.25), and mandatory 2-of-3 temporal confirmation.
+  - Camera hardware tuning: Dynamic AE target FPS selection from `CameraCharacteristics` via `CameraTuning.chooseAeFpsRange()`, face-metered AE with `FLAG_AE` re-issued every 1.5s on face center, and EV compensation loop.
+  - UX: Guidance priority (`NO_FACE > MULTIPLE > TOO_SMALL > POSE > DARK > BLUR`), 3-frame blur hysteresis, string rename to "Hold the phone still for a moment", and live attendance auto-capture (2–4 usable frames on track <= 600ms).

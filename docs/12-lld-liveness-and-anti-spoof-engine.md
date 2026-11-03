@@ -1,71 +1,111 @@
-# LLD-12 — Liveness / Anti-Spoof Engine
+# LLD-12 — Liveness & Anti-Spoof Engine
 
-**Status:** Draft — ready for review and freeze after Gate B  
-**Requirements source:** SDD §§27–28, 70–73  
+**Status:** Implemented & Verified (Updated 2026-11-02 via Doc 20 & Doc 21)
+**Requirements source:** SDD §§27–28, 70–73, Doc 20 (WP1, WP6, WP7), Doc 21 (WP-D)
 **Depends on:** LLD-08, LLD-09, Decision D-004
 
 ## Goal
 
-Verify that the presented face is live before recognition/enrollment. Passive RGB liveness is attempted first; uncertain cases use an active challenge. This is a risk-reduction control, not an assertion of hardware depth-sensing security.
+Verify that the presented face is a live, physically present human being rather than a presentation attack (printed photo, digital screen replay, video loop, or synthetic feed). Protection is achieved by stacking multiple independent signals so an attacker must defeat all layers simultaneously.
 
-## Contract and flow
+## Multi-Layered Anti-Spoof Architecture (Doc 20 & Doc 21)
+
+```text
+Camera Stream (1280×720 YUV)
+   │
+   ├── Un-averaged Wide Crop (160×160)
+   │     ↓
+   │   PresentationAttackAnalyzer (Doc 21 WP-D)
+   │     ├─ Noise-compensated moiré energy: hfeCompensated = max(0, hfe*255 - 3.6*noiseSigma) / 255
+   │     ├─ Specular highlight reflection ratio: maxSpecularHighlightRatio <= 0.25
+   │     └─ Central flat texture std dev: centerTextureStdDev >= 3.0
+   │     ↓
+   │   PresentationAttackDetector (2-of-3 temporal confirmation: never rejects on 1 frame alone)
+   │
+   ├── Canonical Aligned Crop (112×112)
+   │     ↓
+   │   PadCnnEngine (MiniFASNet x2 TFLite) → padScore (live >= 0.80, spoof < 0.25)
+   │
+   ├── MediaPipe FaceMeshEngine (478 landmarks & blendshapes)
+   │     ├─ ParallaxDepthTest: homography residual over yaw movement (distinguishes 3D face from 2D plane)
+   │     └─ BlinkDetector: natural eyeBlink blendshape transitions (open -> closed -> open)
+   │
+   ├── Photometric Screen Flash (optional for dim / medium risk)
+   │     ↓
+   │   FlashLivenessTest: Pearson correlation of screen pulses + differential nose/cheek shading
+   │
+   ▼
+LivenessOrchestrator & RiskFusion
+   ├─ LOW    → Passed
+   ├─ MEDIUM → Trigger targeted micro-challenge (smile, turn head, blink)
+   └─ HIGH   → Rejected (student-safe message; fails closed)
+```
+
+## Contract
 
 ```kotlin
+enum class LivenessRisk { LOW, MEDIUM, HIGH }
+
+enum class LivenessReason {
+    PASSED,
+    EYES_CLOSED_OR_STATIC,
+    PASSIVE_SPOOF_SUSPECTED,
+    SCREEN_REPLAY_SUSPECTED,
+    PRINT_PHOTO_SUSPECTED,
+    INSUFFICIENT_VARIANCE,
+}
+
 sealed interface LivenessResult {
-  data class Passed(val configVersion: String) : LivenessResult
-  data class NeedsActiveChallenge(val reason: SafeLivenessReason) : LivenessResult
-  data class Failed(val reason: SafeLivenessReason) : LivenessResult
-  data class Unavailable(val error: LivenessError) : LivenessResult
+    data object Passed : LivenessResult
+    data class Rejected(val reason: LivenessReason, val message: String) : LivenessResult
 }
 ```
 
-Passive adapter evaluates quality-approved frames against calibrated liveness gates:
-- **Eye Openness Gate**: Both eyes must have open probability $\ge 0.25$.
-- **Blur & Detail Gate**: Frame blur variance must be $\ge 15.0$ to reject static flat photos.
-- **Ambient Lighting Gate**: Brightness must be $\ge 45.0$ for valid liveness evaluation.
-- **Cross-Frame Motion Variance Gate**: Cross-frame eye openness variance $< 0.0001$ AND head yaw variance $< 0.001$ rejects static photo presentation attacks as `INSUFFICIENT_VARIANCE`.
+## Doc 21 WP-D: Noise-Compensated Pixel Gates
 
-### Presentation-Attack Detection (per-frame, applied to EVERY captured frame)
+In dim rooms, camera sensors raise ISO and ISP sharpening amplifies high-frequency noise. Raw high-frequency energy previously exceeded 0.18 on 100% of genuine faces, causing false "Screen detected" rejects.
 
-Each frame offered for capture (enrollment or recognition) passes these checks BEFORE acceptance. A failing frame is rejected with student-safe guidance and the capture must be retaken:
+Doc 21 WP-D fixes this:
 
-1. **Multi-Face Gate** (from LLD-09): `faceCount > 1` → reject (“Only one person at a time”). Catches group-photo and video-of-others attacks.
-2. **Screen-Replay / Phone-Screen Detection** — detects a face displayed on another device's screen:
-   - Moiré/interference pattern check: high-frequency spectral energy in the face crop (FFT or high-pass energy ratio) above calibrated threshold → `SCREEN_REPLAY_SUSPECTED`.
-   - Specular highlight check: presence of saturated near-white blobs with sharp edges inside the face box (screen glare/reflection signature) → `SCREEN_REPLAY_SUSPECTED`.
-   - Screen-color cast check: dominant hue distribution of the crop skewed toward screen-emission signatures (cool/blue-shifted skin tones, banding) → flagged as soft signal feeding the score.
-3. **Printed-Photo Detection** — detects a physical photo held before the camera:
-   - Uniform low-texture background ring around the face box (photo paper border) → soft signal.
-   - Abnormally flat local contrast (low Laplacian variance in skin regions combined with hard print edges at the crop boundary) → `PRINT_PHOTO_SUSPECTED`.
-4. **Blur Gate** (LLD-09): `blurVariance < config.minBlurVariance` → “Image blurry” — also catches re-photographed/re-displayed imagery that lost detail.
-5. All thresholds are calibration parameters versioned with `FaceQualityConfig`; reasons are collapsed to the safe message “Verification failed. Please try again.” — never exposing attack classification to students.
+1. **Noise Compensation:**
+   Computes Immerkær noise standard deviation $\sigma_{\text{noise}}$ on the 96×96 gray downsample and compensates high-frequency energy:
+   $$\text{hfeCompensated} = \frac{\max(0, \text{hfe} \times 255 - 3.6 \times \sigma_{\text{noise}})}{255}$$
+2. **Calibrated Thresholds (`LivenessPolicy` v4):**
+   - `maxHighFrequencyEnergy`: `0.22f` (applied strictly to `hfeCompensated`).
+   - `maxSpecularHighlightRatio`: `0.25f` (accommodates oily skin/forehead glare while blocking screens).
+   - `printFlatTextureStdDev`: `3.0f` (unconditional flat-texture detection without blur coupling).
+3. **Quality/Spoof Separation:**
+   Deleted legacy `blurVariance < 15` and `brightness < 45` checks from `LivenessEngine`. Dim light and blur are image quality concerns managed by `FaceQualityEngine`, NEVER presentation attacks.
+4. **PAD Crop Conditioning:**
+   Pixel PAD runs strictly on the **un-levelled, un-averaged** newest crop. Multi-frame averaging or histogram equalization must never be applied to PAD inputs, as averaging suppresses screen moiré patterns.
+5. **2-of-3 Temporal Confirmation:**
+   A single-frame pixel PAD trip must NEVER reject on its own. `LivenessOrchestrator` maintains a ring buffer of the last 3 frame verdicts and requires the same rejection reason on $\ge 2$ of the 3 frames before issuing a veto.
 
-Active fallback randomly selects one short challenge supported by device/test evidence: blink, turn left, or turn right. It creates a nonce, start/deadline, required landmark/pose sequence, and attempt ID. The UI shows one large instruction; observation is evaluated only for that nonce/attempt. Do not persist challenge frames, nonce history, or detailed spoof reasons. One retry is allowed; repeated failure goes to teacher assistance.
+## Multi-Factor Risk Fusion (`RiskFusion`)
 
-## Model and failure policy
+`RiskFusion.decide(evidence, policy)` combines independent signals:
 
-The initial candidate remains Silent-Face-Anti-Spoofing only if Android/TFLite export, license, latency, and Gate B attack evidence pass. The adapter interface permits replacement without changing session/enrollment logic. If passive is unavailable or fails Gate B, active challenge is the MVP control; it does not silently pass liveness.
+- **Rule 1 (Injection):** Camera timing violation or synthetic zero-jitter $\to$ `HIGH`.
+- **Rule 2 (Pixel Veto):** Confirmed $\ge$ 2-of-3 legacy pixel attack $\to$ `HIGH`.
+- **Rule 3 (CNN PAD):** MiniFASNet score $< 0.25$ (or $< 0.12$ in very dim light) $\to$ `HIGH`.
+- **Rule 4 (Photometric):** Flash reflection correlation $< 0.35$ $\to$ `HIGH`.
+- **Rule 5 (Challenge):** Timed-out or failed micro-challenge $\to$ `HIGH`.
+- **Rule 6 (Planar 2D):** Homography residual $< 0.020$ with angular movement (conclusive flat plane) $\to$ `HIGH`.
+- **Rule 7 (Live Corroborated):** Strong CNN PAD ($\ge 0.80$) corroborated by 3D depth, natural blink, or flash reflection $\to$ `LOW`.
+- **Rule 8 (Challenge Passed):** Completed micro-challenge with supporting cues $\to$ `LOW`.
+- **Rule 9 (Dark Room Path):** Verified flash correlation $\ge 0.75$ and depth $\ge 0.50$ in total darkness $\to$ `LOW`.
+- **Rule 10 (Inconclusive):** Otherwise $\to$ `MEDIUM` (requests natural active verification).
 
-Failure message is “Verification failed. Please try again.” No student sees confidence, model name, or attack classification. Unavailable model/camera input yields teacher assistance, not PRESENT.
+## Tests
 
-## Build and tests
-
-1. Build fake passive/active engines and state tests.
-2. Implement sequence buffering with strict size/time cap and zero persistence.
-3. Integrate selected model only after compatibility/licensing review.
-4. Execute Gate B on print, phone, tablet, and practical replay attacks.
-
-| Scenario | Expected result |
+| Test Suite | Coverage Target |
 |---|---|
-| passive confident live | Passed |
-| passive ambiguous | one active challenge |
-| passive reject | retry/assist, never recognition |
-| active wrong/expired/stale nonce | failed |
-| model missing/corrupt | Unavailable and teacher path |
-| print/phone/tablet/replay corpus | results reported as APCER/BPCER evidence |
-| repeated attempts | bounded retries, buffers cleared |
-| rotated/low-light quality-rejected input | liveness not invoked |
+| `PresentationAttackDetectorTest` (8 tests) | Tests noise-compensated HFE passing genuine dim faces, screen replay detection, specular glare rejection, flat print photo rejection, non-finite signal safety, and legacy integration. |
+| `RiskFusionTest` (10 tests) | Validates all 10 risk fusion rules (injection, pixel veto, CNN threshold, planar homography, challenge outcomes, dark room flash path). |
+| `ParallaxDepthTestTest` (4 tests) | Proves 3D human faces yield high residual depth scores while flat planar targets yield low scores. |
+| `BlinkDetectorTest` (5 tests) | Validates full open $\to$ closed $\to$ open blink cycle; rejects permanently closed eyes and insufficient frames. |
+| `FlashLivenessTestTest` (6 tests) | Validates Pearson correlation and differential facial shading against screen replay attacks. |
 
-## Definition of done
+## Definition of Done
 
-All liveness outcomes are bounded and fail closed. Gate B records attack, latency, and usability evidence before any production threshold/model is frozen.
+Liveness defense stacks learned CNN texture, 3D motion parallax, and photometric cues; genuine users in dim rooms are never falsely flagged as screens; all decisions fail closed safely with student-safe guidance.

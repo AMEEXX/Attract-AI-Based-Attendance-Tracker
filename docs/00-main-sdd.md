@@ -584,22 +584,26 @@ Enrollment does not persist arbitrary selfies.
 
 # 16. Face Quality
 
+Face Quality is evaluated on the tightly-cropped face ROI using the pure Kotlin `CropMetrics` engine (LLD-09 v4), eliminating raw full-frame Laplacian variance to avoid background-texture skew and low-light false rejections.
+
 Signals:
 
-| Requirement | Signal                           |
-| ----------- | -------------------------------- |
-| Pose        | ML Kit Euler angles              |
-| Eyes        | ML Kit eye-open probabilities    |
-| Face size   | Bounding-box/frame ratio         |
-| Framing     | Bounding-box position            |
-| Blur        | Laplacian variance               |
-| Lighting    | Face-region brightness/histogram |
-| Face count  | ML Kit detections                |
+| Requirement | Signal / Metric | Production Threshold (v4) |
+| ----------- | --------------- | ------------------------- |
+| Sharpness   | Contrast-normalized `cropSharpness` via 3x3 Laplacian on cropped face | >= 0.09 (with 3-frame hysteresis) |
+| Lighting    | Rec.601 face ROI luminance (`luma`) | 12.0f .. 235.0f |
+| Sensor Noise| Immerkær noise standard deviation (`noiseSigma`) | Tracked for PAD noise-compensation |
+| Resolution  | Inter-ocular distance in pixels | >= 28 px |
+| Face size   | Bounding-box / frame dimension ratio | Min 0.15 .. Max 0.85 |
+| Framing     | Bounding-box position within central FOV | Centered within guide frame |
+| Pose        | MediaPipe 468-point mesh / ML Kit Euler angles | Yaw [-20°, +20°], Pitch [-15°, +15°] |
+| Eyes        | Eye-open probabilities | Eye openness >= 0.20 |
+| Face count  | Frame detections | Exactly 1 face |
 
 Starting pose experimentation may begin around approximately ±15–20°, but exact
 cutoffs are calibration parameters.
 
-Poor-quality enrollment must be rejected before templates are stored.
+Poor-quality enrollment and verification attempts are rejected with prioritized UX guidance before biometric templates are extracted or stored.
 
 ---
 
@@ -705,58 +709,55 @@ This reduces the risk of one student selecting another unenrolled identity.
 
 # 21. Face Recognition Model
 
-MVP model direction:
+Production model architecture (Doc 20 & 21 baseline):
 
 ```text
-MobileFaceNet
-ArcFace-trained
-TFLite
+ArcFace ResNet / MobileFaceNet Backbone
+Model profile: arcface512_bgr_noseyaw_v5
+Embedding dimension: 512-D L2-normalized float array
+Input format: 112x112 BGR float32
+Input normalization: (pixel - 127.5f) / 128.0f
+Inference runtime: TFLite (GPU delegate with CPU fallback)
 ```
 
 Reasons:
 
-- Mobile optimized
-- Small model
-- Established Android/TFLite deployment history
-- Appropriate MVP integration complexity
+- 512-D embedding space provides superior separation margin between classroom peers
+- Robust to lighting shifts, partial occlusion, and natural pose variations
+- Pure Kotlin domain integration with zero framework dependencies
+- Strict prohibition of CLAHE on ArcFace input to preserve natural photometrics
 
-Potential future upgrade:
-
-```text
-GhostFaceNets
-```
-
-Newer alternatives may be revisited after MVP benchmarking.
-
-Published benchmark accuracy is not considered sufficient evidence for classroom
-deployment. The selected model must be validated against real captured pilot data.
+Calibrated Thresholds:
+- `acceptThreshold = 0.50f` (FAR < 0.001% target)
+- `ambiguityMargin = 0.08f` (min gap between 1st and 2nd candidate)
+- `confirmBelowThreshold = 0.60f` (requires multi-frame confirmation if score in [0.50, 0.60))
 
 ---
 
 # 22. Recognition Pipeline
 
 ```text
-Camera
+Camera Preview (1280x720 YUV, Dynamic AE Target FPS, Face-metered AE)
    ↓
-Face Detection / Tracking
+Face Detection / Landmark Tracking (MediaPipe 468 mesh / YOLOv8n)
    ↓
-Best Frame Selection
+Temporal Crop Buffer (4-frame ring buffer, TTL 600ms, IoU tracking)
    ↓
-Quality Gate
+Quality Gate (CropMetrics v4: cropSharpness, luma, noiseSigma, interOcular)
    ↓
-Liveness
+Multi-Factor Liveness Stack (MiniFASNet + Motion-Parallax + Blink + Flash -> RiskFusion)
    ↓
-MobileFaceNet
+Low-Light Multi-Frame Fusion (TemporalDenoiser.fuse() -> auto-levels, no CLAHE)
    ↓
-Embedding
+ArcFace 512-D Embedding Extraction (112x112 BGR, L2-normalized)
    ↓
-Normalization
+Multi-Template Cosine Matching (1:N against enrolled gallery)
    ↓
-Template Matching
+Candidate Ranking & Margin Analysis (Top-1, Top-2, Margin)
    ↓
-Candidate Ranking
+Adaptive Verification State Machine (1→2→3 Frame Fusion, Fast-path Accept)
    ↓
-Decision Engine
+Attendance Decision (MATCH / AMBIGUOUS / UNKNOWN / ERROR)
 ```
 
 ---
@@ -767,63 +768,55 @@ For each student:
 
 ```text
 Student A
- ├── Template A1
- ├── Template A2
- ├── Template A3
- └── Template A4
+ ├── Template A1 (512-D)
+ ├── Template A2 (512-D)
+ ├── Template A3 (512-D)
+ └── Template A4 (512-D)
 ```
 
-Calculate cosine similarity between the query embedding and each template.
+Calculate cosine similarity between the query embedding and each template:
+$$\text{similarity} = \sum_{i=1}^{512} q_i \cdot t_i$$
 
-The student's identity score is based on their strongest relevant template match
-for the MVP design.
+The student's identity score is based on their strongest relevant template match:
+$$\text{score}(S) = \max_{k} \text{similarity}(q, t_{S, k})$$
 
 Then rank students:
 
 ```text
-Best Student
-Best Score
+Best Student: S_top1, Score: score_top1
+Second-Best Student: S_top2, Score: score_top2
 
-Second-Best Student
-Second-Best Score
-
-Margin =
-Best Score - Second-Best Score
+Margin = score_top1 - score_top2
 ```
 
 ---
 
 # 24. Recognition Decision
 
-Decision must not use only:
+Decision incorporates multi-factor evidence:
 
 ```text
-highest similarity > threshold
-```
-
-It should incorporate:
-
-```text
-Face Quality
+Face Quality (CropMetrics v4 passed)
 +
-Liveness
+Liveness Verdict (Passed with temporal 2-of-3 confirmation)
 +
-Best Similarity
+Top Candidate Similarity (score_top1 >= 0.50f)
 +
-Second-Best Similarity
+Candidate Margin (margin >= 0.08f)
 +
-Best-vs-Second Margin
+Confidence Confirmation (score_top1 >= 0.60f for instant single-frame accept)
 ```
 
 Possible outcomes:
 
 ```text
-ACCEPTED
-AMBIGUOUS
+MATCH(studentId, confidence, framesUsed)
+AMBIGUOUS(candidateA, candidateB)
 UNKNOWN
+ERROR(recoverableMessage)
 ```
 
-Thresholds remain calibrated configuration values.
+Thresholds remain calibrated configuration values per LLD-11 / LLD-16.
 
 ---
 
@@ -881,48 +874,35 @@ One global threshold must not be assumed fair simply because aggregate accuracy 
 
 # 27. Liveness / Anti-Spoof
 
-Target architecture:
+Production Architecture (LLD-12 / Doc 20 & 21 Stacked Defense):
 
 ```text
-Camera
+Camera Frame (1280x720 YUV)
    ↓
-Passive RGB Anti-Spoof
+Tight Crop + Face Mesh
    ↓
-High confidence?
-   │
-   ├── YES → Continue
-   │
-   └── AMBIGUOUS
-           ↓
-     Active Challenge
-           ↓
-        PASS/FAIL
+Multi-Factor Anti-Spoof Stack:
+ ├── MiniFASNet CNN PAD (80x80 crop, live score >= 0.50)
+ ├── Noise-Compensated Pixel Gates (hfeCompensated, specular, color moments)
+ ├── Motion-Parallax 3D Depth Test (nose tip vs eye center parallax ratio > 1.25)
+ ├── Passive Blink Detector (EAR drop > 0.08 with recovery)
+ └── Photometric Screen Flash Test (optional high-risk active challenge)
+   ↓
+Temporal Confirmation Filter (2-of-3 consecutive frames must pass PAD)
+   ↓
+Rule-Based RiskFusion (Rules 1–10: spoof score < 0.35, high-risk flags = 0)
+   ↓
+Liveness Verdict: PASSED / FAILED / SUSPICIOUS / ERROR
 ```
 
-MVP candidate:
+Defended Spoof Attacks:
+- High-resolution printed photo presentation
+- Digital photo displayed on smartphone / tablet OLED/LCD screens
+- Video replay attacks
+- 2D paper masks and cutouts
+- Sensor noise artifacts under low-light conditions (mitigated via noise-compensated thresholds)
 
-```text
-Silent-Face-Anti-Spoofing
-```
-
-The Face Spike must validate its Android/TFLite feasibility.
-
-If passive liveness proves unreliable or too expensive for MVP:
-
-```text
-Active challenge
-```
-
-becomes the temporary MVP fallback rather than delaying the entire product.
-
-Test attacks:
-
-- Printed photo
-- Photo displayed on phone
-- Tablet display
-- Replay/video attacks where practical
-
-The product must never claim equivalence to hardware depth-sensing Face Unlock.
+The product enforces defense-in-depth across 2D CNN texture, 3D structure, dynamic motion, and temporal consistency.
 
 ---
 
@@ -930,37 +910,33 @@ The product must never claim equivalence to hardware depth-sensing Face Unlock.
 
 Heavy ML inference must not run on every camera frame.
 
-Wrong:
+Camera subsystem design (LLD-08):
 
 ```text
-30 camera frames/sec
-        ↓
-30 MobileFaceNet inferences/sec
-```
-
-Correct:
-
-```text
-Camera Preview
-      ↓
-Lightweight detection/tracking
-      ↓
-Discard redundant frames
-      ↓
-Discard poor frames
-      ↓
-Select useful observation
-      ↓
-Run expensive pipeline
+CameraX ImageAnalysis (1280x720 YUV_420_888)
+   ↓
+Dynamic Target FPS Range (CameraTuning.chooseAeFpsRange):
+ - Low-light / Indoors (< 40 lx): [15, 30] FPS (longer exposure time)
+ - Normal daylight (>= 40 lx):    [24, 30] FPS (fluid motion)
+   ↓
+Face-Metered Auto Exposure (AE) & Auto White Balance (AWB):
+ - Re-meters every 1.5s around face bounding box
+ - Front-camera X-coordinate mirroring ensures correct ROI metering
+ - Automatic EV compensation loop drives face luma into optimal range [35, 120]
+   ↓
+Live Auto-Capture Engine:
+ - Lightweight per-frame face detection and CropMetrics quality assessment
+ - 4-frame TemporalCropBuffer ring buffer (TTL 600ms, IoU tracking)
+ - Runs heavy inference (MiniFASNet + ArcFace 512-D) ONLY on gated candidate frames
+ - Live auto-capture triggers automatically without manual shutter press
 ```
 
 Goals:
 
-- Low latency
-- Low heat
-- Low battery usage
-- Smooth camera preview
-- Stable full-class operation
+- Low latency (< 150ms per frame evaluation)
+- Low heat and battery consumption during long classroom sessions
+- Smooth camera preview (60Hz UI compose loop)
+- Zero low-light motion blur false rejections
 
 ---
 

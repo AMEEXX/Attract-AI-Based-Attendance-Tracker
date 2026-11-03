@@ -55,17 +55,23 @@ Flow rules:
 * **S5** Pose is supporting evidence only: supporting frames reject EXTREME yaw/pitch using
   existing thresholds (`isAcceptableSupportPose`), but no specific pose is required.
 
-## Thresholds — UNCHANGED
+## Thresholds — UNCHANGED (Updated for ArcFace 512-D Profile)
 
-accept=0.45, ambiguity margin=0.10, `FaceQualityConfig.calibrationDefaults()`,
-liveness gates, pose windows — all untouched. The adaptive layer reuses
-`RecognitionDecisionEngine.evaluate` verbatim for every per-frame decision.
+In Doc 20 & 21, the recognition backbone was upgraded to ArcFace 512-D (`arcface512_bgr_noseyaw_v5`):
+* `acceptThreshold = 0.50f`
+* `ambiguityMargin = 0.08f`
+* `confirmBelowThreshold = 0.60f`
+* `FaceQualityConfig` v4 defaults (`minCropSharpness = 0.09f`, `minFaceLuma = 12f`, `maxFaceLuma = 235f`, `minInterOcularPx = 28f`)
+* Multi-factor liveness gates with 2-of-3 temporal confirmation.
+The adaptive layer reuses `RecognitionDecisionEngine.evaluate` verbatim for every per-frame decision.
 
 ## UI integration (AttendanceScreen)
 
 * Frame 1 prompt: straight look. Supporting prompts: "one more natural look".
 * Frame-1 quality uses the STRAIGHT window; frames 2–3 bin by MEASURED yaw (production
   windows) so genuine profiles validate without forcing profiles.
+* **Live Auto-Capture Integration (Doc 21 WP-F):** In `AttendanceScreen.kt`, `processAutoCaptureFrame` drives the verification engine seamlessly. When all quality and liveness gates are satisfied, high-quality observations are automatically submitted to `AdaptiveVerificationEngine.submit(observation)` without requiring the user to press a manual shutter.
+* Low-light scenes leverage `TemporalCropBuffer` and `TemporalDenoiser.fuse()` to provide noise-suppressed, auto-leveled 112×112 crops directly to ArcFace 512-D without running CLAHE.
 * `NeedMoreFrames.reason` drives status messages; `Final(Match)` reuses the existing
   success/AlreadyCheckedIn flow; `Final(Ambiguous|Unknown)` reuses the existing 2-attempt
   retry → teacher-assistance/enrollment flow; `Final(Error)` shows the standard
