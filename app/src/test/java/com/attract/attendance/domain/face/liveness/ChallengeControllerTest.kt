@@ -99,4 +99,18 @@ class ChallengeControllerTest {
         // Open -> Complete cycle observed -> PASSED
         assertEquals(ChallengeStatus.PASSED, ctrl.update(frame(blinkLeft = 0.15f), 1300L))
     }
+
+    @Test
+    fun armAt_setsArmedTimestamp() {
+        val ctrl = ChallengeController(
+            challenge = LivenessChallengeType.BLINK,
+            startTimestampMs = 1000L,
+            maxChallengeMs = 6000L
+        )
+        ctrl.armAt(2000L)
+        // At 7000ms (5000ms after arming), still within 6000ms limit
+        assertEquals(ChallengeStatus.IN_PROGRESS, ctrl.update(frame(), nowMs = 7000L))
+        // At 8100ms (6100ms after arming), timed out
+        assertEquals(ChallengeStatus.TIMED_OUT, ctrl.update(frame(), nowMs = 8100L))
+    }
 }

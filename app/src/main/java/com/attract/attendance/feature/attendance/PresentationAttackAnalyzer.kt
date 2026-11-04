@@ -7,8 +7,13 @@ import kotlin.math.abs
 import kotlin.math.sqrt
 
 /**
- * Android adapter (LLD-08/LLD-12): computes [PresentationAttackSignals] from the
- * face-cropped bitmap. Runs only on capture CLICK (one frame), not per preview frame.
+ * Android adapter (LLD-08/LLD-12, Doc 22 WP-A): computes [PresentationAttackSignals] from the
+ * INNER 1.0x face crop (the 112x112 aligned face). Runs on every analysed preview frame so the
+ * 2-of-3 temporal veto in LivenessOrchestrator has real history.
+ *
+ * Doc 22 WP-A: never pass the 2.7x wide crop here — bright backgrounds (white walls, windows behind
+ * the student) inflate the specular-highlight ratio and produced false "Screen glare" rejects. exp10
+ * measured 0.0 % false vetoes on the inner crop across normal, white-wall and window-backlit scenes.
  *
  * All statistics are computed on a fixed 96x96 grayscale downsample so cost is
  * bounded and results are comparable across devices/resolutions.
@@ -16,6 +21,14 @@ import kotlin.math.sqrt
 object PresentationAttackAnalyzer {
 
     private const val ANALYSIS_SIZE = 96
+
+    /**
+     * @param innerFaceCrop the 1.0x (aligned 112x112) face crop.
+     * @param padScore      MiniFASNetV2 live probability measured on the 2.7x wide crop (null if unavailable).
+     */
+    fun analyze(innerFaceCrop: Bitmap?, padScore: Float?): PresentationAttackSignals? =
+        analyze(innerFaceCrop)?.copy(padScore = padScore)
+            ?: padScore?.let { PresentationAttackSignals.Unavailable.copy(padScore = it) }
 
     fun analyze(crop: Bitmap?): PresentationAttackSignals? {
         if (crop == null || crop.width < 8 || crop.height < 8) return null

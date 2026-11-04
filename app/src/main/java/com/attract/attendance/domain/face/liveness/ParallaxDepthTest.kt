@@ -20,28 +20,47 @@ object ParallaxDepthTest {
     // Key anchor points spanning top, bottom, left, right for homography fitting
     val HOMOGRAPHY_ANCHORS = listOf(10, 152, 234, 454)
 
+    /** Doc 22 WP-E defaults, measured in exp8 (real 15° pan p5 residual 0.042; planar p95 0.031, max yaw 7.6°). */
+    const val DEFAULT_MIN_POSE_DELTA_DEG = 5.0f
+    const val DEFAULT_MIN_PARALLAX_RESIDUAL = 0.030f
+
     data class Result(
         val depthScore: Float?,
         val depthInconclusive: Boolean,
         val residual: Float = 0f,
+        val poseDeltaDeg: Float = 0f,
     )
+
+    /** Doc 22 WP-E: angular separation of two frames = max(|Δyaw|, |Δpitch|). Nodding counts as much as turning. */
+    fun poseDelta(a: FaceMeshResult, b: FaceMeshResult): Float =
+        maxOf(abs(a.yawDeg - b.yawDeg), abs(a.pitchDeg - b.pitchDeg))
+
+    /**
+     * Maps a median parallax residual (normalised by IOD) to a 0..1 depth score.
+     * residual == minParallaxResidual  -> exactly 0.50 (the LOW-risk "live" boundary used by RiskFusion)
+     * residual <= 0.4 * minParallaxResidual -> <= 0.20 (conclusive flat plane => HIGH risk)
+     */
+    fun depthScoreFor(residual: Float, minParallaxResidual: Float = DEFAULT_MIN_PARALLAX_RESIDUAL): Float =
+        (residual / (2f * minParallaxResidual)).coerceIn(0f, 1f)
 
     fun evaluate(
         frames: List<FaceMeshResult>,
-        minYawDeltaDeg: Float = 4.0f,
-        parallaxLiveResidual: Float = 0.020f,
+        minYawDeltaDeg: Float = DEFAULT_MIN_POSE_DELTA_DEG,
+        parallaxLiveResidual: Float = DEFAULT_MIN_PARALLAX_RESIDUAL,
     ): Result {
+        val minPoseDeltaDeg = minYawDeltaDeg
+        val minParallaxResidual = parallaxLiveResidual
         if (frames.size < 2) {
             return Result(depthScore = null, depthInconclusive = true)
         }
 
-        // Search for a pair with sufficient angular delta
+        // Search for the pair with the largest angular delta = max(|Δyaw|, |Δpitch|)
         var bestPair: Pair<FaceMeshResult, FaceMeshResult>? = null
         var maxDelta = 0f
 
         for (i in frames.indices) {
             for (j in i + 1 until frames.size) {
-                val delta = abs(frames[i].yawDeg - frames[j].yawDeg)
+                val delta = poseDelta(frames[i], frames[j])
                 if (delta > maxDelta) {
                     maxDelta = delta
                     bestPair = Pair(frames[i], frames[j])
@@ -49,15 +68,15 @@ object ParallaxDepthTest {
             }
         }
 
-        if (bestPair == null || maxDelta < minYawDeltaDeg) {
-            return Result(depthScore = null, depthInconclusive = true)
+        if (bestPair == null || maxDelta < minPoseDeltaDeg) {
+            return Result(depthScore = null, depthInconclusive = true, poseDeltaDeg = maxDelta)
         }
 
         val frameA = bestPair.first
         val frameB = bestPair.second
 
         if (frameA.landmarks.size < 478 || frameB.landmarks.size < 478) {
-            return Result(depthScore = null, depthInconclusive = true)
+            return Result(depthScore = null, depthInconclusive = true, poseDeltaDeg = maxDelta)
         }
 
         // Inter-Ocular Distance (IOD) on destination frame (landmarks 33 and 263)
@@ -68,14 +87,14 @@ object ParallaxDepthTest {
         ).toDouble()
 
         if (iod < 1e-4) {
-            return Result(depthScore = null, depthInconclusive = true)
+            return Result(depthScore = null, depthInconclusive = true, poseDeltaDeg = maxDelta)
         }
 
         val srcAnchors = HOMOGRAPHY_ANCHORS.map { frameA.landmarks[it] }
         val dstAnchors = HOMOGRAPHY_ANCHORS.map { frameB.landmarks[it] }
 
         val h = Homography.solve4Points(srcAnchors, dstAnchors)
-            ?: return Result(depthScore = null, depthInconclusive = true)
+            ?: return Result(depthScore = null, depthInconclusive = true, poseDeltaDeg = maxDelta)
 
         // Compute residuals across all 33 stable points
         val residuals = mutableListOf<Float>()
@@ -93,14 +112,11 @@ object ParallaxDepthTest {
         residuals.sort()
         val medianResidual = residuals[residuals.size / 2]
 
-        // Depth score mapping: real faces yield residual > 0.020, flat attacks < 0.015
-        val depthScore = ((medianResidual - 0.010f) / (parallaxLiveResidual * 2f - 0.010f))
-            .coerceIn(0f, 1f)
-
         return Result(
-            depthScore = depthScore,
+            depthScore = depthScoreFor(medianResidual, minParallaxResidual),
             depthInconclusive = false,
-            residual = medianResidual
+            residual = medianResidual,
+            poseDeltaDeg = maxDelta,
         )
     }
 }

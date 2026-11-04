@@ -35,6 +35,7 @@ import com.attract.attendance.domain.face.PoseSource
 import com.attract.attendance.domain.face.YoloFaceDetector
 import com.attract.attendance.platform.camera.CameraCaptureController
 import com.attract.attendance.platform.face.FaceMeshEngine
+import com.attract.attendance.platform.face.MiniFasNetEngine
 import android.content.Context
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
@@ -93,6 +94,8 @@ fun CameraPreview(
         var activeCameraProvider: ProcessCameraProvider? = null
         try {
             FaceMeshEngine.init(context)
+            // Doc 22 WP-B: MiniFASNetV2 PAD CNN (silentface.tflite). Safe no-op when the asset is missing.
+            MiniFasNetEngine.init(context)
             val tracker = FaceTracker()
             val temporalCropBuffer = com.attract.attendance.domain.face.TemporalCropBuffer(maxCapacity = 4)
             val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
@@ -383,6 +386,14 @@ fun CameraPreview(
                         }
                     } else null
 
+                    // Doc 22 WP-A/WP-B: presentation-attack signals for EVERY analysed frame so the orchestrator's
+                    // 2-of-3 pixel veto and 3-frame PAD median accumulate during preview.
+                    //  - pixel statistics on the INNER 1.0x aligned crop (never the 2.7x crop: bright backgrounds
+                    //    caused false "screen glare" rejects for window-backlit students)
+                    //  - MiniFASNetV2 live probability on the 2.7x wide crop
+                    val framePadScore = MiniFasNetEngine.score(wideFace)
+                    val framePatSignals = PresentationAttackAnalyzer.analyze(alignedFace, framePadScore)
+
                     // Doc 21 WP-C: maintain 4-frame temporal buffer and fuse crops along identity track
                     temporalCropBuffer.add(cropPixels, nowNanos, faceBoxes[0])
                     val fusedPixels = temporalCropBuffer.getFusedCrop(
@@ -409,6 +420,7 @@ fun CameraPreview(
                         fusedCrop = fusedFace ?: alignedFace,
                         wideCrop = wideFace,
                         meshResult = mesh,
+                        patSignals = framePatSignals,
                         trackFrameCount = temporalCropBuffer.size()
                     )
 

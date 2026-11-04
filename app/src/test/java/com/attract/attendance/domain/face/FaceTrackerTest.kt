@@ -48,11 +48,26 @@ class FaceTrackerTest {
         val box1 = FaceBox(100f, 100f, 300f, 300f)
         val track1 = tracker.update(listOf(box1), time)
 
-        // 500 ms gap (> 400ms threshold)
-        time += 500_000_000L
+        // 1200 ms gap (> 1000ms threshold)
+        time += 1_200_000_000L
         val track2 = tracker.update(listOf(box1), time)
 
         assertNotNull(track2)
         assertNotEquals(track1!!.id, track2!!.id)
+    }
+
+    @Test
+    fun faceTracker_gapUnder1000ms_maintainsTrackId() {
+        val tracker = FaceTracker()
+        var time = 1_000_000_000L
+        val box1 = FaceBox(100f, 100f, 300f, 300f)
+        val track1 = tracker.update(listOf(box1), time)
+
+        // 600 ms gap (< 1000ms threshold)
+        time += 600_000_000L
+        val track2 = tracker.update(listOf(box1), time)
+
+        assertNotNull(track2)
+        assertEquals(track1!!.id, track2!!.id)
     }
 }

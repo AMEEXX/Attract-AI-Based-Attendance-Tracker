@@ -17,19 +17,25 @@ enum class ChallengeStatus {
 }
 
 /**
- * Pure state machine governing randomized active micro-challenges when passive risk is MEDIUM (doc-20 WP7.4).
+ * Pure state machine governing randomized active micro-challenges when passive risk is MEDIUM (doc-20 WP7.4, doc-23 WP-7).
  */
 class ChallengeController(
     val challenge: LivenessChallengeType = randomChallenge(),
     val startTimestampMs: Long = System.currentTimeMillis(),
-    val maxChallengeMs: Long = 4000L,
+    val maxChallengeMs: Long = 6000L,
+    val turnThresholdDeg: Float = 7.0f,
 ) {
     private var initialYaw: Float? = null
     private var initialSmile: Float? = null
+    private var armedTimestampMs: Long = startTimestampMs
     private val meshHistory = mutableListOf<FaceMeshResult>()
 
+    fun armAt(nowMs: Long) {
+        armedTimestampMs = nowMs
+    }
+
     fun update(frame: FaceMeshResult, nowMs: Long): ChallengeStatus {
-        if (nowMs - startTimestampMs > maxChallengeMs) {
+        if (nowMs - armedTimestampMs > maxChallengeMs) {
             return ChallengeStatus.TIMED_OUT
         }
 
@@ -43,11 +49,11 @@ class ChallengeController(
             }
             LivenessChallengeType.TURN_SLIGHT_LEFT -> {
                 val yawDiff = (initialYaw ?: 0f) - frame.yawDeg // Left turns have negative yaw
-                if (yawDiff >= 10f) ChallengeStatus.PASSED else ChallengeStatus.IN_PROGRESS
+                if (yawDiff >= turnThresholdDeg) ChallengeStatus.PASSED else ChallengeStatus.IN_PROGRESS
             }
             LivenessChallengeType.TURN_SLIGHT_RIGHT -> {
                 val yawDiff = frame.yawDeg - (initialYaw ?: 0f)
-                if (yawDiff >= 10f) ChallengeStatus.PASSED else ChallengeStatus.IN_PROGRESS
+                if (yawDiff >= turnThresholdDeg) ChallengeStatus.PASSED else ChallengeStatus.IN_PROGRESS
             }
             LivenessChallengeType.SMILE -> {
                 if (frame.mouthSmile >= 0.50f && (initialSmile ?: 0f) < 0.25f) {

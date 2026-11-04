@@ -10,7 +10,9 @@ enum class LivenessReason {
     PASSIVE_SPOOF_SUSPECTED,
     SCREEN_REPLAY_SUSPECTED,
     PRINT_PHOTO_SUSPECTED,
-    INSUFFICIENT_VARIANCE
+    INSUFFICIENT_VARIANCE,
+    /** Doc 22: passive evidence inconclusive (no 3D head-turn yet / PAD suspect) — NOT a spoof verdict, show guidance. */
+    ACTIVE_CHECK_REQUIRED,
 }
 
 sealed interface LivenessResult {

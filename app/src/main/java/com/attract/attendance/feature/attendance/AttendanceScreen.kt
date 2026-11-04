@@ -108,13 +108,20 @@ import com.attract.attendance.domain.face.FaceQualitySignals
 import com.attract.attendance.domain.face.LivenessEngine
 import com.attract.attendance.domain.face.LivenessResult
 import com.attract.attendance.domain.face.QualityResult
+import com.attract.attendance.domain.face.StudentTemplatePair
 import com.attract.attendance.lockdown.platform.LockTaskControllerImpl
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 private const val TAG = "AttendanceScreen"
+
+/** Doc 22 WP-C: pause auto-capture after a HIGH (spoof) liveness verdict so the message stays readable. */
+private const val LIVENESS_REJECT_COOLDOWN_MS = 1500L
 
 enum class SessionScreenState {
     READY,
@@ -299,6 +306,9 @@ fun AttendanceScreen(
     var showEnrollBottomSheet by remember { mutableStateOf(false) }
     var selectedStudentForEnroll by remember(targetStudentForStandalone) { mutableStateOf<StudentSummary?>(targetStudentForStandalone) }
     val livenessOrchestrator = remember { com.attract.attendance.domain.face.liveness.LivenessOrchestrator() }
+    // Doc 22 WP-C: after a HIGH (spoof) verdict the orchestrator is reset; auto-capture pauses briefly so the
+    // rejection message stays readable before evidence is rebuilt from fresh frames.
+    var livenessCooldownUntilMs by remember { mutableLongStateOf(0L) }
     var isScreenFlashActive by remember { mutableStateOf(false) }
 
     // R04/R05: attempt tokens, feedback job tracking, and active teacher authorization grant
@@ -453,6 +463,39 @@ fun AttendanceScreen(
     var lastFrameQualityScore by remember { mutableStateOf(0f) }
     var lastFrameLive by remember { mutableStateOf(false) }
 
+    // ---- Session-scoped decrypted template cache (prevents per-frame Keystore IPC on Main thread) ----
+    val templateCacheMutex = remember(classId) { Mutex() }
+    val cachedTemplatesRef = remember(classId) { AtomicReference<List<StudentTemplatePair>?>(null) }
+
+    suspend fun getActiveTemplatesCached(forceRefresh: Boolean = false): List<StudentTemplatePair> = withContext(Dispatchers.IO) {
+        if (!forceRefresh) {
+            cachedTemplatesRef.get()?.let { return@withContext it }
+        }
+        templateCacheMutex.withLock {
+            if (!forceRefresh) {
+                cachedTemplatesRef.get()?.let { return@withLock it }
+            }
+            repository.getActiveTemplatesForClass(classId).also {
+                cachedTemplatesRef.set(it)
+            }
+        }
+    }
+
+    fun invalidateTemplateCache(preloadInBackground: Boolean = true) {
+        cachedTemplatesRef.set(null)
+        adaptiveEngine = null
+        if (preloadInBackground) {
+            scope.launch {
+                runCatching { getActiveTemplatesCached(forceRefresh = true) }
+            }
+        }
+    }
+
+    // Pre-warm decrypted Keystore templates in the background while the camera initializes
+    LaunchedEffect(classId) {
+        runCatching { getActiveTemplatesCached(forceRefresh = true) }
+    }
+
     // ---- Inline enrollment (LLD-06): when a NOT_ENROLLED student is selected from the
     // UNKNOWN roster, the attendance screen collects 3 enrollment poses right here,
     // enrolls them, and marks the student PRESENT — all without leaving the session.
@@ -464,6 +507,7 @@ fun AttendanceScreen(
             autoCaptureJob?.cancel()
             adaptiveEngine = null
             activeTeacherGrant = null
+            cachedTemplatesRef.set(null)
         }
     }
 
@@ -799,6 +843,7 @@ fun AttendanceScreen(
             when (enrollResult) {
                 is com.attract.attendance.domain.face.EnrollmentResult.Committed -> {
                     AppLog.i("ATTRACT_ATTENDANCE_FALLBACK", "[INLINE_REGISTRATION] success for ${target.id}")
+                    invalidateTemplateCache(preloadInBackground = true)
                     if (enrollResult.attendanceRecordId != null) {
                         presentIds = presentIds + target.id
                     }
@@ -1022,23 +1067,61 @@ fun AttendanceScreen(
             return
         }
 
-        // Presentation-attack signals (LLD-12 / doc-20 WP1.3) computed on the wide crop
-        val patCrop = bundle?.wideCrop ?: frameBitmap
-        val patSignals = PresentationAttackAnalyzer.analyze(patCrop)
+        // Doc 22 WP-A/WP-B: presentation-attack signals were computed per preview frame in CameraPreview
+        // (pixel stats on the INNER 1.0x aligned crop, MiniFASNetV2 on the 2.7x wide crop). Fallback: inner crop.
+        val patSignals = bundle?.patSignals ?: PresentationAttackAnalyzer.analyze(frameBitmap, null)
 
+        // Live attendance: history is fed ONLY from the preview callback (single source, Doc 22 WP-C);
+        // here we just read the fused verdict. Enrollment keeps the single-frame LivenessEngine check.
+        var livenessGuidance: com.attract.attendance.domain.face.liveness.LivenessGuidance? = null
         val livenessEval = if (isEnrollmentMode) {
             LivenessEngine.check(signals, lastQualitySignals, patSignals)
         } else {
-            livenessOrchestrator.onFrame(signals, patSignals, bundle?.meshResult, null)
-            val (risk, eval) = livenessOrchestrator.evaluate(signals, patSignals)
-            eval
+            val verdict = livenessOrchestrator.evaluate(signals)
+            livenessGuidance = verdict.guidance
+            AppLog.i(
+                TAG,
+                "[LIVENESS] risk=${verdict.risk} guidance=${verdict.guidance} pad=${verdict.evidence.padScore} " +
+                    "depth=${verdict.evidence.depthScore} inconclusive=${verdict.evidence.depthInconclusive} " +
+                    "poseDelta=${verdict.depth.poseDeltaDeg} residual=${verdict.depth.residual} " +
+                    "pixelVeto=${verdict.evidence.legacyPixelVeto} frames=${verdict.evidence.trackFrames}"
+            )
+            if (verdict.risk == com.attract.attendance.domain.face.liveness.LivenessRisk.HIGH) {
+                livenessOrchestrator.reset()
+                livenessCooldownUntilMs = System.currentTimeMillis() + LIVENESS_REJECT_COOLDOWN_MS
+            }
+            verdict.result
         }
         if (livenessEval is LivenessResult.Rejected) {
+            if (livenessEval.reason == com.attract.attendance.domain.face.LivenessReason.ACTIVE_CHECK_REQUIRED) {
+                // WP-8: Escape hatch to Teacher Assistance after 12s in MEDIUM
+                if (livenessGuidance == com.attract.attendance.domain.face.liveness.LivenessGuidance.TEACHER_ASSIST) {
+                    statusMessage = AttendanceStrings.LIVENESS_TEACHER_ASSIST_TITLE
+                    statusSubtitle = AttendanceStrings.LIVENESS_TEACHER_ASSIST_SUBTITLE
+                    showTeacherAssistDialog = true
+                    isValidatingFrame = false
+                    return
+                }
+                // NOT a spoof verdict: guide the student (small head turn / random challenge) and keep previewing.
+                val challenge = livenessOrchestrator.currentChallenge
+                statusMessage = if (challenge == null) {
+                    AttendanceStrings.LIVENESS_TURN_HEAD_TITLE
+                } else {
+                    AttendanceStrings.LIVENESS_CHALLENGE_TITLE
+                }
+                statusSubtitle = if (challenge == null) {
+                    AttendanceStrings.LIVENESS_TURN_HEAD_SUBTITLE
+                } else {
+                    livenessEval.message
+                }
+                isValidatingFrame = false
+                return
+            }
             statusMessage = when (livenessEval.reason) {
-                com.attract.attendance.domain.face.LivenessReason.SCREEN_REPLAY_SUSPECTED -> "Screen replay detected"
-                com.attract.attendance.domain.face.LivenessReason.PRINT_PHOTO_SUSPECTED -> "Printed photo detected"
-                com.attract.attendance.domain.face.LivenessReason.INSUFFICIENT_VARIANCE -> "Liveness check failed — static image"
-                else -> "Liveness check failed"
+                com.attract.attendance.domain.face.LivenessReason.SCREEN_REPLAY_SUSPECTED -> AttendanceStrings.LIVENESS_SCREEN_TITLE
+                com.attract.attendance.domain.face.LivenessReason.PRINT_PHOTO_SUSPECTED -> AttendanceStrings.LIVENESS_PRINT_TITLE
+                com.attract.attendance.domain.face.LivenessReason.INSUFFICIENT_VARIANCE -> AttendanceStrings.LIVENESS_STATIC_TITLE
+                else -> AttendanceStrings.LIVENESS_SPOOF_TITLE
             }
             statusSubtitle = livenessEval.message
             isValidatingFrame = false
@@ -1128,14 +1211,16 @@ fun AttendanceScreen(
                 val embedding = withContext(Dispatchers.IO) {
                     com.attract.attendance.domain.face.EmbeddingEngine.extractEmbedding(context, cropBitmap)
                 }
-                val activeTemplates = repository.getActiveTemplatesForClass(classId)
-                if (activeTemplates.isEmpty()) {
-                    handleNoEnrolledStudents()
-                    return@launch
+                val eng = adaptiveEngine ?: run {
+                    val activeTemplates = getActiveTemplatesCached()
+                    if (activeTemplates.isEmpty()) {
+                        handleNoEnrolledStudents()
+                        return@launch
+                    }
+                    com.attract.attendance.domain.face.AdaptiveVerificationEngine(
+                        templates = activeTemplates,
+                    ).also { adaptiveEngine = it }
                 }
-                val eng = adaptiveEngine ?: com.attract.attendance.domain.face.AdaptiveVerificationEngine(
-                    templates = activeTemplates,
-                ).also { adaptiveEngine = it }
 
                 val observation = com.attract.attendance.domain.face.FrameObservation(
                     signals = signalsNow,
@@ -1191,6 +1276,7 @@ fun AttendanceScreen(
             if (state != SessionScreenState.CAPTURING) return
             if (isValidatingFrame) return
             if (autoCaptureJob?.isActive == true) return
+            if (System.currentTimeMillis() < livenessCooldownUntilMs) return
 
             val signals = bundle.qualitySignals
             if (signals == null || signals.faceCount == 0) {
@@ -1384,8 +1470,7 @@ fun AttendanceScreen(
                     val livenessReCheck = if (isEnroll) {
                         LivenessEngine.check(currentSignals)
                     } else {
-                        val (risk, eval) = livenessOrchestrator.evaluate(currentSignals, null)
-                        eval
+                        livenessOrchestrator.evaluate(currentSignals).result
                     }
                     if (livenessReCheck is LivenessResult.Rejected) {
                         state = SessionScreenState.CAPTURING
@@ -1414,10 +1499,11 @@ fun AttendanceScreen(
                 }
 
                 val targetFloats = com.attract.attendance.domain.face.EmbeddingEngine.combineEmbeddings(queryEmbeddings)
-                val activeTemplates = repository.getActiveTemplatesForClass(classId)
-                val engine = com.attract.attendance.domain.face.RecognitionDecisionEngine()
-
-                val outcome = engine.evaluate(targetFloats, activeTemplates)
+                val activeTemplates = getActiveTemplatesCached()
+                val outcome = withContext(Dispatchers.Default) {
+                    val engine = com.attract.attendance.domain.face.RecognitionDecisionEngine()
+                    engine.evaluate(targetFloats, activeTemplates)
+                }
 
                 val trace = AttemptTrace(
                     faceLuma = lastQualitySignals?.brightness ?: 0f,
@@ -1454,15 +1540,20 @@ fun AttendanceScreen(
                                 val meshPose = lastQualitySignals?.let { sig ->
                                     HeadPose.poseBucket(sig.yawDegrees, sig.pitchDegrees)
                                 } ?: "FRONTAL"
-                                repository.maybeAutoUpdateTemplate(
-                                    studentId = matchedId,
-                                    newEmbedding = targetFloats,
-                                    qualityScore = lastFrameQualityScore,
-                                    matchScore = outcome.confidence,
-                                    margin = 0.20f,
-                                    livenessRisk = com.attract.attendance.domain.face.liveness.LivenessRisk.LOW,
-                                    poseBucket = meshPose,
-                                )
+                                val autoUpdated = withContext(Dispatchers.IO) {
+                                    repository.maybeAutoUpdateTemplate(
+                                        studentId = matchedId,
+                                        newEmbedding = targetFloats,
+                                        qualityScore = lastFrameQualityScore,
+                                        matchScore = outcome.confidence,
+                                        margin = 0.20f,
+                                        livenessRisk = com.attract.attendance.domain.face.liveness.LivenessRisk.LOW,
+                                        poseBucket = meshPose,
+                                    )
+                                }
+                                if (autoUpdated) {
+                                    invalidateTemplateCache(preloadInBackground = true)
+                                }
                                 delay(2000)
                                 resetToReady(resetAttempts = true)
                             }
@@ -1634,6 +1725,22 @@ fun AttendanceScreen(
                                 evMax = 4,
                                 currentlyActive = isScreenFlashActive
                             )
+                            // Doc 22 WP-C: feed the liveness orchestrator from EVERY analysed preview frame (single
+                            // source of history) so 3D head-turn parallax, the 3-frame PAD median and the 2-of-3 pixel
+                            // veto accumulate BEFORE capture. Live attendance only; enrollment has its own checks.
+                            val isEnrollmentFlow = isStandaloneMode || inlineEnrollmentTarget != null
+                            if (!isEnrollmentFlow &&
+                                (state == SessionScreenState.CAPTURING || state == SessionScreenState.READY)
+                            ) {
+                                // Doc 23 WP-2: faceCount dropout grace (800ms) and multi-face logic are inside onFrame
+                                livenessOrchestrator.onFrame(
+                                    signals = signals,
+                                    patSignals = bundle.patSignals,
+                                    mesh = bundle.meshResult,
+                                    trackId = bundle.trackId,
+                                    faceCount = signals?.faceCount ?: 0,
+                                )
+                            }
                             processAutoCaptureFrame(bundle)
                         },
                         onFrameAnalyzed = { signals, frameBitmap ->

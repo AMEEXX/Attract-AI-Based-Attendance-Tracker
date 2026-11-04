@@ -69,10 +69,16 @@
 -dontwarn kotlinx.coroutines.**
 -keep class androidx.biometric.** { *; }
 
-# 9. MediaPipe Tasks Vision & AutoValue
+# 9. MediaPipe Tasks Vision, Protobuf Lite & AutoValue (Doc 23 WP-1.1)
 -keep class com.google.mediapipe.tasks.vision.** { *; }
 -keep class com.google.mediapipe.framework.** { *; }
+-keep class com.google.protobuf.** { *; }
+-keep class com.google.mediapipe.proto.** { *; }
+-keep class com.google.mediapipe.calculator.proto.** { *; }
+-keep class com.google.mediapipe.formats.proto.** { *; }
+-keepclassmembers class * extends com.google.protobuf.GeneratedMessageLite { <fields>; }
 -dontwarn com.google.mediapipe.**
+-dontwarn com.google.protobuf.**
 -dontwarn javax.lang.model.**
 -dontwarn com.google.auto.value.**
 -dontwarn autovalue.shaded.**

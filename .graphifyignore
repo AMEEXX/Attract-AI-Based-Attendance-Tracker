@@ -1,0 +1,6 @@
+.agents/
+app/build/
+build/
+*.aab
+*.apk
+
