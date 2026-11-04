@@ -9,7 +9,27 @@ import com.attract.attendance.domain.face.PresentationAttackDetector
 import com.attract.attendance.domain.face.PresentationAttackSignals
 
 /**
- * What the UI must ask the student to do while liveness is [LivenessRisk.MEDIUM] (Doc 22 WP-C).
+ * Proof method used to achieve low-risk liveness (Doc 23 WP-3).
+ */
+enum class LivenessProofMethod {
+    PARALLAX_MESH,
+    PARALLAX_5PT,
+    CHALLENGE,
+    PASSIVE_STRONG,
+}
+
+/**
+ * Latched liveness decision for the current track (Doc 23 WP-3).
+ */
+data class LivenessLatch(
+    val risk: LivenessRisk = LivenessRisk.LOW,
+    val provenAtMs: Long,
+    val trackId: Int?,
+    val method: LivenessProofMethod = LivenessProofMethod.PARALLAX_MESH,
+)
+
+/**
+ * What the UI must ask the student to do while liveness is [LivenessRisk.MEDIUM] (Doc 22 WP-C, Doc 23 WP-5/WP-8).
  */
 enum class LivenessGuidance {
     /** Nothing to ask (LOW = live, or HIGH = rejected). */
@@ -21,33 +41,22 @@ enum class LivenessGuidance {
     CHALLENGE_TURN_LEFT,
     CHALLENGE_TURN_RIGHT,
     CHALLENGE_SMILE,
+    /** Stuck in MEDIUM past timeout: escape hatch to teacher assist (Doc 23 WP-8). */
+    TEACHER_ASSIST,
 }
 
-/** Full liveness verdict for one evaluation (Doc 22). */
+/** Full liveness verdict for one evaluation (Doc 22, Doc 23). */
 data class LivenessVerdict(
     val risk: LivenessRisk,
     val result: LivenessResult,
     val guidance: LivenessGuidance,
     val evidence: LivenessEvidence,
     val depth: ParallaxDepthTest.Result,
+    val latch: LivenessLatch? = null,
 )
 
 /**
- * Orchestrates multi-signal presentation-attack detection for live attendance (doc-20 WP7.5, Doc 22 WP-C).
- *
- * Doc 22 contract:
- *  - **Single-source history.** Only [onFrame] appends to the mesh / PAD / pixel-veto histories. [evaluate]
- *    is read-only, so evaluating several times on the same frame can never double-count a pixel trip.
- *  - **2-of-3 pixel veto** (`policy.pixelVetoMinHits` of the last `policy.pixelVetoWindow` frames, same reason),
- *    measured on the INNER 1.0x face crop.
- *  - **PAD CNN** = median of the last 3 MiniFASNet live probabilities. Below `policy.padSpoofReject` it only
- *    ESCALATES (random challenge), it never hard-rejects (genuine backlit faces score low in 2–9 % of frames).
- *  - **MEDIUM never maps to [LivenessResult.Passed]**: it maps to `Rejected(ACTIVE_CHECK_REQUIRED)` and the
- *    caller shows [LivenessVerdict.guidance] instead of a spoof message.
- *  - History older than `policy.meshWindowMs` is discarded, so stale frames cannot create fake parallax.
- *
- * Feed it from the live preview (every analysed single-face frame) so 3D parallax and the PAD median build up
- * BEFORE capture; call [reset] when the face track changes or an attempt ends.
+ * Orchestrates multi-signal presentation-attack detection for live attendance (doc-20 WP7.5, Doc 22 WP-C, Doc 23).
  */
 class LivenessOrchestrator(
     private val policy: LivenessPolicy = LivenessPolicy(),
@@ -63,6 +72,14 @@ class LivenessOrchestrator(
     private var flashScore: Float? = null
     private var injectionSuspected: Boolean = false
     private var lastTrackId: Int? = null
+
+    // Doc 23 additions
+    var latch: LivenessLatch? = null
+        private set
+    val activeLatch: LivenessLatch? get() = latch
+    private var lastSeenSingleFaceMs: Long = 0L
+    private var multiFaceCount: Int = 0
+    private var firstMediumSeenAtMs: Long? = null
 
     private val pixelThresholds = PresentationAttackDetector.Thresholds(
         maxHighFrequencyEnergy = policy.maxHighFrequencyEnergy,
@@ -82,24 +99,35 @@ class LivenessOrchestrator(
 
     /**
      * Appends one analysed frame. The ONLY method that mutates history.
-     *
-     * @param padScore MiniFASNet live probability for this frame; defaults to [PresentationAttackSignals.padScore].
-     * @param trackId  face-track id; a change of track clears all history (prevents a real face's head turn
-     *                 being credited to a photo swapped in afterwards).
-     * @param nowMs    frame timestamp in ms (monotonic within a session).
      */
     fun onFrame(
-        signals: FaceQualitySignals,
-        patSignals: PresentationAttackSignals?,
-        mesh: FaceMeshResult?,
+        signals: FaceQualitySignals? = null,
+        patSignals: PresentationAttackSignals? = null,
+        mesh: FaceMeshResult? = null,
         padScore: Float? = patSignals?.padScore,
         trackId: Int? = null,
+        faceCount: Int = signals?.faceCount ?: 0,
         nowMs: Long = clock(),
     ) {
-        if (trackId != null) {
-            if (lastTrackId != null && lastTrackId != trackId) reset()
+        if (faceCount == 1) {
+            if (trackId != null && lastTrackId != null && trackId != lastTrackId) {
+                reset()
+            }
             lastTrackId = trackId
+            lastSeenSingleFaceMs = nowMs
+            multiFaceCount = 0
+        } else if (faceCount == 0) {
+            // Brief dropout (< 800ms) preserves history
+            if (lastSeenSingleFaceMs > 0L && nowMs - lastSeenSingleFaceMs > policy.faceDropoutGraceMs) {
+                reset()
+            }
+        } else if (faceCount > 1) {
+            multiFaceCount++
+            if (multiFaceCount >= 3) {
+                reset()
+            }
         }
+
         prune(nowMs)
 
         if (mesh != null) {
@@ -112,10 +140,8 @@ class LivenessOrchestrator(
             while (padScores.size > PAD_MEDIAN_WINDOW) padScores.removeFirst()
         }
 
-        // Pixel PAD trip for THIS frame (null = clean). Recorded only when signals exist; a frame without
-        // pixel signals neither confirms nor clears an earlier trip.
         if (patSignals != null) {
-            val reason = (PresentationAttackDetector.analyze(patSignals, signals.blurVariance, pixelThresholds)
+            val reason = (PresentationAttackDetector.analyze(patSignals, signals?.blurVariance ?: 0f, pixelThresholds)
                 as? LivenessResult.Rejected)?.reason
             pixelReasons.addLast(reason)
             while (pixelReasons.size > policy.pixelVetoWindow) pixelReasons.removeFirst()
@@ -125,9 +151,41 @@ class LivenessOrchestrator(
         val challenge = activeChallenge
         if (challenge != null && mesh != null && activeChallengeResult == null) {
             when (challenge.update(mesh, nowMs)) {
-                ChallengeStatus.PASSED -> activeChallengeResult = true
+                ChallengeStatus.PASSED -> {
+                    activeChallengeResult = true
+                    if (confirmedPixelVeto() == null && !injectionSuspected) {
+                        latch = LivenessLatch(
+                            risk = LivenessRisk.LOW,
+                            provenAtMs = nowMs,
+                            trackId = lastTrackId,
+                            method = LivenessProofMethod.CHALLENGE,
+                        )
+                    }
+                }
                 ChallengeStatus.TIMED_OUT -> activeChallengeResult = false
                 ChallengeStatus.IN_PROGRESS -> {}
+            }
+        }
+
+        // Incremental latch evaluation (Doc 23 WP-3)
+        if (latch == null && confirmedPixelVeto() == null && !injectionSuspected) {
+            val window = meshHistory.filter { nowMs - it.tMs <= policy.meshWindowMs }.map { it.value }
+            if (window.size >= 2) {
+                val depthRes = ParallaxDepthTest.evaluate(
+                    frames = window,
+                    minYawDeltaDeg = policy.parallaxMinYawDeltaDeg,
+                    parallaxLiveResidual = policy.parallaxLiveResidual,
+                )
+                val medPad = medianPadScore()
+                val padSuspect = medPad != null && medPad < policy.padSpoofReject
+                if (!depthRes.depthInconclusive && (depthRes.depthScore ?: 0f) >= 0.50f && !padSuspect) {
+                    latch = LivenessLatch(
+                        risk = LivenessRisk.LOW,
+                        provenAtMs = nowMs,
+                        trackId = lastTrackId,
+                        method = LivenessProofMethod.PARALLAX_MESH,
+                    )
+                }
             }
         }
     }
@@ -138,6 +196,7 @@ class LivenessOrchestrator(
 
     fun markInjectionSuspected() {
         injectionSuspected = true
+        latch = null
     }
 
     /** Pixel veto reason confirmed on >= pixelVetoMinHits of the last pixelVetoWindow frames, else null. */
@@ -162,9 +221,64 @@ class LivenessOrchestrator(
 
     /**
      * Read-only fusion of the accumulated history. Never mutates the frame histories.
-     * May START a random challenge when depth is live but the PAD CNN is suspicious (Rule 6 of [RiskFusion]).
      */
     fun evaluate(signals: FaceQualitySignals, nowMs: Long = clock()): LivenessVerdict {
+        val pixelVeto = confirmedPixelVeto()
+        if (pixelVeto != null || injectionSuspected) {
+            latch = null
+            firstMediumSeenAtMs = null
+            val evidence = LivenessEvidence(
+                legacyPixelVeto = pixelVeto,
+                padScore = medianPadScore(),
+                depthScore = null,
+                depthInconclusive = true,
+                blinkSeen = false,
+                flashScore = flashScore,
+                challengePassed = activeChallengeResult,
+                faceLuma = if (signals.faceLuma >= 0f) signals.faceLuma else signals.brightness,
+                trackFrames = maxOf(meshHistory.size, padScores.size),
+                injectionSuspected = injectionSuspected,
+            )
+            return LivenessVerdict(
+                risk = LivenessRisk.HIGH,
+                result = LivenessResult.Rejected(
+                    reason = pixelVeto ?: LivenessReason.PASSIVE_SPOOF_SUSPECTED,
+                    message = "Liveness check failed — please present your live face directly to the camera.",
+                ),
+                guidance = LivenessGuidance.NONE,
+                evidence = evidence,
+                depth = ParallaxDepthTest.Result(depthScore = null, depthInconclusive = true),
+                latch = null,
+            )
+        }
+
+        // Active latch within TTL (Doc 23 WP-3)
+        val activeLatch = latch
+        if (activeLatch != null && (nowMs - activeLatch.provenAtMs <= policy.latchTtlMs)) {
+            firstMediumSeenAtMs = null
+            val evidence = LivenessEvidence(
+                legacyPixelVeto = null,
+                padScore = medianPadScore() ?: 0.9f,
+                depthScore = 0.8f,
+                depthInconclusive = false,
+                blinkSeen = true,
+                flashScore = flashScore,
+                challengePassed = true,
+                faceLuma = if (signals.faceLuma >= 0f) signals.faceLuma else signals.brightness,
+                trackFrames = maxOf(meshHistory.size, padScores.size),
+                injectionSuspected = false,
+            )
+            return LivenessVerdict(
+                risk = LivenessRisk.LOW,
+                result = LivenessResult.Passed,
+                guidance = LivenessGuidance.NONE,
+                evidence = evidence,
+                depth = ParallaxDepthTest.Result(depthScore = 0.8f, depthInconclusive = false),
+                latch = activeLatch,
+            )
+        }
+
+        // Sliding window evaluation
         val window = meshHistory.filter { nowMs - it.tMs <= policy.meshWindowMs }.map { it.value }
 
         val depthRes = ParallaxDepthTest.evaluate(
@@ -179,7 +293,6 @@ class LivenessOrchestrator(
             openScore = policy.blinkOpenScore,
         )
 
-        val pixelVeto = confirmedPixelVeto()
         val evidence = LivenessEvidence(
             legacyPixelVeto = pixelVeto,
             padScore = medianPadScore(),
@@ -195,14 +308,33 @@ class LivenessOrchestrator(
 
         val risk = RiskFusion.decide(evidence, policy)
 
-        // Depth is live but the PAD CNN is suspicious -> start ONE random challenge (if none ran yet).
-        if (risk == LivenessRisk.MEDIUM && evidence.depthLive && activeChallenge == null) {
-            startChallenge(nowMs)
+        if (risk == LivenessRisk.LOW) {
+            latch = LivenessLatch(
+                risk = LivenessRisk.LOW,
+                provenAtMs = nowMs,
+                trackId = lastTrackId,
+                method = LivenessProofMethod.PARALLAX_MESH,
+            )
+            firstMediumSeenAtMs = null
+        } else if (risk == LivenessRisk.MEDIUM) {
+            if (firstMediumSeenAtMs == null) firstMediumSeenAtMs = nowMs
+            if (evidence.depthLive && activeChallenge == null) {
+                startChallenge(nowMs)
+            }
+        } else {
+            firstMediumSeenAtMs = null
         }
 
         val guidance = when (risk) {
             LivenessRisk.LOW, LivenessRisk.HIGH -> LivenessGuidance.NONE
-            LivenessRisk.MEDIUM -> guidanceFor(evidence)
+            LivenessRisk.MEDIUM -> {
+                val mediumDuration = firstMediumSeenAtMs?.let { nowMs - it } ?: 0L
+                if (mediumDuration >= policy.maxMediumMsBeforeAssist) {
+                    LivenessGuidance.TEACHER_ASSIST
+                } else {
+                    guidanceFor(evidence)
+                }
+            }
         }
 
         val result: LivenessResult = when (risk) {
@@ -217,7 +349,7 @@ class LivenessOrchestrator(
             )
         }
 
-        return LivenessVerdict(risk, result, guidance, evidence, depthRes)
+        return LivenessVerdict(risk, result, guidance, evidence, depthRes, latch)
     }
 
     private fun guidanceFor(e: LivenessEvidence): LivenessGuidance {
@@ -232,7 +364,12 @@ class LivenessOrchestrator(
     }
 
     fun startChallenge(nowMs: Long = clock()): ChallengeController {
-        val ctrl = ChallengeController(startTimestampMs = nowMs, maxChallengeMs = policy.maxChallengeMs)
+        val ctrl = ChallengeController(
+            startTimestampMs = nowMs,
+            maxChallengeMs = policy.maxChallengeMs,
+            turnThresholdDeg = policy.challengeTurnDeg,
+        )
+        ctrl.armAt(nowMs)
         activeChallenge = ctrl
         activeChallengeResult = null
         return ctrl
@@ -247,6 +384,10 @@ class LivenessOrchestrator(
         flashScore = null
         injectionSuspected = false
         lastTrackId = null
+        latch = null
+        firstMediumSeenAtMs = null
+        multiFaceCount = 0
+        lastSeenSingleFaceMs = 0L
     }
 
     private fun prune(nowMs: Long) {
@@ -257,7 +398,7 @@ class LivenessOrchestrator(
     companion object {
         /** exp10 `pad_median3`. */
         const val PAD_MEDIAN_WINDOW = 3
-        const val MAX_MESH_FRAMES = 30
+        const val MAX_MESH_FRAMES = 45 // Doc 23 WP-2.4: raised to 45
 
         fun messageFor(g: LivenessGuidance): String = when (g) {
             LivenessGuidance.NONE -> ""
@@ -266,6 +407,7 @@ class LivenessOrchestrator(
             LivenessGuidance.CHALLENGE_TURN_LEFT -> "Please turn your head slightly to the left."
             LivenessGuidance.CHALLENGE_TURN_RIGHT -> "Please turn your head slightly to the right."
             LivenessGuidance.CHALLENGE_SMILE -> "Please smile."
+            LivenessGuidance.TEACHER_ASSIST -> "Having trouble verifying? Tap below for Teacher Assistance."
         }
     }
 }

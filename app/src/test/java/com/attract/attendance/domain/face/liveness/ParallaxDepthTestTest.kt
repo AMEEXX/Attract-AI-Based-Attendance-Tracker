@@ -179,9 +179,9 @@ class ParallaxDepthTestDoc22Test {
     )
 
     @Test
-    fun defaults_areExp8Values() {
-        org.junit.Assert.assertEquals(8.0f, ParallaxDepthTest.DEFAULT_MIN_POSE_DELTA_DEG, 0f)
-        org.junit.Assert.assertEquals(0.035f, ParallaxDepthTest.DEFAULT_MIN_PARALLAX_RESIDUAL, 0f)
+    fun defaults_areDoc23Values() {
+        org.junit.Assert.assertEquals(5.0f, ParallaxDepthTest.DEFAULT_MIN_POSE_DELTA_DEG, 0f)
+        org.junit.Assert.assertEquals(0.030f, ParallaxDepthTest.DEFAULT_MIN_PARALLAX_RESIDUAL, 0f)
     }
 
     @Test
@@ -206,10 +206,10 @@ class ParallaxDepthTestDoc22Test {
     @Test
     fun belowDefaultPoseDelta_isInconclusive_andReportsDelta() {
         val base = face()
-        val res = ParallaxDepthTest.evaluate(listOf(mesh(base, yaw = 0f), mesh(rotY(base, 7.9), yaw = 7.9f)))
+        val res = ParallaxDepthTest.evaluate(listOf(mesh(base, yaw = 0f), mesh(rotY(base, 4.5), yaw = 4.5f)))
         assertTrue(res.depthInconclusive)
         assertNull(res.depthScore)
-        org.junit.Assert.assertEquals(7.9f, res.poseDeltaDeg, 1e-4f)
+        org.junit.Assert.assertEquals(4.5f, res.poseDeltaDeg, 1e-4f)
     }
 
     @Test

@@ -1,7 +1,9 @@
 package com.attract.attendance.domain.face
 
+import kotlin.math.sqrt
+
 /**
- * Pure Kotlin IoU-based face tracking engine for cross-frame continuity (doc-20 WP4.3).
+ * Pure Kotlin IoU-based face tracking engine for cross-frame continuity (doc-20 WP4.3, doc-23 WP-2).
  * Produces a stable trackId while a single student remains in front of the lens.
  */
 data class FaceBox(
@@ -13,6 +15,8 @@ data class FaceBox(
     val width: Float get() = maxOf(0f, right - left)
     val height: Float get() = maxOf(0f, bottom - top)
     val area: Float get() = width * height
+    val centerX: Float get() = (left + right) / 2f
+    val centerY: Float get() = (top + bottom) / 2f
 
     fun iou(other: FaceBox): Float {
         val interLeft = maxOf(left, other.left)
@@ -25,9 +29,18 @@ data class FaceBox(
         val unionArea = area + other.area - interArea
         return if (unionArea > 0f) interArea / unionArea else 0f
     }
+
+    fun centerDistance(other: FaceBox): Float {
+        val dx = centerX - other.centerX
+        val dy = centerY - other.centerY
+        return sqrt(dx * dx + dy * dy)
+    }
 }
 
-class FaceTracker {
+class FaceTracker(
+    private val maxGapNanos: Long = DEFAULT_MAX_GAP_NANOS,
+    private val minIouThreshold: Float = DEFAULT_MIN_IOU_THRESHOLD,
+) {
     data class Track(
         val id: Int,
         val lastBox: FaceBox,
@@ -44,7 +57,7 @@ class FaceTracker {
         val currentTrack = activeTrack
         if (currentTrack != null) {
             val elapsedNanos = nowNanos - currentTrack.lastSeenNanos
-            if (elapsedNanos <= 400_000_000L) { // 400 ms gap threshold
+            if (elapsedNanos <= maxGapNanos) {
                 // Find detection with highest IoU
                 var bestIou = 0f
                 var bestBox: FaceBox? = null
@@ -56,9 +69,14 @@ class FaceTracker {
                     }
                 }
 
-                if (bestBox != null && bestIou >= 0.30f) {
+                val isMatch = bestBox != null && (
+                    bestIou >= minIouThreshold ||
+                    currentTrack.lastBox.centerDistance(bestBox) < 0.5f * currentTrack.lastBox.width
+                )
+
+                if (isMatch) {
                     val updated = currentTrack.copy(
-                        lastBox = bestBox,
+                        lastBox = bestBox!!,
                         lastSeenNanos = nowNanos,
                         hits = currentTrack.hits + 1
                     )
@@ -82,5 +100,10 @@ class FaceTracker {
 
     fun reset() {
         activeTrack = null
+    }
+
+    companion object {
+        const val DEFAULT_MAX_GAP_NANOS = 1_000_000_000L // 1000 ms adaptive threshold (Doc 23 WP-2.1)
+        const val DEFAULT_MIN_IOU_THRESHOLD = 0.20f
     }
 }

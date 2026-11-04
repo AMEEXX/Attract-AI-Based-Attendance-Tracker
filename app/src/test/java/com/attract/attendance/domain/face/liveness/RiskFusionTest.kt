@@ -23,11 +23,16 @@ class RiskFusionTest {
 
     // ---------------------------------------------------------------- policy constants are the locked values
     @Test
-    fun policy_isDoc22() {
-        assertEquals("liveness_v5_doc22", policy.id)
+    fun policy_isDoc23() {
+        assertEquals("liveness_v6_doc23", policy.id)
         assertEquals(0.10f, policy.padSpoofReject, 0f)
-        assertEquals(8f, policy.parallaxMinYawDeltaDeg, 0f)
-        assertEquals(0.035f, policy.parallaxLiveResidual, 0f)
+        assertEquals(5f, policy.parallaxMinYawDeltaDeg, 0f)
+        assertEquals(0.030f, policy.parallaxLiveResidual, 0f)
+        assertEquals(20_000L, policy.latchTtlMs)
+        assertEquals(800L, policy.faceDropoutGraceMs)
+        assertEquals(6000L, policy.maxChallengeMs)
+        assertEquals(7f, policy.challengeTurnDeg, 0f)
+        assertEquals(12_000L, policy.maxMediumMsBeforeAssist)
         assertEquals(3, policy.pixelVetoWindow)
         assertEquals(2, policy.pixelVetoMinHits)
         assertEquals(0.22f, policy.maxHighFrequencyEnergy, 0f)

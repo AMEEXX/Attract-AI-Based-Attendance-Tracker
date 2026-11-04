@@ -1073,10 +1073,12 @@ fun AttendanceScreen(
 
         // Live attendance: history is fed ONLY from the preview callback (single source, Doc 22 WP-C);
         // here we just read the fused verdict. Enrollment keeps the single-frame LivenessEngine check.
+        var livenessGuidance: com.attract.attendance.domain.face.liveness.LivenessGuidance? = null
         val livenessEval = if (isEnrollmentMode) {
             LivenessEngine.check(signals, lastQualitySignals, patSignals)
         } else {
             val verdict = livenessOrchestrator.evaluate(signals)
+            livenessGuidance = verdict.guidance
             AppLog.i(
                 TAG,
                 "[LIVENESS] risk=${verdict.risk} guidance=${verdict.guidance} pad=${verdict.evidence.padScore} " +
@@ -1092,6 +1094,14 @@ fun AttendanceScreen(
         }
         if (livenessEval is LivenessResult.Rejected) {
             if (livenessEval.reason == com.attract.attendance.domain.face.LivenessReason.ACTIVE_CHECK_REQUIRED) {
+                // WP-8: Escape hatch to Teacher Assistance after 12s in MEDIUM
+                if (livenessGuidance == com.attract.attendance.domain.face.liveness.LivenessGuidance.TEACHER_ASSIST) {
+                    statusMessage = AttendanceStrings.LIVENESS_TEACHER_ASSIST_TITLE
+                    statusSubtitle = AttendanceStrings.LIVENESS_TEACHER_ASSIST_SUBTITLE
+                    showTeacherAssistDialog = true
+                    isValidatingFrame = false
+                    return
+                }
                 // NOT a spoof verdict: guide the student (small head turn / random challenge) and keep previewing.
                 val challenge = livenessOrchestrator.currentChallenge
                 statusMessage = if (challenge == null) {
@@ -1722,17 +1732,14 @@ fun AttendanceScreen(
                             if (!isEnrollmentFlow &&
                                 (state == SessionScreenState.CAPTURING || state == SessionScreenState.READY)
                             ) {
-                                if (signals != null && signals.faceCount == 1) {
-                                    livenessOrchestrator.onFrame(
-                                        signals = signals,
-                                        patSignals = bundle.patSignals,
-                                        mesh = bundle.meshResult,
-                                        trackId = bundle.trackId,
-                                    )
-                                } else if (signals != null && signals.faceCount != 1) {
-                                    // Face left the frame or a second face appeared: never carry evidence across.
-                                    livenessOrchestrator.reset()
-                                }
+                                // Doc 23 WP-2: faceCount dropout grace (800ms) and multi-face logic are inside onFrame
+                                livenessOrchestrator.onFrame(
+                                    signals = signals,
+                                    patSignals = bundle.patSignals,
+                                    mesh = bundle.meshResult,
+                                    trackId = bundle.trackId,
+                                    faceCount = signals?.faceCount ?: 0,
+                                )
                             }
                             processAutoCaptureFrame(bundle)
                         },

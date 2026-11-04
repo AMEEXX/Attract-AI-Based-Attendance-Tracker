@@ -238,4 +238,80 @@ class LivenessOrchestratorTest {
         o.markInjectionSuspected()
         assertEquals(LivenessRisk.HIGH, o.evaluate(signals, now).risk)
     }
+
+    // ---------------------------------------------------------------- Doc 23 tests
+    @Test
+    fun latch_survivesWindowExpiry() {
+        val o = orch()
+        val base = face()
+        // Turn at t = now (t0)
+        o.onFrame(signals, clean, mesh(base, 0f), padScore = 0.9f, trackId = 1, nowMs = now); now += 150
+        o.onFrame(signals, clean, mesh(rotY(base, 15.0), 15f), padScore = 0.95f, trackId = 1, nowMs = now)
+
+        assertNotNull("Latch must be set on proven turn", o.activeLatch)
+
+        // Advance 5000ms: outside 3000ms mesh window, but within 20000ms latch TTL
+        now += 5000
+        val v = o.evaluate(signals, now)
+        assertEquals("Latch must maintain LOW risk past mesh window expiry", LivenessRisk.LOW, v.risk)
+        assertEquals(LivenessResult.Passed, v.result)
+    }
+
+    @Test
+    fun latch_revokedByPixelVeto() {
+        val o = orch()
+        val base = face()
+        o.onFrame(signals, clean, mesh(base, 0f), padScore = 0.9f, trackId = 1, nowMs = now); now += 150
+        o.onFrame(signals, clean, mesh(rotY(base, 15.0), 15f), padScore = 0.95f, trackId = 1, nowMs = now)
+        assertNotNull(o.activeLatch)
+
+        // Then 2 pixel trips occur
+        now += 150; o.onFrame(signals, screenTrip, null, trackId = 1, nowMs = now)
+        now += 150; o.onFrame(signals, screenTrip, null, trackId = 1, nowMs = now)
+
+        val v = o.evaluate(signals, now)
+        assertEquals("Latch must be revoked by confirmed pixel veto", LivenessRisk.HIGH, v.risk)
+        assertNull("Active latch must be cleared upon HIGH veto", o.activeLatch)
+    }
+
+    @Test
+    fun faceDropout_under800ms_keepsHistory() {
+        val o = orch()
+        val base = face()
+        // Frame 1 with face
+        o.onFrame(signals, clean, mesh(base, 0f), padScore = 0.9f, trackId = 1, faceCount = 1, nowMs = now)
+        assertEquals(1, o.meshFrameCount)
+
+        // Single frame dropout (faceCount = 0 for 200ms < 800ms)
+        now += 200
+        o.onFrame(null, null, null, trackId = null, faceCount = 0, nowMs = now)
+        // History should NOT be wiped
+        assertEquals(1, o.meshFrameCount)
+
+        // Face reappears and completes turn
+        now += 200
+        o.onFrame(signals, clean, mesh(rotY(base, 15.0), 15f), padScore = 0.95f, trackId = 1, faceCount = 1, nowMs = now)
+        assertEquals(2, o.meshFrameCount)
+
+        val v = o.evaluate(signals, now)
+        assertEquals("Head turn with momentary dropout must still succeed", LivenessRisk.LOW, v.risk)
+        assertEquals(LivenessResult.Passed, v.result)
+    }
+
+    @Test
+    fun mediumEscapeHatch_after12s_returnsTeacherAssist() {
+        val o = orch()
+        // Frame at t = 0
+        o.onFrame(signals, clean, mesh(face(), 0f), padScore = 0.9f, trackId = 1, nowMs = now)
+        val v1 = o.evaluate(signals, now)
+        assertEquals(LivenessRisk.MEDIUM, v1.risk)
+        assertEquals(LivenessGuidance.TURN_HEAD, v1.guidance)
+
+        // Fast forward 12.5 seconds without proving liveness
+        now += 12_500L
+        o.onFrame(signals, clean, mesh(face(), 0f), padScore = 0.9f, trackId = 1, nowMs = now)
+        val v2 = o.evaluate(signals, now)
+        assertEquals(LivenessRisk.MEDIUM, v2.risk)
+        assertEquals("Must offer TEACHER_ASSIST after 12s in medium", LivenessGuidance.TEACHER_ASSIST, v2.guidance)
+    }
 }

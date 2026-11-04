@@ -1,9 +1,9 @@
 {
   "app/build.gradle.kts": {
     "mtime": 1793615250.9295843,
-    "seen": 1793685061.1206362,
+    "seen": 1793814015.8791635,
     "ast_hash": "125d7201a58bdc006bf01120280e787f",
-    "semantic_hash": ""
+    "semantic_hash": "125d7201a58bdc006bf01120280e787f"
   },
   "app/schemas/com.attract.attendance.data.local.AttractDatabase/1.json": {
     "mtime": 1791364952.4901896,
@@ -43,9 +43,9 @@
   },
   "app/src/androidTest/java/com/attract/acceptance/SeedWebcamTestData.kt": {
     "mtime": 1793608293.5291572,
-    "seen": 1793685061.1206548,
+    "seen": 1793814015.8791907,
     "ast_hash": "beeca3926add631008c06dd66334099b",
-    "semantic_hash": ""
+    "semantic_hash": "beeca3926add631008c06dd66334099b"
   },
   "app/src/androidTest/java/com/attract/attendance/acceptance/FullWorkflowAcceptanceTest.kt": {
     "mtime": 1791364952.5283105,
@@ -55,9 +55,9 @@
   },
   "app/src/androidTest/java/com/attract/attendance/acceptance/RealUiFlowAcceptanceTest.kt": {
     "mtime": 1793608293.5401616,
-    "seen": 1793685061.1206572,
+    "seen": 1793814015.8791943,
     "ast_hash": "f6ccfbd3dd53b1d0d0efa9acc19f2413",
-    "semantic_hash": ""
+    "semantic_hash": "f6ccfbd3dd53b1d0d0efa9acc19f2413"
   },
   "app/src/androidTest/java/com/attract/attendance/acceptance/RecognitionPathDiagnosticTest.kt": {
     "mtime": 1791364952.5382707,
@@ -73,9 +73,9 @@
   },
   "app/src/androidTest/java/com/attract/attendance/data/local/RoomDatabaseIntegrationTest.kt": {
     "mtime": 1793609369.6236844,
-    "seen": 1793685061.1206605,
+    "seen": 1793814015.8791995,
     "ast_hash": "c890cbb58cb28c42485f8ba27554a3ab",
-    "semantic_hash": ""
+    "semantic_hash": "c890cbb58cb28c42485f8ba27554a3ab"
   },
   "app/src/androidTest/java/com/attract/attendance/data/local/TemplateMigrationAndroidTest.kt": {
     "mtime": 1791364952.5510623,
@@ -169,9 +169,9 @@
   },
   "app/src/main/java/com/attract/attendance/app/AttractApplication.kt": {
     "mtime": 1793608293.554816,
-    "seen": 1793685061.1206787,
+    "seen": 1793814015.8792229,
     "ast_hash": "c847466f6991a51eddfbd0416edf3a61",
-    "semantic_hash": ""
+    "semantic_hash": "c847466f6991a51eddfbd0416edf3a61"
   },
   "app/src/main/java/com/attract/attendance/app/MainActivity.kt": {
     "mtime": 1793608293.556751,
@@ -217,15 +217,15 @@
   },
   "app/src/main/java/com/attract/attendance/data/drive/DriveBackupWorker.kt": {
     "mtime": 1793608293.5611813,
-    "seen": 1793685061.1206872,
+    "seen": 1793814015.8792343,
     "ast_hash": "b91f74e65823ccc813dbefbdbec4b721",
-    "semantic_hash": ""
+    "semantic_hash": "b91f74e65823ccc813dbefbdbec4b721"
   },
   "app/src/main/java/com/attract/attendance/data/drive/DriveServiceHelper.kt": {
     "mtime": 1793608293.5701818,
-    "seen": 1793685061.1206882,
+    "seen": 1793814015.8792355,
     "ast_hash": "57ce85b80b6ee26db94e818a74cd458c",
-    "semantic_hash": ""
+    "semantic_hash": "57ce85b80b6ee26db94e818a74cd458c"
   },
   "app/src/main/java/com/attract/attendance/data/drive/DriveSyncState.kt": {
     "mtime": 1791364952.923361,
@@ -253,9 +253,9 @@
   },
   "app/src/main/java/com/attract/attendance/data/importexport/OcrRosterParser.kt": {
     "mtime": 1793608293.592191,
-    "seen": 1793685061.1206942,
+    "seen": 1793814015.879243,
     "ast_hash": "b52e60384309fd8ea7bf60a8026af0d6",
-    "semantic_hash": ""
+    "semantic_hash": "b52e60384309fd8ea7bf60a8026af0d6"
   },
   "app/src/main/java/com/attract/attendance/data/importexport/RosterTablePlanner.kt": {
     "mtime": 1791364952.9566603,
@@ -271,9 +271,9 @@
   },
   "app/src/main/java/com/attract/attendance/data/local/AttractDatabase.kt": {
     "mtime": 1793608293.5981884,
-    "seen": 1793685061.1207,
+    "seen": 1793814015.8792484,
     "ast_hash": "543c77defa0ce93ef2df82e29b3fc50a",
-    "semantic_hash": ""
+    "semantic_hash": "543c77defa0ce93ef2df82e29b3fc50a"
   },
   "app/src/main/java/com/attract/attendance/data/local/Converters.kt": {
     "mtime": 1791364952.9695146,
@@ -283,9 +283,9 @@
   },
   "app/src/main/java/com/attract/attendance/data/local/Daos.kt": {
     "mtime": 1793615936.304323,
-    "seen": 1793685061.1207018,
+    "seen": 1793814015.8792508,
     "ast_hash": "e0121b067c44c6fa0c9a33e1330cb25e",
-    "semantic_hash": ""
+    "semantic_hash": "e0121b067c44c6fa0c9a33e1330cb25e"
   },
   "app/src/main/java/com/attract/attendance/data/local/Entities.kt": {
     "mtime": 1791364952.974945,
@@ -295,21 +295,21 @@
   },
   "app/src/main/java/com/attract/attendance/data/repository/AttractRepository.kt": {
     "mtime": 1793685535.1743574,
-    "seen": 1793685681.519602,
+    "seen": 1793814015.879253,
     "ast_hash": "4006df9b7618580427aa5eeabe3f2b23",
-    "semantic_hash": ""
+    "semantic_hash": "4006df9b7618580427aa5eeabe3f2b23"
   },
   "app/src/main/java/com/attract/attendance/data/security/PinHasher.kt": {
     "mtime": 1793608293.6186275,
-    "seen": 1793685061.1207044,
+    "seen": 1793814015.8792543,
     "ast_hash": "c39c3f0df7dd47638b922c9d9ad20942",
-    "semantic_hash": ""
+    "semantic_hash": "c39c3f0df7dd47638b922c9d9ad20942"
   },
   "app/src/main/java/com/attract/attendance/data/security/TemplateEnvelopeCodec.kt": {
     "mtime": 1793608293.6216347,
-    "seen": 1793685061.1207054,
+    "seen": 1793814015.8792553,
     "ast_hash": "f2644a7e205341c0c3b02a2e2c069375",
-    "semantic_hash": ""
+    "semantic_hash": "f2644a7e205341c0c3b02a2e2c069375"
   },
   "app/src/main/java/com/attract/attendance/data/theme/ThemeRepository.kt": {
     "mtime": 1791364952.9906921,
@@ -349,21 +349,21 @@
   },
   "app/src/main/java/com/attract/attendance/domain/face/AdaptiveVerificationEngine.kt": {
     "mtime": 1793631072.0894594,
-    "seen": 1793685061.1207128,
+    "seen": 1793814015.8792627,
     "ast_hash": "06da92c0d141936174ea6d530b641337",
-    "semantic_hash": ""
+    "semantic_hash": "06da92c0d141936174ea6d530b641337"
   },
   "app/src/main/java/com/attract/attendance/domain/face/BiometricModelProfile.kt": {
-    "mtime": 1793631006.0628326,
-    "seen": 1793685061.1207154,
-    "ast_hash": "36652df599d7f7a1f46160e7f5a46e06",
-    "semantic_hash": ""
+    "mtime": 1793803346.0346017,
+    "seen": 1793814015.8792658,
+    "ast_hash": "0c69889558beaf892c32425b04d93451",
+    "semantic_hash": "0c69889558beaf892c32425b04d93451"
   },
   "app/src/main/java/com/attract/attendance/domain/face/EmbeddingEngine.kt": {
     "mtime": 1793608293.6246276,
-    "seen": 1793685061.120718,
+    "seen": 1793814015.8792694,
     "ast_hash": "bda8bd15fb3291e7867424b5002b26a5",
-    "semantic_hash": ""
+    "semantic_hash": "bda8bd15fb3291e7867424b5002b26a5"
   },
   "app/src/main/java/com/attract/attendance/domain/face/EnrollmentBatch.kt": {
     "mtime": 1791364953.022596,
@@ -379,39 +379,39 @@
   },
   "app/src/main/java/com/attract/attendance/domain/face/FaceAligner.kt": {
     "mtime": 1793608293.6306407,
-    "seen": 1793685061.1207209,
+    "seen": 1793814015.8792732,
     "ast_hash": "8c872ad6b61629896e1d5af8c5c7f8b7",
-    "semantic_hash": ""
+    "semantic_hash": "8c872ad6b61629896e1d5af8c5c7f8b7"
   },
   "app/src/main/java/com/attract/attendance/domain/face/FaceQualityConfig.kt": {
     "mtime": 1793630993.1507988,
-    "seen": 1793685061.1207225,
+    "seen": 1793814015.8792756,
     "ast_hash": "3cdfad70dcb1fabdf18f83ec28436883",
-    "semantic_hash": ""
+    "semantic_hash": "3cdfad70dcb1fabdf18f83ec28436883"
   },
   "app/src/main/java/com/attract/attendance/domain/face/FaceQualityEngine.kt": {
     "mtime": 1793631058.3854244,
-    "seen": 1793685061.1207232,
+    "seen": 1793814015.8792765,
     "ast_hash": "fc4e31d45cb04c1cca0bbf1b40e91c1b",
-    "semantic_hash": ""
+    "semantic_hash": "fc4e31d45cb04c1cca0bbf1b40e91c1b"
   },
   "app/src/main/java/com/attract/attendance/domain/face/FaceQualityResult.kt": {
     "mtime": 1793610119.3284168,
-    "seen": 1793685061.1207242,
+    "seen": 1793814015.8792772,
     "ast_hash": "6832aa45aac600a514deaa6229cf9344",
-    "semantic_hash": ""
+    "semantic_hash": "6832aa45aac600a514deaa6229cf9344"
   },
   "app/src/main/java/com/attract/attendance/domain/face/FaceQualitySignals.kt": {
     "mtime": 1793630958.896089,
-    "seen": 1793685061.120725,
+    "seen": 1793814015.8792787,
     "ast_hash": "f03f1b92eac471521dac53a2c1037916",
-    "semantic_hash": ""
+    "semantic_hash": "f03f1b92eac471521dac53a2c1037916"
   },
   "app/src/main/java/com/attract/attendance/domain/face/FrameBundle.kt": {
-    "mtime": 1793633191.2511485,
-    "seen": 1793685061.1207268,
-    "ast_hash": "a3fe24bec43c9525a8e73a1b179f2858",
-    "semantic_hash": ""
+    "mtime": 1793803346.0369165,
+    "seen": 1793814015.8792808,
+    "ast_hash": "ae339ddd3982bb918051a68aec25c71a",
+    "semantic_hash": "ae339ddd3982bb918051a68aec25c71a"
   },
   "app/src/main/java/com/attract/attendance/domain/face/FrameObservation.kt": {
     "mtime": 1791364953.0472739,
@@ -432,22 +432,22 @@
     "semantic_hash": "961b45ba0e43435830d8b93d5325edfc"
   },
   "app/src/main/java/com/attract/attendance/domain/face/LivenessEngine.kt": {
-    "mtime": 1793610979.8765323,
-    "seen": 1793685061.1207342,
-    "ast_hash": "656d4c28f5d7b8865d1d1fadacf1eb6c",
-    "semantic_hash": ""
+    "mtime": 1793715796.116684,
+    "seen": 1793814015.8792896,
+    "ast_hash": "15af9de7cb39445e31da1eb988597d98",
+    "semantic_hash": "15af9de7cb39445e31da1eb988597d98"
   },
   "app/src/main/java/com/attract/attendance/domain/face/PresentationAttackDetector.kt": {
     "mtime": 1793632057.0352426,
-    "seen": 1793685061.1207378,
+    "seen": 1793814015.8792973,
     "ast_hash": "7cffbf4c12b7f812c85f1931b988d05c",
-    "semantic_hash": ""
+    "semantic_hash": "7cffbf4c12b7f812c85f1931b988d05c"
   },
   "app/src/main/java/com/attract/attendance/domain/face/PresentationAttackSignals.kt": {
-    "mtime": 1793631992.6522367,
-    "seen": 1793685061.1207385,
-    "ast_hash": "f1a677bba00005059525a4addb5ebad0",
-    "semantic_hash": ""
+    "mtime": 1793803346.0419905,
+    "seen": 1793814015.879299,
+    "ast_hash": "a2fdff126d424b8c415a834c30ba167e",
+    "semantic_hash": "a2fdff126d424b8c415a834c30ba167e"
   },
   "app/src/main/java/com/attract/attendance/domain/face/RecognitionDecisionEngine.kt": {
     "mtime": 1791364953.0659566,
@@ -469,9 +469,9 @@
   },
   "app/src/main/java/com/attract/attendance/domain/face/YoloFaceDetector.kt": {
     "mtime": 1793615754.660434,
-    "seen": 1793685061.1207438,
+    "seen": 1793814015.8793085,
     "ast_hash": "70c0c941030395978591ad243583e102",
-    "semantic_hash": ""
+    "semantic_hash": "70c0c941030395978591ad243583e102"
   },
   "app/src/main/java/com/attract/attendance/domain/session/SessionContext.kt": {
     "mtime": 1791364953.0794623,
@@ -505,15 +505,15 @@
   },
   "app/src/main/java/com/attract/attendance/feature/app/AttractApp.kt": {
     "mtime": 1793616343.4162512,
-    "seen": 1793685061.1207552,
+    "seen": 1793814015.8793244,
     "ast_hash": "43cf7726dbfde05e787d2141cf268219",
-    "semantic_hash": ""
+    "semantic_hash": "43cf7726dbfde05e787d2141cf268219"
   },
   "app/src/main/java/com/attract/attendance/feature/app/AttractViewModel.kt": {
     "mtime": 1793616256.381528,
-    "seen": 1793685061.120756,
+    "seen": 1793814015.8793254,
     "ast_hash": "966588ca9049b3fdff1b703baeaeb2d1",
-    "semantic_hash": ""
+    "semantic_hash": "966588ca9049b3fdff1b703baeaeb2d1"
   },
   "app/src/main/java/com/attract/attendance/feature/app/Route.kt": {
     "mtime": 1791364953.1056795,
@@ -528,28 +528,28 @@
     "semantic_hash": "b0f8fae2560a88aaf3437a968abb88b8"
   },
   "app/src/main/java/com/attract/attendance/feature/attendance/AttendanceScreen.kt": {
-    "mtime": 1793633586.0848238,
-    "seen": 1793685061.120759,
-    "ast_hash": "c9b77cfb7cb4eb851f2a026490d08132",
-    "semantic_hash": ""
+    "mtime": 1793805380.4216638,
+    "seen": 1793814015.8793292,
+    "ast_hash": "728d3c13b3a132864ca50a74852f1cc4",
+    "semantic_hash": "728d3c13b3a132864ca50a74852f1cc4"
   },
   "app/src/main/java/com/attract/attendance/feature/attendance/AttendanceStrings.kt": {
-    "mtime": 1793633217.055727,
-    "seen": 1793685061.1207597,
-    "ast_hash": "e0888139ee6d5bb31d6a8ad126ea43f9",
-    "semantic_hash": ""
+    "mtime": 1793803346.0537431,
+    "seen": 1793814015.8793304,
+    "ast_hash": "a33e7c8e76257a4ef939cf926025d58c",
+    "semantic_hash": "a33e7c8e76257a4ef939cf926025d58c"
   },
   "app/src/main/java/com/attract/attendance/feature/attendance/CameraPreview.kt": {
-    "mtime": 1793633200.7255952,
-    "seen": 1793685061.1207619,
-    "ast_hash": "8035aa417732a51d732845dac4a88087",
-    "semantic_hash": ""
+    "mtime": 1793803346.0567446,
+    "seen": 1793814015.8793323,
+    "ast_hash": "3c0d348dbcbf17ed3cb8a737a2b72c83",
+    "semantic_hash": "3c0d348dbcbf17ed3cb8a737a2b72c83"
   },
   "app/src/main/java/com/attract/attendance/feature/attendance/PresentationAttackAnalyzer.kt": {
-    "mtime": 1793632019.5512464,
-    "seen": 1793685061.1207626,
-    "ast_hash": "8380ee4b1f02646dc6e0f2510e840d7a",
-    "semantic_hash": ""
+    "mtime": 1793803346.0592573,
+    "seen": 1793814015.8793333,
+    "ast_hash": "e71d191217e13dd6e76d0fddc0e8b3b0",
+    "semantic_hash": "e71d191217e13dd6e76d0fddc0e8b3b0"
   },
   "app/src/main/java/com/attract/attendance/feature/calendar/CalendarScreen.kt": {
     "mtime": 1791364953.1285136,
@@ -571,9 +571,9 @@
   },
   "app/src/main/java/com/attract/attendance/lockdown/data/crypto/KeystoreEmbeddingCipher.kt": {
     "mtime": 1793608293.675319,
-    "seen": 1793685061.1207669,
+    "seen": 1793814015.879338,
     "ast_hash": "823c7df81a1648ae81300363792e1ddb",
-    "semantic_hash": ""
+    "semantic_hash": "823c7df81a1648ae81300363792e1ddb"
   },
   "app/src/main/java/com/attract/attendance/lockdown/domain/LockdownInterfaces.kt": {
     "mtime": 1791364953.1407838,
@@ -589,9 +589,9 @@
   },
   "app/src/main/java/com/attract/attendance/lockdown/domain/PinBackedAuthenticator.kt": {
     "mtime": 1793608293.6774855,
-    "seen": 1793685061.1207697,
+    "seen": 1793814015.8793416,
     "ast_hash": "7c6d9c1c60aad6048ce60f77a64866cc",
-    "semantic_hash": ""
+    "semantic_hash": "7c6d9c1c60aad6048ce60f77a64866cc"
   },
   "app/src/main/java/com/attract/attendance/lockdown/domain/PrerequisitesChecker.kt": {
     "mtime": 1791364953.1503122,
@@ -691,15 +691,15 @@
   },
   "app/src/main/java/com/attract/attendance/ui/components/OcrConfirmationDialog.kt": {
     "mtime": 1791576009.204938,
-    "seen": 1793685061.1207879,
+    "seen": 1793814015.879438,
     "ast_hash": "9323b6a7bb33b2af782a12fbd14c2e9b",
-    "semantic_hash": ""
+    "semantic_hash": "9323b6a7bb33b2af782a12fbd14c2e9b"
   },
   "app/src/main/java/com/attract/attendance/ui/components/OcrImportSheet.kt": {
     "mtime": 1793611522.6334512,
-    "seen": 1793685061.1207888,
+    "seen": 1793814015.8794389,
     "ast_hash": "877855f7dc6d81ec20ded1f81ff6d605",
-    "semantic_hash": ""
+    "semantic_hash": "877855f7dc6d81ec20ded1f81ff6d605"
   },
   "app/src/main/java/com/attract/attendance/ui/components/SearchField.kt": {
     "mtime": 1791364953.2040126,
@@ -751,9 +751,9 @@
   },
   "app/src/main/java/com/attract/attendance/ui/components/biometric/RosterSelectionBottomSheet.kt": {
     "mtime": 1793608293.6823483,
-    "seen": 1793685061.1207974,
+    "seen": 1793814015.879452,
     "ast_hash": "54b5078a119df6727974b582bfbe1050",
-    "semantic_hash": ""
+    "semantic_hash": "54b5078a119df6727974b582bfbe1050"
   },
   "app/src/main/java/com/attract/attendance/ui/components/biometric/VerificationMeter.kt": {
     "mtime": 1791364953.2378483,
@@ -787,15 +787,15 @@
   },
   "app/src/main/java/com/attract/attendance/ui/screens/history/SessionHistoryScreen.kt": {
     "mtime": 1791576009.2064667,
-    "seen": 1793685061.1208038,
+    "seen": 1793814015.8794668,
     "ast_hash": "04e4885187b54d837e0139ffcf7cc7e5",
-    "semantic_hash": ""
+    "semantic_hash": "04e4885187b54d837e0139ffcf7cc7e5"
   },
   "app/src/main/java/com/attract/attendance/ui/screens/onboarding/OnboardingScreen.kt": {
     "mtime": 1793608293.6852741,
-    "seen": 1793685061.1208045,
+    "seen": 1793814015.8794684,
     "ast_hash": "5fb831c5fb4d650c2cee04d3591f5660",
-    "semantic_hash": ""
+    "semantic_hash": "5fb831c5fb4d650c2cee04d3591f5660"
   },
   "app/src/main/java/com/attract/attendance/ui/screens/onboarding/ThemeSelectionScreen.kt": {
     "mtime": 1791576009.8953242,
@@ -811,9 +811,9 @@
   },
   "app/src/main/java/com/attract/attendance/ui/screens/settings/GoogleDriveSyncCard.kt": {
     "mtime": 1791633643.968305,
-    "seen": 1793685061.1208072,
+    "seen": 1793814015.8794744,
     "ast_hash": "84ccbd6f64564da13e5cd4458cf028d5",
-    "semantic_hash": ""
+    "semantic_hash": "84ccbd6f64564da13e5cd4458cf028d5"
   },
   "app/src/main/java/com/attract/attendance/ui/screens/settings/SettingsScreen.kt": {
     "mtime": 1793608293.687341,
@@ -823,9 +823,9 @@
   },
   "app/src/main/java/com/attract/attendance/ui/screens/students/StudentDetailScreen.kt": {
     "mtime": 1793616328.9967582,
-    "seen": 1793685061.120809,
+    "seen": 1793814015.8794787,
     "ast_hash": "eddd5ad144fd85ef2c87fed943c09f7b",
-    "semantic_hash": ""
+    "semantic_hash": "eddd5ad144fd85ef2c87fed943c09f7b"
   },
   "app/src/main/java/com/attract/attendance/ui/theme/Color.kt": {
     "mtime": 1791364953.2761872,
@@ -907,9 +907,9 @@
   },
   "app/src/test/java/com/attract/attendance/data/importexport/BackupExporterTest.kt": {
     "mtime": 1793608293.7077942,
-    "seen": 1793685061.1208255,
+    "seen": 1793814015.879504,
     "ast_hash": "1bd181bd0a08e70bf4ac12899487b126",
-    "semantic_hash": ""
+    "semantic_hash": "1bd181bd0a08e70bf4ac12899487b126"
   },
   "app/src/test/java/com/attract/attendance/data/importexport/RosterTablePlannerTest.kt": {
     "mtime": 1791364953.3340263,
@@ -937,9 +937,9 @@
   },
   "app/src/test/java/com/attract/attendance/data/security/TemplateEnvelopeCodecTest.kt": {
     "mtime": 1793608293.7127159,
-    "seen": 1793685061.120833,
+    "seen": 1793814015.879518,
     "ast_hash": "c62d81948000f04ee9629cb80376a955",
-    "semantic_hash": ""
+    "semantic_hash": "c62d81948000f04ee9629cb80376a955"
   },
   "app/src/test/java/com/attract/attendance/domain/AttendanceRulesTest.kt": {
     "mtime": 1791364953.350217,
@@ -979,9 +979,9 @@
   },
   "app/src/test/java/com/attract/attendance/domain/face/ConsolidatedFaceVerificationPipelineTest.kt": {
     "mtime": 1793610993.697142,
-    "seen": 1793685061.120841,
+    "seen": 1793814015.8795304,
     "ast_hash": "b3706e6188f5c6466c9a42eaf46f1a2b",
-    "semantic_hash": ""
+    "semantic_hash": "b3706e6188f5c6466c9a42eaf46f1a2b"
   },
   "app/src/test/java/com/attract/attendance/domain/face/DefectReproductionTest.kt": {
     "mtime": 1791364953.371271,
@@ -1003,15 +1003,15 @@
   },
   "app/src/test/java/com/attract/attendance/domain/face/FaceQualityEngineTest.kt": {
     "mtime": 1793631182.1294484,
-    "seen": 1793685061.1208453,
+    "seen": 1793814015.8795369,
     "ast_hash": "55510d3f39efb9c275bb04eb016ca359",
-    "semantic_hash": ""
+    "semantic_hash": "55510d3f39efb9c275bb04eb016ca359"
   },
   "app/src/test/java/com/attract/attendance/domain/face/LivenessEngineTest.kt": {
     "mtime": 1793609843.18965,
-    "seen": 1793685061.1208494,
+    "seen": 1793814015.8795424,
     "ast_hash": "316de3533d4b55209e89bef601dda540",
-    "semantic_hash": ""
+    "semantic_hash": "316de3533d4b55209e89bef601dda540"
   },
   "app/src/test/java/com/attract/attendance/domain/face/PoseEstimatorTest.kt": {
     "mtime": 1791364953.3873923,
@@ -1021,9 +1021,9 @@
   },
   "app/src/test/java/com/attract/attendance/domain/face/PresentationAttackDetectorTest.kt": {
     "mtime": 1793632171.9452913,
-    "seen": 1793685061.120853,
+    "seen": 1793814015.8795474,
     "ast_hash": "277a13cffd672a83168426ce43be8a01",
-    "semantic_hash": ""
+    "semantic_hash": "277a13cffd672a83168426ce43be8a01"
   },
   "app/src/test/java/com/attract/attendance/domain/face/RecognitionDecisionEngineTest.kt": {
     "mtime": 1791364953.3977928,
@@ -1051,15 +1051,15 @@
   },
   "app/src/test/java/com/attract/attendance/domain/session/SessionRecoveryManagerTest.kt": {
     "mtime": 1791633404.7925234,
-    "seen": 1793685061.1208632,
+    "seen": 1793814015.8795648,
     "ast_hash": "308a24551f8f40a08b59101fbf45e624",
-    "semantic_hash": ""
+    "semantic_hash": "308a24551f8f40a08b59101fbf45e624"
   },
   "app/src/test/java/com/attract/attendance/feature/app/AttractViewModelTest.kt": {
     "mtime": 1793608293.7147994,
-    "seen": 1793685061.120864,
+    "seen": 1793814015.8795657,
     "ast_hash": "54d738d3b739dd3d29a11d47407716f9",
-    "semantic_hash": ""
+    "semantic_hash": "54d738d3b739dd3d29a11d47407716f9"
   },
   "app/src/test/java/com/attract/attendance/feature/app/StartupCoordinatorTest.kt": {
     "mtime": 1791633404.7955313,
@@ -1147,9 +1147,9 @@
   },
   "app/src/test/java/com/attract/attendance/lockdown/domain/PinAuthTest.kt": {
     "mtime": 1793608293.7177281,
-    "seen": 1793685061.120879,
+    "seen": 1793814015.879585,
     "ast_hash": "a44ff78798eed040e34247c4ab3c980e",
-    "semantic_hash": ""
+    "semantic_hash": "a44ff78798eed040e34247c4ab3c980e"
   },
   "app/src/test/java/com/attract/attendance/lockdown/domain/PrerequisitesCheckerTest.kt": {
     "mtime": 1791364953.4661822,
@@ -1165,9 +1165,9 @@
   },
   "build.gradle.kts": {
     "mtime": 1793608293.7197325,
-    "seen": 1793685061.120882,
+    "seen": 1793814015.8795893,
     "ast_hash": "6fa41a2e07f590427f7b4eea1ff910ad",
-    "semantic_hash": ""
+    "semantic_hash": "6fa41a2e07f590427f7b4eea1ff910ad"
   },
   "gradlew": {
     "mtime": 1791364953.6731634,
@@ -1249,495 +1249,495 @@
   },
   "tools/biometric_eval/app_pipeline.py": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.0915196,
+    "seen": 1793814015.8796082,
     "ast_hash": "b0d3f1a91503bb4acd253b3a3a3d78d8",
-    "semantic_hash": ""
+    "semantic_hash": "b0d3f1a91503bb4acd253b3a3a3d78d8"
   },
   "tools/biometric_eval/build_feature_cache.py": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.0915222,
+    "seen": 1793814015.8796103,
     "ast_hash": "781f13c1e7d878197dd2ec8c7fb22041",
-    "semantic_hash": ""
+    "semantic_hash": "781f13c1e7d878197dd2ec8c7fb22041"
   },
   "tools/biometric_eval/calibrate.py": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.091524,
+    "seen": 1793814015.879612,
     "ast_hash": "941a6b993595b926181e51d2436b0a19",
-    "semantic_hash": ""
+    "semantic_hash": "941a6b993595b926181e51d2436b0a19"
   },
   "tools/biometric_eval/exp1_pose_sweep.py": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.0915253,
+    "seen": 1793814015.8796144,
     "ast_hash": "8b0f8f8fa255eff0f39725422b351094",
-    "semantic_hash": ""
+    "semantic_hash": "8b0f8f8fa255eff0f39725422b351094"
   },
   "tools/biometric_eval/exp1b_quality_gates.py": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.0915272,
+    "seen": 1793814015.8796155,
     "ast_hash": "4de37a9c4dbc2377f5d4a37f2266ac42",
-    "semantic_hash": ""
+    "semantic_hash": "4de37a9c4dbc2377f5d4a37f2266ac42"
   },
   "tools/biometric_eval/exp2_embedding_sanity.py": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.0915284,
+    "seen": 1793814015.8796177,
     "ast_hash": "cec3fa3659d50c35cbe1adf6ceb5ad18",
-    "semantic_hash": ""
+    "semantic_hash": "cec3fa3659d50c35cbe1adf6ceb5ad18"
   },
   "tools/biometric_eval/exp2b_center_face.py": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.09153,
+    "seen": 1793814015.8796191,
     "ast_hash": "add309b61f76fa2ab2fd3ebd8177d8e7",
-    "semantic_hash": ""
+    "semantic_hash": "add309b61f76fa2ab2fd3ebd8177d8e7"
   },
   "tools/biometric_eval/exp3_pose_estimators.py": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.0915322,
+    "seen": 1793814015.879623,
     "ast_hash": "7f7d6cf78f005fba4c692991d738f39f",
-    "semantic_hash": ""
+    "semantic_hash": "7f7d6cf78f005fba4c692991d738f39f"
   },
   "tools/biometric_eval/exp4_turn_templates.py": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.0915337,
+    "seen": 1793814015.879624,
     "ast_hash": "34e430c365d3c3530e5af6dd94a8eb4f",
-    "semantic_hash": ""
+    "semantic_hash": "34e430c365d3c3530e5af6dd94a8eb4f"
   },
   "tools/biometric_eval/extract_datasets.py": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.0915434,
+    "seen": 1793814015.8796356,
     "ast_hash": "6e067efd5cb276cbc903e98e104038eb",
-    "semantic_hash": ""
+    "semantic_hash": "6e067efd5cb276cbc903e98e104038eb"
   },
   "tools/biometric_eval/results/calibration_report.json": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.0915456,
+    "seen": 1793814015.8796365,
     "ast_hash": "115318ff67f56086be98b4bad9d89a67",
-    "semantic_hash": ""
+    "semantic_hash": "115318ff67f56086be98b4bad9d89a67"
   },
   "tools/biometric_eval/results/classroom_simulation.json": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.0915482,
+    "seen": 1793814015.8796375,
     "ast_hash": "9313f80b3fe24bb62afeb219fcef4493",
-    "semantic_hash": ""
+    "semantic_hash": "9313f80b3fe24bb62afeb219fcef4493"
   },
   "tools/biometric_eval/results/exp1_pose_sweep.json": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.09155,
+    "seen": 1793814015.8796403,
     "ast_hash": "37b70dda90f111c4954702b00796165b",
-    "semantic_hash": ""
+    "semantic_hash": "37b70dda90f111c4954702b00796165b"
   },
   "tools/biometric_eval/results/exp1b_quality_gates.json": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.091552,
+    "seen": 1793814015.8796415,
     "ast_hash": "074ac1fb6f8173cc5ea513d0979302f2",
-    "semantic_hash": ""
+    "semantic_hash": "074ac1fb6f8173cc5ea513d0979302f2"
   },
   "tools/biometric_eval/results/exp2_embedding_sanity.json": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.0915537,
+    "seen": 1793814015.8796427,
     "ast_hash": "e5af6d23be8092b6e239a4d07018ffdf",
-    "semantic_hash": ""
+    "semantic_hash": "e5af6d23be8092b6e239a4d07018ffdf"
   },
   "tools/biometric_eval/results/exp2b_center_face.json": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.0915549,
+    "seen": 1793814015.879644,
     "ast_hash": "c32fc71b322d75e11542f277dce586b3",
-    "semantic_hash": ""
+    "semantic_hash": "c32fc71b322d75e11542f277dce586b3"
   },
   "tools/biometric_eval/results/exp3_pose_estimators.json": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.0915568,
+    "seen": 1793814015.879645,
     "ast_hash": "ba03d3b492f7b7d61e31b994afbd52be",
-    "semantic_hash": ""
+    "semantic_hash": "ba03d3b492f7b7d61e31b994afbd52be"
   },
   "tools/biometric_eval/results/exp4_turn_templates.json": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.0915587,
+    "seen": 1793814015.879905,
     "ast_hash": "a648e6a8ad6c04a66088bf1f8fa95ea6",
-    "semantic_hash": ""
+    "semantic_hash": "a648e6a8ad6c04a66088bf1f8fa95ea6"
   },
   "tools/biometric_eval/results/policy_confirm_sweep.json": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.0915642,
+    "seen": 1793814015.8799145,
     "ast_hash": "4cc7de097e13dfab4a340713a8f4c616",
-    "semantic_hash": ""
+    "semantic_hash": "4cc7de097e13dfab4a340713a8f4c616"
   },
   "tools/biometric_eval/results/policy_sweep.json": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.0915656,
+    "seen": 1793814015.879916,
     "ast_hash": "66b5e8095a9e39a5e446afc6cd3e1491",
-    "semantic_hash": ""
+    "semantic_hash": "66b5e8095a9e39a5e446afc6cd3e1491"
   },
   "tools/biometric_eval/results/proposed_config.json": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.0915666,
+    "seen": 1793814015.8799183,
     "ast_hash": "2386b2ca7901195a7fad51d613fe4d70",
-    "semantic_hash": ""
+    "semantic_hash": "2386b2ca7901195a7fad51d613fe4d70"
   },
   "tools/biometric_eval/simulate_classroom.py": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.0915675,
+    "seen": 1793814015.8799195,
     "ast_hash": "e664080f7313b18d500acd44fe1f53e1",
-    "semantic_hash": ""
+    "semantic_hash": "e664080f7313b18d500acd44fe1f53e1"
   },
   "tools/biometric_eval/sweep_policy.py": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.091569,
+    "seen": 1793814015.8799229,
     "ast_hash": "f1e9ad9f08b51aabbe40d310eab3d256",
-    "semantic_hash": ""
+    "semantic_hash": "f1e9ad9f08b51aabbe40d310eab3d256"
   },
   "app/google-services.json": {
     "mtime": 1791553313.91898,
-    "seen": 1793685061.120642,
+    "seen": 1793814015.8791726,
     "ast_hash": "67ce09db4a92416f8e21a84ed15893be",
-    "semantic_hash": ""
+    "semantic_hash": "67ce09db4a92416f8e21a84ed15893be"
   },
   "app/src/main/java/com/attract/attendance/data/importexport/GeminiRosterExtractor.kt": {
     "mtime": 1793608293.5851886,
-    "seen": 1793685061.1206934,
+    "seen": 1793814015.879242,
     "ast_hash": "046899e2675f5e8c0250cbb37f48a2f9",
-    "semantic_hash": ""
+    "semantic_hash": "046899e2675f5e8c0250cbb37f48a2f9"
   },
   "app/src/main/java/com/attract/attendance/data/importexport/RollNumberRepair.kt": {
     "mtime": 1791553313.9332333,
-    "seen": 1793685061.1206958,
+    "seen": 1793814015.8792443,
     "ast_hash": "6abe9058517bddd7c1e49c1fa0e9181d",
-    "semantic_hash": ""
+    "semantic_hash": "6abe9058517bddd7c1e49c1fa0e9181d"
   },
   "app/src/main/java/com/attract/attendance/data/importexport/RosterGeometry.kt": {
     "mtime": 1791553313.9341593,
-    "seen": 1793685061.1206968,
+    "seen": 1793814015.8792453,
     "ast_hash": "c6e758d91f6f2918b5f49e57e27859a6",
-    "semantic_hash": ""
+    "semantic_hash": "c6e758d91f6f2918b5f49e57e27859a6"
   },
   "app/src/test/java/com/attract/attendance/data/importexport/RollNumberRepairTest.kt": {
     "mtime": 1791553313.9952004,
-    "seen": 1793685061.1208274,
+    "seen": 1793814015.8795066,
     "ast_hash": "689d84e7d5c5fdca17922e83a1b8106e",
-    "semantic_hash": ""
+    "semantic_hash": "689d84e7d5c5fdca17922e83a1b8106e"
   },
   "app/src/test/java/com/attract/attendance/data/importexport/RosterGeometryTest.kt": {
     "mtime": 1791553313.9961996,
-    "seen": 1793685061.1208282,
+    "seen": 1793814015.879508,
     "ast_hash": "b10ac545a8847de5e89172b8fd7bd1de",
-    "semantic_hash": ""
+    "semantic_hash": "b10ac545a8847de5e89172b8fd7bd1de"
   },
   "scripts/generate_app_icons.py": {
     "mtime": 1791576009.9497185,
-    "seen": 1793685061.120886,
+    "seen": 1793814015.8795943,
     "ast_hash": "6200855afea1bbc94fe4531ba22611a8",
-    "semantic_hash": ""
+    "semantic_hash": "6200855afea1bbc94fe4531ba22611a8"
   },
   "app/src/debug/java/com/attract/attendance/app/AppCheckInitializer.kt": {
     "mtime": 1793608293.5411618,
-    "seen": 1793685061.1206775,
+    "seen": 1793814015.8792214,
     "ast_hash": "b9c6afff240c884160e8dcd6716efd81",
-    "semantic_hash": ""
+    "semantic_hash": "b9c6afff240c884160e8dcd6716efd81"
   },
   "app/src/main/java/com/attract/attendance/core/observability/AppObservability.kt": {
     "mtime": 1793608293.5587022,
-    "seen": 1793685061.1206827,
+    "seen": 1793814015.8792279,
     "ast_hash": "841962a94fb43c2d8b5b5188c58514c0",
-    "semantic_hash": ""
+    "semantic_hash": "841962a94fb43c2d8b5b5188c58514c0"
   },
   "app/src/main/java/com/attract/attendance/domain/face/AttemptTrace.kt": {
     "mtime": 1793609649.6335597,
-    "seen": 1793685061.1207135,
+    "seen": 1793814015.8792636,
     "ast_hash": "2eb7b68170a4410def6727522dd501f9",
-    "semantic_hash": ""
+    "semantic_hash": "2eb7b68170a4410def6727522dd501f9"
   },
   "app/src/main/java/com/attract/attendance/domain/face/BiometricFeatureFlags.kt": {
     "mtime": 1793609638.7185638,
-    "seen": 1793685061.1207142,
+    "seen": 1793814015.879265,
     "ast_hash": "30bfc2b82a3a4344dc04a072d7bcd70d",
-    "semantic_hash": ""
+    "semantic_hash": "30bfc2b82a3a4344dc04a072d7bcd70d"
   },
   "app/src/main/java/com/attract/attendance/domain/face/CameraTuning.kt": {
     "mtime": 1793609876.9725358,
-    "seen": 1793685061.1207163,
+    "seen": 1793814015.8792672,
     "ast_hash": "a8fd4165c0fac63946c12da5cd439c35",
-    "semantic_hash": ""
+    "semantic_hash": "a8fd4165c0fac63946c12da5cd439c35"
   },
   "app/src/main/java/com/attract/attendance/domain/face/CropMetrics.kt": {
     "mtime": 1793630673.6549687,
-    "seen": 1793685061.1207173,
+    "seen": 1793814015.8792686,
     "ast_hash": "18d90639de2f6804af6dc5d35a63e5c1",
-    "semantic_hash": ""
+    "semantic_hash": "18d90639de2f6804af6dc5d35a63e5c1"
   },
   "app/src/main/java/com/attract/attendance/domain/face/FaceMeshResult.kt": {
     "mtime": 1793610022.4694397,
-    "seen": 1793685061.1207216,
+    "seen": 1793814015.8792741,
     "ast_hash": "b051274e5c75ff76197a7532ee2cd207",
-    "semantic_hash": ""
+    "semantic_hash": "b051274e5c75ff76197a7532ee2cd207"
   },
   "app/src/main/java/com/attract/attendance/domain/face/FaceTracker.kt": {
     "mtime": 1793609999.160315,
-    "seen": 1793685061.120726,
+    "seen": 1793814015.8792799,
     "ast_hash": "9e397c916ecd32f1233b90144e606558",
-    "semantic_hash": ""
+    "semantic_hash": "9e397c916ecd32f1233b90144e606558"
   },
   "app/src/main/java/com/attract/attendance/domain/face/FrameTimingGuard.kt": {
     "mtime": 1793612256.942098,
-    "seen": 1793685061.120729,
+    "seen": 1793814015.8792832,
     "ast_hash": "7d37bec3ac89c5ea3b040d275c761383",
-    "semantic_hash": ""
+    "semantic_hash": "7d37bec3ac89c5ea3b040d275c761383"
   },
   "app/src/main/java/com/attract/attendance/domain/face/HeadPose.kt": {
     "mtime": 1793615949.9164522,
-    "seen": 1793685061.1207314,
+    "seen": 1793814015.8792856,
     "ast_hash": "3b4fb90e0f57757dd2a9b340bcd8b668",
-    "semantic_hash": ""
+    "semantic_hash": "3b4fb90e0f57757dd2a9b340bcd8b668"
   },
   "app/src/main/java/com/attract/attendance/domain/face/LetterboxMapping.kt": {
     "mtime": 1793609972.1936843,
-    "seen": 1793685061.1207333,
+    "seen": 1793814015.8792884,
     "ast_hash": "335b515516e3c2f038ea612928f7fdde",
-    "semantic_hash": ""
+    "semantic_hash": "335b515516e3c2f038ea612928f7fdde"
   },
   "app/src/main/java/com/attract/attendance/domain/face/LivenessPolicy.kt": {
-    "mtime": 1793632035.117831,
-    "seen": 1793685061.120735,
-    "ast_hash": "a584c7e774c7355934b560b75e6feaa1",
-    "semantic_hash": ""
+    "mtime": 1793715789.5417626,
+    "seen": 1793814015.8792906,
+    "ast_hash": "02a496e224208d872696009e440959c7",
+    "semantic_hash": "02a496e224208d872696009e440959c7"
   },
   "app/src/main/java/com/attract/attendance/domain/face/LowLightEnhancer.kt": {
     "mtime": 1793609915.842826,
-    "seen": 1793685061.120736,
+    "seen": 1793814015.879292,
     "ast_hash": "62c1d633ac53617d35e777e69562fdcb",
-    "semantic_hash": ""
+    "semantic_hash": "62c1d633ac53617d35e777e69562fdcb"
   },
   "app/src/main/java/com/attract/attendance/domain/face/PadCrop.kt": {
     "mtime": 1793610257.9392557,
-    "seen": 1793685061.120737,
+    "seen": 1793814015.8792956,
     "ast_hash": "433f5788486b2890bb273eeed4d8acfe",
-    "semantic_hash": ""
+    "semantic_hash": "433f5788486b2890bb273eeed4d8acfe"
   },
   "app/src/main/java/com/attract/attendance/domain/face/TemplateUpdatePolicy.kt": {
     "mtime": 1793615964.6026213,
-    "seen": 1793685061.120742,
+    "seen": 1793814015.8793063,
     "ast_hash": "2f5eb97ce288eb1037ffb3e146175519",
-    "semantic_hash": ""
+    "semantic_hash": "2f5eb97ce288eb1037ffb3e146175519"
   },
   "app/src/main/java/com/attract/attendance/domain/face/TemporalDenoiser.kt": {
     "mtime": 1793631756.255466,
-    "seen": 1793685061.1207428,
+    "seen": 1793814015.8793075,
     "ast_hash": "5f1a1a3b138db2aa40a785cfa42ff42b",
-    "semantic_hash": ""
+    "semantic_hash": "5f1a1a3b138db2aa40a785cfa42ff42b"
   },
   "app/src/main/java/com/attract/attendance/domain/face/liveness/BlinkDetector.kt": {
     "mtime": 1793610328.9378836,
-    "seen": 1793685061.1207447,
+    "seen": 1793814015.8793097,
     "ast_hash": "f759f1e9c4e8b10df684417a45fae638",
-    "semantic_hash": ""
+    "semantic_hash": "f759f1e9c4e8b10df684417a45fae638"
   },
   "app/src/main/java/com/attract/attendance/domain/face/liveness/ChallengeController.kt": {
     "mtime": 1793610358.529486,
-    "seen": 1793685061.1207454,
+    "seen": 1793814015.8793106,
     "ast_hash": "d3575f63dd89a711c8c0c30d16cf9cc3",
-    "semantic_hash": ""
+    "semantic_hash": "d3575f63dd89a711c8c0c30d16cf9cc3"
   },
   "app/src/main/java/com/attract/attendance/domain/face/liveness/FlashLivenessTest.kt": {
     "mtime": 1793610345.3031995,
-    "seen": 1793685061.120746,
+    "seen": 1793814015.8793118,
     "ast_hash": "8fe14feaaec43156e83edef961149c6e",
-    "semantic_hash": ""
+    "semantic_hash": "8fe14feaaec43156e83edef961149c6e"
   },
   "app/src/main/java/com/attract/attendance/domain/face/liveness/Homography.kt": {
     "mtime": 1793610296.6087756,
-    "seen": 1793685061.1207469,
+    "seen": 1793814015.8793132,
     "ast_hash": "15076b14b2a3a90d9f19523b9782dab8",
-    "semantic_hash": ""
+    "semantic_hash": "15076b14b2a3a90d9f19523b9782dab8"
   },
   "app/src/main/java/com/attract/attendance/domain/face/liveness/LivenessOrchestrator.kt": {
-    "mtime": 1793632101.3796465,
-    "seen": 1793685061.1207478,
-    "ast_hash": "3ba7c0517299b0149b1bbe6054565985",
-    "semantic_hash": ""
+    "mtime": 1793803346.0452113,
+    "seen": 1793814015.8793147,
+    "ast_hash": "82000fac240ce463d6ba7b67e2904e79",
+    "semantic_hash": "82000fac240ce463d6ba7b67e2904e79"
   },
   "app/src/main/java/com/attract/attendance/domain/face/liveness/ParallaxDepthTest.kt": {
-    "mtime": 1793610315.7228992,
-    "seen": 1793685061.1207485,
-    "ast_hash": "f73c5b97e5a811b4f9c696d4240d791f",
-    "semantic_hash": ""
+    "mtime": 1793803346.0472262,
+    "seen": 1793814015.8793166,
+    "ast_hash": "dc06b8b63923a2319e9d23144bb44743",
+    "semantic_hash": "dc06b8b63923a2319e9d23144bb44743"
   },
   "app/src/main/java/com/attract/attendance/domain/face/liveness/RiskFusion.kt": {
-    "mtime": 1793610383.973645,
-    "seen": 1793685061.1207492,
-    "ast_hash": "170337a6e6dd28ad58849f8f14b7cba5",
-    "semantic_hash": ""
+    "mtime": 1793715823.1334345,
+    "seen": 1793814015.879318,
+    "ast_hash": "07a612f1d5ff9f25383975944ac1a5fc",
+    "semantic_hash": "07a612f1d5ff9f25383975944ac1a5fc"
   },
   "app/src/main/java/com/attract/attendance/feature/attendance/AutoCaptureController.kt": {
     "mtime": 1793610439.0096622,
-    "seen": 1793685061.1207607,
+    "seen": 1793814015.8793316,
     "ast_hash": "2343131ece627fe24a9717dd682abe58",
-    "semantic_hash": ""
+    "semantic_hash": "2343131ece627fe24a9717dd682abe58"
   },
   "app/src/main/java/com/attract/attendance/platform/camera/CameraCaptureController.kt": {
     "mtime": 1793612567.0002246,
-    "seen": 1793685061.1207778,
+    "seen": 1793814015.8793502,
     "ast_hash": "cf92e5a910aefbef721efdbb26193a53",
-    "semantic_hash": ""
+    "semantic_hash": "cf92e5a910aefbef721efdbb26193a53"
   },
   "app/src/main/java/com/attract/attendance/platform/face/FaceMeshEngine.kt": {
     "mtime": 1793614308.157554,
-    "seen": 1793685061.1207786,
+    "seen": 1793814015.8793516,
     "ast_hash": "b2103a9386e54c49665b3c52f34a4c84",
-    "semantic_hash": ""
+    "semantic_hash": "b2103a9386e54c49665b3c52f34a4c84"
   },
   "app/src/main/java/com/attract/attendance/ui/components/biometric/ScreenFlashOverlay.kt": {
     "mtime": 1793612356.365352,
-    "seen": 1793685061.120798,
+    "seen": 1793814015.8794532,
     "ast_hash": "4763cba1fa6cda0537a5f33f59a7561a",
-    "semantic_hash": ""
+    "semantic_hash": "4763cba1fa6cda0537a5f33f59a7561a"
   },
   "app/src/main/java/com/attract/attendance/util/AppLog.kt": {
     "mtime": 1793608293.6979742,
-    "seen": 1793685061.1208158,
+    "seen": 1793814015.8794906,
     "ast_hash": "f40ef22f644d491affe614ddcd041587",
-    "semantic_hash": ""
+    "semantic_hash": "f40ef22f644d491affe614ddcd041587"
   },
   "app/src/release/java/com/attract/attendance/app/AppCheckInitializer.kt": {
     "mtime": 1793608293.700701,
-    "seen": 1793685061.1208167,
+    "seen": 1793814015.8794916,
     "ast_hash": "d970a01cbf8b6d923916495a241df59e",
-    "semantic_hash": ""
+    "semantic_hash": "d970a01cbf8b6d923916495a241df59e"
   },
   "app/src/test/java/com/attract/attendance/core/observability/AppObservabilityTest.kt": {
     "mtime": 1793608293.7028039,
-    "seen": 1793685061.1208239,
+    "seen": 1793814015.8795018,
     "ast_hash": "16abfd6b3931eff357c916a0b72e3aff",
-    "semantic_hash": ""
+    "semantic_hash": "16abfd6b3931eff357c916a0b72e3aff"
   },
   "app/src/test/java/com/attract/attendance/data/importexport/GeminiRosterExtractorTest.kt": {
     "mtime": 1793608293.7098067,
-    "seen": 1793685061.1208265,
+    "seen": 1793814015.8795054,
     "ast_hash": "49680815766d270d1df1add2c12b4e55",
-    "semantic_hash": ""
+    "semantic_hash": "49680815766d270d1df1add2c12b4e55"
   },
   "app/src/test/java/com/attract/attendance/domain/face/AttemptTraceTest.kt": {
     "mtime": 1793609864.2050807,
-    "seen": 1793685061.120839,
+    "seen": 1793814015.8795276,
     "ast_hash": "1eac15ac15bb06167f1d8795ee737c4b",
-    "semantic_hash": ""
+    "semantic_hash": "1eac15ac15bb06167f1d8795ee737c4b"
   },
   "app/src/test/java/com/attract/attendance/domain/face/CameraTuningTest.kt": {
     "mtime": 1793609889.5988295,
-    "seen": 1793685061.1208398,
+    "seen": 1793814015.8795295,
     "ast_hash": "989a6670e3de1cac0446df3897dc58b4",
-    "semantic_hash": ""
+    "semantic_hash": "989a6670e3de1cac0446df3897dc58b4"
   },
   "app/src/test/java/com/attract/attendance/domain/face/CropMetricsTest.kt": {
     "mtime": 1793630693.5389464,
-    "seen": 1793685061.1208417,
+    "seen": 1793814015.879532,
     "ast_hash": "0d3b60c3676fe47df4e768921f7b5481",
-    "semantic_hash": ""
+    "semantic_hash": "0d3b60c3676fe47df4e768921f7b5481"
   },
   "app/src/test/java/com/attract/attendance/domain/face/FaceTrackerTest.kt": {
     "mtime": 1793610011.3907719,
-    "seen": 1793685061.120846,
+    "seen": 1793814015.879538,
     "ast_hash": "ecd1263db619b728d9e65b34a344529f",
-    "semantic_hash": ""
+    "semantic_hash": "ecd1263db619b728d9e65b34a344529f"
   },
   "app/src/test/java/com/attract/attendance/domain/face/FrameTimingGuardTest.kt": {
     "mtime": 1793612271.7341354,
-    "seen": 1793685061.120847,
+    "seen": 1793814015.8795393,
     "ast_hash": "70a202230700cd69535c04952f519aa3",
-    "semantic_hash": ""
+    "semantic_hash": "70a202230700cd69535c04952f519aa3"
   },
   "app/src/test/java/com/attract/attendance/domain/face/HeadPoseTest.kt": {
     "mtime": 1793616379.6915476,
-    "seen": 1793685061.120848,
+    "seen": 1793814015.8795402,
     "ast_hash": "6c9757d599d91b58d172129fabfb4a22",
-    "semantic_hash": ""
+    "semantic_hash": "6c9757d599d91b58d172129fabfb4a22"
   },
   "app/src/test/java/com/attract/attendance/domain/face/LetterboxMappingTest.kt": {
     "mtime": 1793609982.7940142,
-    "seen": 1793685061.1208487,
+    "seen": 1793814015.8795414,
     "ast_hash": "1f012a314dd11fb68b8aa52e4053117a",
-    "semantic_hash": ""
+    "semantic_hash": "1f012a314dd11fb68b8aa52e4053117a"
   },
   "app/src/test/java/com/attract/attendance/domain/face/LowLightEnhancerTest.kt": {
     "mtime": 1793610845.6056125,
-    "seen": 1793685061.1208503,
+    "seen": 1793814015.8795433,
     "ast_hash": "3348d0e937e5fd6356a1490341c2066a",
-    "semantic_hash": ""
+    "semantic_hash": "3348d0e937e5fd6356a1490341c2066a"
   },
   "app/src/test/java/com/attract/attendance/domain/face/PadCropTest.kt": {
     "mtime": 1793610267.2874558,
-    "seen": 1793685061.1208513,
+    "seen": 1793814015.8795455,
     "ast_hash": "8ca7b8c3221a4506eca30e0117746211",
-    "semantic_hash": ""
+    "semantic_hash": "8ca7b8c3221a4506eca30e0117746211"
   },
   "app/src/test/java/com/attract/attendance/domain/face/TemplateUpdatePolicyTest.kt": {
     "mtime": 1793616394.9517045,
-    "seen": 1793685061.1208558,
+    "seen": 1793814015.8795514,
     "ast_hash": "d3138cb0c82b549351a72cd632b5b495",
-    "semantic_hash": ""
+    "semantic_hash": "d3138cb0c82b549351a72cd632b5b495"
   },
   "app/src/test/java/com/attract/attendance/domain/face/TemporalDenoiserTest.kt": {
     "mtime": 1793631777.6988769,
-    "seen": 1793685061.1208565,
+    "seen": 1793814015.8795526,
     "ast_hash": "1ec96391d22163eeea439df70f743936",
-    "semantic_hash": ""
+    "semantic_hash": "1ec96391d22163eeea439df70f743936"
   },
   "app/src/test/java/com/attract/attendance/domain/face/liveness/BlinkDetectorTest.kt": {
     "mtime": 1793614404.6709883,
-    "seen": 1793685061.1208572,
+    "seen": 1793814015.8795533,
     "ast_hash": "42ce527eb6903483d6141ace05faee84",
-    "semantic_hash": ""
+    "semantic_hash": "42ce527eb6903483d6141ace05faee84"
   },
   "app/src/test/java/com/attract/attendance/domain/face/liveness/ChallengeControllerTest.kt": {
     "mtime": 1793614440.3810246,
-    "seen": 1793685061.1208582,
+    "seen": 1793814015.8795547,
     "ast_hash": "eeced1f6fbe3741d489982be67dd6a08",
-    "semantic_hash": ""
+    "semantic_hash": "eeced1f6fbe3741d489982be67dd6a08"
   },
   "app/src/test/java/com/attract/attendance/domain/face/liveness/FlashLivenessTestTest.kt": {
     "mtime": 1793614421.2948992,
-    "seen": 1793685061.120859,
+    "seen": 1793814015.8795567,
     "ast_hash": "8add7b8a3a2a666f456dc25ce75094ab",
-    "semantic_hash": ""
+    "semantic_hash": "8add7b8a3a2a666f456dc25ce75094ab"
   },
   "app/src/test/java/com/attract/attendance/domain/face/liveness/ParallaxDepthTestTest.kt": {
-    "mtime": 1793614852.9160311,
-    "seen": 1793685061.1208596,
-    "ast_hash": "8102235fc0622b1f478e9ee9b996adae",
-    "semantic_hash": ""
+    "mtime": 1793803346.0679612,
+    "seen": 1793814015.8795588,
+    "ast_hash": "d95ee2dfc8d14cfc755802f212a7b248",
+    "semantic_hash": "d95ee2dfc8d14cfc755802f212a7b248"
   },
   "app/src/test/java/com/attract/attendance/domain/face/liveness/RiskFusionTest.kt": {
-    "mtime": 1793610398.153842,
-    "seen": 1793685061.1208603,
-    "ast_hash": "f1d06cbe05e757e8302d9a0540e3e227",
-    "semantic_hash": ""
+    "mtime": 1793803346.071052,
+    "seen": 1793814015.8795605,
+    "ast_hash": "7e2f7f725e199c72e9b55d0ea962c162",
+    "semantic_hash": "7e2f7f725e199c72e9b55d0ea962c162"
   },
   "app/src/test/java/com/attract/attendance/feature/attendance/AutoCaptureControllerTest.kt": {
     "mtime": 1793610449.6255052,
-    "seen": 1793685061.1208658,
+    "seen": 1793814015.879568,
     "ast_hash": "280e5dc06b058cec43558ffa92326e06",
-    "semantic_hash": ""
+    "semantic_hash": "280e5dc06b058cec43558ffa92326e06"
   },
   "tools/biometric_eval/exp5_lowlight.py": {
     "mtime": 1793686321.0,
-    "seen": 1793691794.0915346,
+    "seen": 1793814015.8796248,
     "ast_hash": "1226eb638b51128f281169a4f0631578",
-    "semantic_hash": ""
+    "semantic_hash": "1226eb638b51128f281169a4f0631578"
   },
   "tools/biometric_eval/exp6_gates.py": {
     "mtime": 1793686321.0,
-    "seen": 1793691794.0915363,
+    "seen": 1793814015.879626,
     "ast_hash": "3500e72acacc0954de58bfeaa997b514",
-    "semantic_hash": ""
+    "semantic_hash": "3500e72acacc0954de58bfeaa997b514"
   },
   "tools/biometric_eval/results/exp5_lowlight.json": {
     "mtime": 1793686321.0,
-    "seen": 1793691794.09156,
+    "seen": 1793814015.87991,
     "ast_hash": "ecfac0f9d147801f599a9920cebb0f97",
-    "semantic_hash": ""
+    "semantic_hash": "ecfac0f9d147801f599a9920cebb0f97"
   },
   "tools/biometric_eval/results/exp6_gates.json": {
     "mtime": 1793686321.0,
-    "seen": 1793691794.091561,
+    "seen": 1793814015.879911,
     "ast_hash": "d2ae323f67650267838f9246db7c1e9e",
-    "semantic_hash": ""
+    "semantic_hash": "d2ae323f67650267838f9246db7c1e9e"
   },
   ".github/workflows/ci.yml": {
     "mtime": 1793608293.4871705,
@@ -1747,219 +1747,219 @@
   },
   "README.md": {
     "mtime": 1793608293.5011692,
-    "seen": 1793685061.1209219,
+    "seen": 1793814015.8799255,
     "ast_hash": "ef37d0d11f20762136cde6ce66b8813e",
-    "semantic_hash": ""
+    "semantic_hash": "ef37d0d11f20762136cde6ce66b8813e"
   },
   "docs/00-architecture-decisions.md": {
     "mtime": 1791364953.483806,
-    "seen": 1793685061.1209226,
+    "seen": 1793814015.8799272,
     "ast_hash": "5c4c27390149b6fa46546d873c609004",
-    "semantic_hash": ""
+    "semantic_hash": "5c4c27390149b6fa46546d873c609004"
   },
   "docs/00-architecture-risks-and-gates.md": {
     "mtime": 1791364953.4897509,
-    "seen": 1793685061.120923,
+    "seen": 1793814015.879929,
     "ast_hash": "841ff7bc1cb19b40459dce9c0496b8c7",
-    "semantic_hash": ""
+    "semantic_hash": "841ff7bc1cb19b40459dce9c0496b8c7"
   },
   "docs/00-build-fix-and-export-wiring-plan.md": {
     "mtime": 1791364953.492497,
-    "seen": 1793685061.120924,
+    "seen": 1793814015.879931,
     "ast_hash": "7eda63d2c7be2de86896a0504b806e55",
-    "semantic_hash": ""
+    "semantic_hash": "7eda63d2c7be2de86896a0504b806e55"
   },
   "docs/00-document-control.md": {
     "mtime": 1793708876.5902662,
-    "seen": 1793708924.3947875,
+    "seen": 1793814015.8799329,
     "ast_hash": "430ee670af193e6876fec77c110830a6",
-    "semantic_hash": ""
+    "semantic_hash": "430ee670af193e6876fec77c110830a6"
   },
   "docs/00-fix-plan-device-parity-pose-antispoof.md": {
     "mtime": 1791364953.4988139,
-    "seen": 1793685061.1209252,
+    "seen": 1793814015.8799348,
     "ast_hash": "7d1191d947b048c164abe2658cbac3e6",
-    "semantic_hash": ""
+    "semantic_hash": "7d1191d947b048c164abe2658cbac3e6"
   },
   "docs/00-implementation-runbook.md": {
     "mtime": 1791364953.502784,
-    "seen": 1793685061.120926,
+    "seen": 1793814015.8799381,
     "ast_hash": "1ee0b7215c7ee7dc81f7f6c6cd5a6320",
-    "semantic_hash": ""
+    "semantic_hash": "1ee0b7215c7ee7dc81f7f6c6cd5a6320"
   },
   "docs/00-lld-plan.md": {
     "mtime": 1793608293.7217162,
-    "seen": 1793685061.1209266,
+    "seen": 1793814015.8799403,
     "ast_hash": "f4e964081648f22f99a1e94e179cdc30",
-    "semantic_hash": ""
+    "semantic_hash": "f4e964081648f22f99a1e94e179cdc30"
   },
   "docs/00-main-sdd.md": {
     "mtime": 1793684826.3819597,
-    "seen": 1793685061.1209276,
+    "seen": 1793814015.879943,
     "ast_hash": "2572dd5467462606a7fbeef0d6e9201c",
-    "semantic_hash": ""
+    "semantic_hash": "2572dd5467462606a7fbeef0d6e9201c"
   },
   "docs/00-master-implementation-plan.md": {
     "mtime": 1791364953.51538,
-    "seen": 1793685061.120928,
+    "seen": 1793814015.8799453,
     "ast_hash": "db66ea90157190c41f807c7dc59c1738",
-    "semantic_hash": ""
+    "semantic_hash": "db66ea90157190c41f807c7dc59c1738"
   },
   "docs/01-lld-application-foundation-and-navigation.md": {
     "mtime": 1791364953.5201013,
-    "seen": 1793685061.120929,
+    "seen": 1793814015.8799474,
     "ast_hash": "6195f1c9583b9fab762e34189298a9ad",
-    "semantic_hash": ""
+    "semantic_hash": "6195f1c9583b9fab762e34189298a9ad"
   },
   "docs/02-lld-database-and-persistence.md": {
     "mtime": 1791364953.5246422,
-    "seen": 1793685061.1209297,
+    "seen": 1793814015.8799517,
     "ast_hash": "77c7642760d4a3044c0adb94e1239b2c",
-    "semantic_hash": ""
+    "semantic_hash": "77c7642760d4a3044c0adb94e1239b2c"
   },
   "docs/03-lld-class-and-student-management.md": {
     "mtime": 1791364953.5292497,
-    "seen": 1793685061.1209302,
+    "seen": 1793814015.8799527,
     "ast_hash": "75d3834a787fd35d3f14e7e93b17cb53",
-    "semantic_hash": ""
+    "semantic_hash": "75d3834a787fd35d3f14e7e93b17cb53"
   },
   "docs/04-lld-roster-import.md": {
     "mtime": 1791364953.5327718,
-    "seen": 1793685061.1209311,
+    "seen": 1793814015.879956,
     "ast_hash": "15b2296246ccc1632ac6d5ef51c70ce1",
-    "semantic_hash": ""
+    "semantic_hash": "15b2296246ccc1632ac6d5ef51c70ce1"
   },
   "docs/05-lld-attendance-domain-engine.md": {
     "mtime": 1791364953.536412,
-    "seen": 1793685061.1209319,
+    "seen": 1793814015.8799598,
     "ast_hash": "2e090719950f8240db933d0a3ad06f04",
-    "semantic_hash": ""
+    "semantic_hash": "2e090719950f8240db933d0a3ad06f04"
   },
   "docs/06-lld-live-attendance-session-engine.md": {
     "mtime": 1791364953.5411572,
-    "seen": 1793685061.1209326,
+    "seen": 1793814015.879961,
     "ast_hash": "5337e4e4e4f7d70debcabef193b233e5",
-    "semantic_hash": ""
+    "semantic_hash": "5337e4e4e4f7d70debcabef193b233e5"
   },
   "docs/07-lld-session-recovery.md": {
     "mtime": 1791364953.544695,
-    "seen": 1793685061.1209333,
+    "seen": 1793814015.8799634,
     "ast_hash": "aa1c412a0e949abda801f63e97e56ce8",
-    "semantic_hash": ""
+    "semantic_hash": "aa1c412a0e949abda801f63e97e56ce8"
   },
   "docs/08-lld-camera-and-frame-processing.md": {
     "mtime": 1793684596.517051,
-    "seen": 1793685061.1209338,
+    "seen": 1793814015.8799672,
     "ast_hash": "269c342d2a3135085d54ba77ad9bf2d0",
-    "semantic_hash": ""
+    "semantic_hash": "269c342d2a3135085d54ba77ad9bf2d0"
   },
   "docs/09-lld-face-quality-engine.md": {
     "mtime": 1793684618.6033454,
-    "seen": 1793685061.1209347,
+    "seen": 1793814015.8799694,
     "ast_hash": "75149e2ec37fd556c49d77870b47e946",
-    "semantic_hash": ""
+    "semantic_hash": "75149e2ec37fd556c49d77870b47e946"
   },
   "docs/10-lld-face-enrollment-and-template-management.md": {
     "mtime": 1791364953.5634403,
-    "seen": 1793685061.1209354,
+    "seen": 1793814015.8799715,
     "ast_hash": "7afceefdb3aa93a03a80cc6caf35e59a",
-    "semantic_hash": ""
+    "semantic_hash": "7afceefdb3aa93a03a80cc6caf35e59a"
   },
   "docs/11-lld-face-recognition-and-decision-engine.md": {
     "mtime": 1793684642.1128786,
-    "seen": 1793685061.120936,
+    "seen": 1793814015.8799748,
     "ast_hash": "2aa23faadfa40d4016a68150bd00bd82",
-    "semantic_hash": ""
+    "semantic_hash": "2aa23faadfa40d4016a68150bd00bd82"
   },
   "docs/12-lld-liveness-and-anti-spoof-engine.md": {
     "mtime": 1793684665.98922,
-    "seen": 1793685061.1209366,
+    "seen": 1793814015.8799767,
     "ast_hash": "edeca717188a1a26351406cdcdb0c35f",
-    "semantic_hash": ""
+    "semantic_hash": "edeca717188a1a26351406cdcdb0c35f"
   },
   "docs/13-lld-lockdown-authentication-and-security.md": {
     "mtime": 1791364953.5769253,
-    "seen": 1793685061.1209376,
+    "seen": 1793814015.8799806,
     "ast_hash": "61dec0bd27e9efa862b2919f1ee6728c",
-    "semantic_hash": ""
+    "semantic_hash": "61dec0bd27e9efa862b2919f1ee6728c"
   },
   "docs/14-lld-reporting-export-backup-and-data-lifecycle.md": {
     "mtime": 1791364953.5809534,
-    "seen": 1793685061.120938,
+    "seen": 1793814015.8799822,
     "ast_hash": "03338a6897df47edfa3725ccad47955a",
-    "semantic_hash": ""
+    "semantic_hash": "03338a6897df47edfa3725ccad47955a"
   },
   "docs/15-lld-bug-fixes-and-ux-refinements.md": {
     "mtime": 1791364953.585987,
-    "seen": 1793685061.120939,
+    "seen": 1793814015.8799841,
     "ast_hash": "0f680ec707468c06bd56846d203112c5",
-    "semantic_hash": ""
+    "semantic_hash": "0f680ec707468c06bd56846d203112c5"
   },
   "docs/16-lld-adaptive-multiframe-verification.md": {
     "mtime": 1793684763.7569997,
-    "seen": 1793685061.1209395,
+    "seen": 1793814015.8799858,
     "ast_hash": "858648b7a0224452009c057ef98d97bf",
-    "semantic_hash": ""
+    "semantic_hash": "858648b7a0224452009c057ef98d97bf"
   },
   "docs/17-biometric-pipeline-repair-implementation-plan.md": {
     "mtime": 1791364953.5934596,
-    "seen": 1793685061.1209402,
+    "seen": 1793814015.879987,
     "ast_hash": "debe9440039234b8144388fb9a8d71c1",
-    "semantic_hash": ""
+    "semantic_hash": "debe9440039234b8144388fb9a8d71c1"
   },
   "docs/18-attendance-pipeline-root-cause-and-rebuild-plan.md": {
     "mtime": 1791364953.5989983,
-    "seen": 1793685061.1209412,
+    "seen": 1793814015.8799887,
     "ast_hash": "2b475a070f6554dfa2cf3ca9e0e42ff8",
-    "semantic_hash": ""
+    "semantic_hash": "2b475a070f6554dfa2cf3ca9e0e42ff8"
   },
   "docs/20-faceid-grade-recognition-liveness-lowlight-plan.md": {
     "mtime": 1793608293.7227156,
-    "seen": 1793685061.1209419,
+    "seen": 1793814015.8799922,
     "ast_hash": "fb7a0cc6960dfc0eb017c360393fedfe",
-    "semantic_hash": ""
+    "semantic_hash": "fb7a0cc6960dfc0eb017c360393fedfe"
   },
   "docs/21-lowlight-blur-gate-and-pad-false-positive-fix-plan.md": {
     "mtime": 1793630535.625338,
-    "seen": 1793685061.1209426,
+    "seen": 1793814015.8799958,
     "ast_hash": "89eb6a444f397b142d1201db51f806ee",
-    "semantic_hash": ""
+    "semantic_hash": "89eb6a444f397b142d1201db51f806ee"
   },
   "docs/99-lld-template.md": {
     "mtime": 1791364953.602769,
-    "seen": 1793685061.1209433,
+    "seen": 1793814015.8800135,
     "ast_hash": "f20d2613d4a5bf7cb7eed6a375026fb7",
-    "semantic_hash": ""
+    "semantic_hash": "f20d2613d4a5bf7cb7eed6a375026fb7"
   },
   "docs/face_verification_test_report.md": {
     "mtime": 1791364953.6129026,
-    "seen": 1793685061.120944,
+    "seen": 1793814015.8800159,
     "ast_hash": "acb44625db7a97731a9b1498e89e461e",
-    "semantic_hash": ""
+    "semantic_hash": "acb44625db7a97731a9b1498e89e461e"
   },
   "docs/manual_camerax_qa_procedure.md": {
     "mtime": 1791364953.644663,
-    "seen": 1793685061.120945,
+    "seen": 1793814015.8800192,
     "ast_hash": "7f9559d37da854f8e4da87912a5fbe2b",
-    "semantic_hash": ""
+    "semantic_hash": "7f9559d37da854f8e4da87912a5fbe2b"
   },
   "sample-data/README.md": {
     "mtime": 1791364953.699324,
-    "seen": 1793685061.1209457,
+    "seen": 1793814015.8800213,
     "ast_hash": "12f4e051c773ea2385f3ef638ed92fd2",
-    "semantic_hash": ""
+    "semantic_hash": "12f4e051c773ea2385f3ef638ed92fd2"
   },
   "scripts/README.md": {
     "mtime": 1791364953.7121499,
-    "seen": 1793685061.1209462,
+    "seen": 1793814015.8800235,
     "ast_hash": "f28861650496e8cc800eabccd910ab20",
-    "semantic_hash": ""
+    "semantic_hash": "f28861650496e8cc800eabccd910ab20"
   },
   "tools/biometric_eval/README.md": {
     "mtime": 1793686310.0,
-    "seen": 1793691794.0916262,
+    "seen": 1793814015.8800254,
     "ast_hash": "7097c79c8b36cd0744d65ca8552f0c49",
-    "semantic_hash": ""
+    "semantic_hash": "7097c79c8b36cd0744d65ca8552f0c49"
   },
   "tools/biometric_eval/results/exp5_lowlight_run_60ids.txt": {
     "mtime": 1793686321.0,
@@ -2095,38 +2095,74 @@
   },
   "tools/biometric_eval/exp7_pad_backlight.py": {
     "mtime": 1793691707.0376124,
-    "seen": 1793691794.0915384,
+    "seen": 1793814015.8796294,
     "ast_hash": "7b56369621dc369fb29944996342db61",
-    "semantic_hash": ""
+    "semantic_hash": "7b56369621dc369fb29944996342db61"
   },
   "tools/biometric_eval/exp8_parallax_3d.py": {
     "mtime": 1793687931.0,
-    "seen": 1793691794.0915403,
+    "seen": 1793814015.8796315,
     "ast_hash": "7b582f29200bd2a54e2976b3c207c3c5",
-    "semantic_hash": ""
+    "semantic_hash": "7b582f29200bd2a54e2976b3c207c3c5"
   },
   "tools/biometric_eval/exp9_real_replay_videos.py": {
     "mtime": 1793688161.0,
-    "seen": 1793691794.0915415,
+    "seen": 1793814015.8796327,
     "ast_hash": "55c54c2506fc8a2539209bbfc5224225",
-    "semantic_hash": ""
+    "semantic_hash": "55c54c2506fc8a2539209bbfc5224225"
   },
   "tools/biometric_eval/results/exp7_pad_backlight.json": {
     "mtime": 1793688514.0,
-    "seen": 1793691794.091562,
+    "seen": 1793814015.8799121,
     "ast_hash": "f88b3af36310874a66b3780e6f8c1ca9",
-    "semantic_hash": ""
+    "semantic_hash": "f88b3af36310874a66b3780e6f8c1ca9"
   },
   "tools/biometric_eval/results/exp8_parallax_3d.json": {
     "mtime": 1793687960.0,
-    "seen": 1793691794.0915632,
+    "seen": 1793814015.8799133,
     "ast_hash": "fd091c4aa0db47721efdc203c8776814",
-    "semantic_hash": ""
+    "semantic_hash": "fd091c4aa0db47721efdc203c8776814"
   },
   "docs/22-backlight-false-spoof-and-screen-replay-acceptance-plan.md": {
-    "mtime": 1793708789.2046402,
-    "seen": 1793708924.3948488,
-    "ast_hash": "b5f6dc0b33e849261fecd0ddc7159dbd",
-    "semantic_hash": ""
+    "mtime": 1793803346.0730546,
+    "seen": 1793814015.879997,
+    "ast_hash": "be6be64022a695d063e3db58a4a7b213",
+    "semantic_hash": "be6be64022a695d063e3db58a4a7b213"
+  },
+  "app/src/main/java/com/attract/attendance/domain/face/PadCnnMath.kt": {
+    "mtime": 1793803346.0389254,
+    "seen": 1793814015.8792937,
+    "ast_hash": "926040b39035cba97cf76dc237b57661",
+    "semantic_hash": "926040b39035cba97cf76dc237b57661"
+  },
+  "app/src/main/java/com/attract/attendance/platform/face/MiniFasNetEngine.kt": {
+    "mtime": 1793803346.0612645,
+    "seen": 1793814015.8793526,
+    "ast_hash": "d0734192b97a0a17f21fe8e9eebc4637",
+    "semantic_hash": "d0734192b97a0a17f21fe8e9eebc4637"
+  },
+  "app/src/test/java/com/attract/attendance/domain/face/PadCnnMathTest.kt": {
+    "mtime": 1793803346.0639493,
+    "seen": 1793814015.8795443,
+    "ast_hash": "140bf4a3936d4b1d5ea920fd72c39dfe",
+    "semantic_hash": "140bf4a3936d4b1d5ea920fd72c39dfe"
+  },
+  "app/src/test/java/com/attract/attendance/domain/face/liveness/LivenessOrchestratorTest.kt": {
+    "mtime": 1793803346.0659583,
+    "seen": 1793814015.8795576,
+    "ast_hash": "d32f5de6d5cc3b8ca9fc6dc30ecfc446",
+    "semantic_hash": "d32f5de6d5cc3b8ca9fc6dc30ecfc446"
+  },
+  "tools/biometric_eval/exp10_proposed_policy.py": {
+    "mtime": 1793715892.0447958,
+    "seen": 1793814015.8796127,
+    "ast_hash": "705deb107efa0e22735a050ba3d7213e",
+    "semantic_hash": "705deb107efa0e22735a050ba3d7213e"
+  },
+  "tools/biometric_eval/results/exp10_proposed_policy.json": {
+    "mtime": 1793715988.9308867,
+    "seen": 1793814015.8796384,
+    "ast_hash": "bbee99e77c291abd2ce7e992fcc99bc6",
+    "semantic_hash": "bbee99e77c291abd2ce7e992fcc99bc6"
   }
 }

@@ -21,8 +21,8 @@ object ParallaxDepthTest {
     val HOMOGRAPHY_ANCHORS = listOf(10, 152, 234, 454)
 
     /** Doc 22 WP-E defaults, measured in exp8 (real 15° pan p5 residual 0.042; planar p95 0.031, max yaw 7.6°). */
-    const val DEFAULT_MIN_POSE_DELTA_DEG = 8.0f
-    const val DEFAULT_MIN_PARALLAX_RESIDUAL = 0.035f
+    const val DEFAULT_MIN_POSE_DELTA_DEG = 5.0f
+    const val DEFAULT_MIN_PARALLAX_RESIDUAL = 0.030f
 
     data class Result(
         val depthScore: Float?,

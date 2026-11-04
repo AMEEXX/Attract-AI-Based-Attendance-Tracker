@@ -74,6 +74,8 @@ object AttendanceStrings {
     const val LIVENESS_TURN_HEAD_TITLE = "Turn your head slightly"
     const val LIVENESS_TURN_HEAD_SUBTITLE = "Slowly look a little to the left, then to the right"
     const val LIVENESS_CHALLENGE_TITLE = "One quick check"
+    const val LIVENESS_TEACHER_ASSIST_TITLE = "Teacher assistance"
+    const val LIVENESS_TEACHER_ASSIST_SUBTITLE = "Having trouble verifying? Tap below for Teacher Assistance"
     const val LIVENESS_SPOOF_TITLE = "Liveness check failed"
     const val LIVENESS_SCREEN_TITLE = "Screen replay detected"
     const val LIVENESS_PRINT_TITLE = "Printed photo detected"
