@@ -108,10 +108,14 @@ import com.attract.attendance.domain.face.FaceQualitySignals
 import com.attract.attendance.domain.face.LivenessEngine
 import com.attract.attendance.domain.face.LivenessResult
 import com.attract.attendance.domain.face.QualityResult
+import com.attract.attendance.domain.face.StudentTemplatePair
 import com.attract.attendance.lockdown.platform.LockTaskControllerImpl
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 private const val TAG = "AttendanceScreen"
@@ -459,6 +463,39 @@ fun AttendanceScreen(
     var lastFrameQualityScore by remember { mutableStateOf(0f) }
     var lastFrameLive by remember { mutableStateOf(false) }
 
+    // ---- Session-scoped decrypted template cache (prevents per-frame Keystore IPC on Main thread) ----
+    val templateCacheMutex = remember(classId) { Mutex() }
+    val cachedTemplatesRef = remember(classId) { AtomicReference<List<StudentTemplatePair>?>(null) }
+
+    suspend fun getActiveTemplatesCached(forceRefresh: Boolean = false): List<StudentTemplatePair> = withContext(Dispatchers.IO) {
+        if (!forceRefresh) {
+            cachedTemplatesRef.get()?.let { return@withContext it }
+        }
+        templateCacheMutex.withLock {
+            if (!forceRefresh) {
+                cachedTemplatesRef.get()?.let { return@withLock it }
+            }
+            repository.getActiveTemplatesForClass(classId).also {
+                cachedTemplatesRef.set(it)
+            }
+        }
+    }
+
+    fun invalidateTemplateCache(preloadInBackground: Boolean = true) {
+        cachedTemplatesRef.set(null)
+        adaptiveEngine = null
+        if (preloadInBackground) {
+            scope.launch {
+                runCatching { getActiveTemplatesCached(forceRefresh = true) }
+            }
+        }
+    }
+
+    // Pre-warm decrypted Keystore templates in the background while the camera initializes
+    LaunchedEffect(classId) {
+        runCatching { getActiveTemplatesCached(forceRefresh = true) }
+    }
+
     // ---- Inline enrollment (LLD-06): when a NOT_ENROLLED student is selected from the
     // UNKNOWN roster, the attendance screen collects 3 enrollment poses right here,
     // enrolls them, and marks the student PRESENT — all without leaving the session.
@@ -470,6 +507,7 @@ fun AttendanceScreen(
             autoCaptureJob?.cancel()
             adaptiveEngine = null
             activeTeacherGrant = null
+            cachedTemplatesRef.set(null)
         }
     }
 
@@ -805,6 +843,7 @@ fun AttendanceScreen(
             when (enrollResult) {
                 is com.attract.attendance.domain.face.EnrollmentResult.Committed -> {
                     AppLog.i("ATTRACT_ATTENDANCE_FALLBACK", "[INLINE_REGISTRATION] success for ${target.id}")
+                    invalidateTemplateCache(preloadInBackground = true)
                     if (enrollResult.attendanceRecordId != null) {
                         presentIds = presentIds + target.id
                     }
@@ -1162,14 +1201,16 @@ fun AttendanceScreen(
                 val embedding = withContext(Dispatchers.IO) {
                     com.attract.attendance.domain.face.EmbeddingEngine.extractEmbedding(context, cropBitmap)
                 }
-                val activeTemplates = repository.getActiveTemplatesForClass(classId)
-                if (activeTemplates.isEmpty()) {
-                    handleNoEnrolledStudents()
-                    return@launch
+                val eng = adaptiveEngine ?: run {
+                    val activeTemplates = getActiveTemplatesCached()
+                    if (activeTemplates.isEmpty()) {
+                        handleNoEnrolledStudents()
+                        return@launch
+                    }
+                    com.attract.attendance.domain.face.AdaptiveVerificationEngine(
+                        templates = activeTemplates,
+                    ).also { adaptiveEngine = it }
                 }
-                val eng = adaptiveEngine ?: com.attract.attendance.domain.face.AdaptiveVerificationEngine(
-                    templates = activeTemplates,
-                ).also { adaptiveEngine = it }
 
                 val observation = com.attract.attendance.domain.face.FrameObservation(
                     signals = signalsNow,
@@ -1448,10 +1489,11 @@ fun AttendanceScreen(
                 }
 
                 val targetFloats = com.attract.attendance.domain.face.EmbeddingEngine.combineEmbeddings(queryEmbeddings)
-                val activeTemplates = repository.getActiveTemplatesForClass(classId)
-                val engine = com.attract.attendance.domain.face.RecognitionDecisionEngine()
-
-                val outcome = engine.evaluate(targetFloats, activeTemplates)
+                val activeTemplates = getActiveTemplatesCached()
+                val outcome = withContext(Dispatchers.Default) {
+                    val engine = com.attract.attendance.domain.face.RecognitionDecisionEngine()
+                    engine.evaluate(targetFloats, activeTemplates)
+                }
 
                 val trace = AttemptTrace(
                     faceLuma = lastQualitySignals?.brightness ?: 0f,
@@ -1488,15 +1530,20 @@ fun AttendanceScreen(
                                 val meshPose = lastQualitySignals?.let { sig ->
                                     HeadPose.poseBucket(sig.yawDegrees, sig.pitchDegrees)
                                 } ?: "FRONTAL"
-                                repository.maybeAutoUpdateTemplate(
-                                    studentId = matchedId,
-                                    newEmbedding = targetFloats,
-                                    qualityScore = lastFrameQualityScore,
-                                    matchScore = outcome.confidence,
-                                    margin = 0.20f,
-                                    livenessRisk = com.attract.attendance.domain.face.liveness.LivenessRisk.LOW,
-                                    poseBucket = meshPose,
-                                )
+                                val autoUpdated = withContext(Dispatchers.IO) {
+                                    repository.maybeAutoUpdateTemplate(
+                                        studentId = matchedId,
+                                        newEmbedding = targetFloats,
+                                        qualityScore = lastFrameQualityScore,
+                                        matchScore = outcome.confidence,
+                                        margin = 0.20f,
+                                        livenessRisk = com.attract.attendance.domain.face.liveness.LivenessRisk.LOW,
+                                        poseBucket = meshPose,
+                                    )
+                                }
+                                if (autoUpdated) {
+                                    invalidateTemplateCache(preloadInBackground = true)
+                                }
                                 delay(2000)
                                 resetToReady(resetAttempts = true)
                             }
