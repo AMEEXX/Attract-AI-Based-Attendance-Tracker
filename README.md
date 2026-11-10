@@ -1,4 +1,4 @@
-# Attract — Face-Based Attendance Tracker
+# Attract — Face-Based Attendance Tracker.
 
 <p align="center">
   <img src="docs/art/app_logo.png" alt="Attract App Logo" width="120" />
