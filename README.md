@@ -2,7 +2,7 @@
 
 <p align="center">
   <img src="docs/art/app_logo.png" alt="Attract App Logo" width="120" />
-  <h3 align="center">Offline, Class-Scoped Biometric Attendance for Native Android</h3>
+  <h3 align="center">Offline, Class-Scoped Biometric Attendance for Native Android.</h3>
   <p align="center">
     High-assurance student self-check-in with on-device face recognition, progressive enrollment, hardware-pinned kiosk safety, and zero cloud dependency.
   </p>
@@ -61,14 +61,14 @@ Attract leverages modern Android architecture, high-performance edge machine lea
 | **Design System** | Material Design 3 | ![Material 3](https://img.shields.io/badge/Material_3-757575?style=flat-square&logo=materialdesign&logoColor=white) | Unified typography, dark/light themes, and haptic feedback. |
 | **Camera Feed** | CameraX | ![CameraX](https://img.shields.io/badge/CameraX_1.4-00C853?style=flat-square&logo=googlecamera&logoColor=white) | High-speed preview stream & non-blocking `ImageAnalysis` analyzer. |
 | **Face Detection** | YOLOv8n-Face | ![YOLOv8](https://img.shields.io/badge/YOLOv8n--Face-00FFFF?style=flat-square&logo=target&logoColor=black) | On-device face detection & 5-point facial landmark regression. |
-| **Alignment** | Umeyama 2D Transform | ![Umeyama](https://img.shields.io/badge/Umeyama_Similarity-FF4081?style=flat-square&logo=opencv&logoColor=white) | Least-squares similarity alignment to canonical 112×112 crop |
-| **Feature Extraction** | ArcFace MobileFaceNet | ![ArcFace](https://img.shields.io/badge/ArcFace_512--D-8A2BE2?style=flat-square&logo=thealgorithms&logoColor=white) | 512-dimensional L2-normalized deep facial identity embeddings |
-| **Runtime Engine** | LiteRT / TFLite | ![TFLite](https://img.shields.io/badge/TensorFlow_Lite-FF6F00?style=flat-square&logo=tensorflow&logoColor=white) | Low-latency CPU & GPU inference acceleration |
-| **Database** | Room v4 (SQLite) | ![Room](https://img.shields.io/badge/Room_v4-00599C?style=flat-square&logo=sqlite&logoColor=white) | Atomic transactions, foreign-key safety, and forward migrations |
-| **Encryption** | Android Keystore | ![Keystore](https://img.shields.io/badge/Keystore_AES--GCM-D32F2F?style=flat-square&logo=securityscorecard&logoColor=white) | Hardware-backed key generation & envelope template encryption |
-| **Kiosk Security** | Lock Task Mode | ![LockTask](https://img.shields.io/badge/Screen_Pinning-E65100?style=flat-square&logo=pinboard&logoColor=white) | Device lockdown during attendance sessions |
-| **Concurrency** | Coroutines & Flow | ![Coroutines](https://img.shields.io/badge/Coroutines_&_Flow-4A148C?style=flat-square&logo=kotlin&logoColor=white) | Thread-safe Mutex state coordinator & reactive room observations |
-| **Build Tooling** | Gradle 8.10 | ![Gradle](https://img.shields.io/badge/Gradle_8.10-02303A?style=flat-square&logo=gradle&logoColor=white) | Kotlin DSL build scripts & multi-variant compilation |
+| **Alignment** | Umeyama 2D Transform | ![Umeyama](https://img.shields.io/badge/Umeyama_Similarity-FF4081?style=flat-square&logo=opencv&logoColor=white) | Least-squares similarity alignment to canonical 112×112 crop. |
+| **Feature Extraction** | ArcFace MobileFaceNet | ![ArcFace](https://img.shields.io/badge/ArcFace_512--D-8A2BE2?style=flat-square&logo=thealgorithms&logoColor=white) | 512-dimensional L2-normalized deep facial identity embeddings. |
+| **Runtime Engine** | LiteRT / TFLite | ![TFLite](https://img.shields.io/badge/TensorFlow_Lite-FF6F00?style=flat-square&logo=tensorflow&logoColor=white) | Low-latency CPU & GPU inference acceleration. |
+| **Database** | Room v4 (SQLite) | ![Room](https://img.shields.io/badge/Room_v4-00599C?style=flat-square&logo=sqlite&logoColor=white) | Atomic transactions, foreign-key safety, and forward migrations. |
+| **Encryption** | Android Keystore | ![Keystore](https://img.shields.io/badge/Keystore_AES--GCM-D32F2F?style=flat-square&logo=securityscorecard&logoColor=white) | Hardware-backed key generation & envelope template encryption. |
+| **Kiosk Security** | Lock Task Mode | ![LockTask](https://img.shields.io/badge/Screen_Pinning-E65100?style=flat-square&logo=pinboard&logoColor=white) | Device lockdown during attendance sessions. |
+| **Concurrency** | Coroutines & Flow | ![Coroutines](https://img.shields.io/badge/Coroutines_&_Flow-4A148C?style=flat-square&logo=kotlin&logoColor=white) | Thread-safe Mutex state coordinator & reactive room observations. |
+| **Build Tooling** | Gradle 8.10 | ![Gradle](https://img.shields.io/badge/Gradle_8.10-02303A?style=flat-square&logo=gradle&logoColor=white) | Kotlin DSL build scripts & multi-variant compilation. |
 
 ---
 
@@ -129,9 +129,9 @@ flowchart TD
 2. **Strict Roster Isolation**: The selection list shows **only `NOT_ENROLLED` students** (enrolled students are never shown, preventing identity hijacking).
 3. **D-001 Teacher Approval**: The teacher verifies student identity in person and confirms via an action-bound grant dialog.
 4. **Guided 3-Angle Capture**: The student captures 3 distinct validated angles:
-   - **Angle 1**: Frontal (Straight)
-   - **Angle 2**: Slight Left Turn (~15°)
-   - **Angle 3**: Slight Right Turn (~15°)
+   - **Angle 1**: Frontal (Straight).
+   - **Angle 2**: Slight Left Turn (~15°).
+   - **Angle 3**: Slight Right Turn (~15°).
 5. **Continuity & Duplicate Verification**: The batch validator requires pairwise embedding continuity ($\ge 0.35$ to frontal anchor) and `DuplicateCheckService` verifies against the class gallery ($\text{max score} < 0.22$).
 6. **Atomic Transaction**: Templates are encrypted with Keystore AES-GCM, the student status becomes `ENROLLED`, and an attendance record with source `ENROLLMENT` is saved together in Room.
 
@@ -146,12 +146,12 @@ flowchart TD
 
 | Pipeline Stage | Model Asset / Algorithm | Input Dimensions | Output Dimensions | Verification Thresholds |
 |---|---|---|---|---|
-| **Face Detection** | `yolov8n_face.tflite` | `[1, 3, 640, 640]` float32 RGB | `[1, 20, 8400]` float32 | IoU: `0.45f`, Confidence: `0.50f` |
-| **Facial Alignment** | 2D Umeyama Similarity Fit | 5 facial landmarks | `[112, 112, 3]` canonical crop | Geometry and residual check |
-| **Feature Extraction** | `arcface_mobilefacenet.tflite` | `[1, 112, 112, 3]` float32 `[-1, 1]` | `[1, 512]` float32 L2-norm | Norm range: $[0.8, 1.2]$ |
-| **Identity Scoring** | Grouped-Maximum Cosine | Query vector vs class gallery | Best score ($B$), Runner-up ($S$) | Accept: $\ge 0.25$, Margin: $\ge 0.05$ |
-| **Duplicate Gate** | Class-wide pairwise check | 3 candidate sample vectors | Max gallery similarity | Block if $\ge 0.22$ |
-| **Envelope Encryption** | Hardware Keystore AES-GCM | Plaintext float bytes | IV + Ciphertext blob (v2) | Non-null hardware boundary |
+| **Face Detection** | `yolov8n_face.tflite` | `[1, 3, 640, 640]` float32 RGB | `[1, 20, 8400]` float32 | IoU: `0.45f`, Confidence: `0.50f`. |
+| **Facial Alignment** | 2D Umeyama Similarity Fit | 5 facial landmarks | `[112, 112, 3]` canonical crop | Geometry and residual check. |
+| **Feature Extraction** | `arcface_mobilefacenet.tflite` | `[1, 112, 112, 3]` float32 `[-1, 1]` | `[1, 512]` float32 L2-norm | Norm range: $[0.8, 1.2]$. |
+| **Identity Scoring** | Grouped-Maximum Cosine | Query vector vs class gallery | Best score ($B$), Runner-up ($S$) | Accept: $\ge 0.25$, Margin: $\ge 0.05$. |
+| **Duplicate Gate** | Class-wide pairwise check | 3 candidate sample vectors | Max gallery similarity | Block if $\ge 0.22$. |
+| **Envelope Encryption** | Hardware Keystore AES-GCM | Plaintext float bytes | IV + Ciphertext blob (v2) | Non-null hardware boundary. |
 
 ---
 
@@ -192,24 +192,24 @@ Attract/
 ## 7. Quick Start & Building
 
 ### Prerequisites
-- **IDE**: Android Studio Ladybug (2024.2.1+) or Koala
-- **JDK**: Java 17
-- **Target Platform**: Android 15 (API level 35), Min SDK 26 (Android 8.0 Oreo)
-- **Device / Emulator**: Physical Android phone or Android Emulator with Virtual Scene Camera (e.g. `Pixel 6 API 35`)
+- **IDE**: Android Studio Ladybug (2024.2.1+) or Koala.
+- **JDK**: Java 17.
+- **Target Platform**: Android 15 (API level 35), Min SDK 26 (Android 8.0 Oreo).
+- **Device / Emulator**: Physical Android phone or Android Emulator with Virtual Scene Camera (e.g. `Pixel 6 API 35`).
 
 ### Build & Test Commands
 
 ```bash
-# 1. Download and verify TFLite models
+# 1. Download and verify TFLite models.
 python scripts/download_models.py
 
-# 2. Run all unit tests (100% green required)
+# 2. Run all unit tests (100% green required).
 ./gradlew testDebugUnitTest
 
-# 3. Assemble debug APK
+# 3. Assemble debug APK.
 ./gradlew assembleDebug
 
-# 4. Run instrumented migration and database tests on connected device/emulator
+# 4. Run instrumented migration and database tests on connected device/emulator.
 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.attract.attendance.data.local.TemplateMigrationAndroidTest
 ```
 
