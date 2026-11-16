@@ -67,6 +67,8 @@ Attract leverages modern Android architecture, high-performance edge machine lea
 | **Database** | Room v4 (SQLite) | ![Room](https://img.shields.io/badge/Room_v4-00599C?style=flat-square&logo=sqlite&logoColor=white) | Atomic transactions, foreign-key safety, and forward migrations. |
 | **Encryption** | Android Keystore | ![Keystore](https://img.shields.io/badge/Keystore_AES--GCM-D32F2F?style=flat-square&logo=securityscorecard&logoColor=white) | Hardware-backed key generation & envelope template encryption. |
 | **Kiosk Security** | Lock Task Mode | ![LockTask](https://img.shields.io/badge/Screen_Pinning-E65100?style=flat-square&logo=pinboard&logoColor=white) | Device lockdown during attendance sessions. |
+| **FaceMesh 3D** | MediaPipe Landmarker | ![MediaPipe](https://img.shields.io/badge/MediaPipe_Mesh-00897B?style=flat-square&logo=google&logoColor=white) | 478-point 3D landmark mesh for temporal motion-parallax verification. |
+| **Anti-Spoofing** | MiniFASNetV2 CNN | ![AntiSpoof](https://img.shields.io/badge/PAD_MiniFASNet-E64A19?style=flat-square&logo=shield&logoColor=white) | Multi-signal presentation attack detection and pixel texture veto. |
 | **Concurrency** | Coroutines & Flow | ![Coroutines](https://img.shields.io/badge/Coroutines_&_Flow-4A148C?style=flat-square&logo=kotlin&logoColor=white) | Thread-safe Mutex state coordinator & reactive room observations. |
 | **Build Tooling** | Gradle 8.10 | ![Gradle](https://img.shields.io/badge/Gradle_8.10-02303A?style=flat-square&logo=gradle&logoColor=white) | Kotlin DSL build scripts & multi-variant compilation. |
 
@@ -150,6 +152,8 @@ flowchart TD
 | **Facial Alignment** | 2D Umeyama Similarity Fit | 5 facial landmarks | `[112, 112, 3]` canonical crop | Geometry and residual check. |
 | **Feature Extraction** | `arcface_mobilefacenet.tflite` | `[1, 112, 112, 3]` float32 `[-1, 1]` | `[1, 512]` float32 L2-norm | Norm range: $[0.8, 1.2]$. |
 | **Identity Scoring** | Grouped-Maximum Cosine | Query vector vs class gallery | Best score ($B$), Runner-up ($S$) | Accept: $\ge 0.25$, Margin: $\ge 0.05$. |
+| **Presentation Attack** | `silentface.tflite` (MiniFASNet) | `[1, 3, 80, 80]` float32 RGB | Softmax class probabilities | Live probability $\ge 0.10f$ (3-frame median). |
+| **Motion Parallax 3D** | MediaPipe FaceLandmarker | 478 3D facial landmarks | Affine projective residual | Pose $\Delta \ge 5.0^\circ$, Residual $\ge 0.030$. |
 | **Duplicate Gate** | Class-wide pairwise check | 3 candidate sample vectors | Max gallery similarity | Block if $\ge 0.22$. |
 | **Envelope Encryption** | Hardware Keystore AES-GCM | Plaintext float bytes | IV + Ciphertext blob (v2) | Non-null hardware boundary. |
 
@@ -238,6 +242,8 @@ For in-depth design rationale, mathematical models, and subsystem specifications
 | 📄 **[12 Liveness & Anti-Spoof (docs/12-lld-liveness-and-anti-spoof-engine.md)](docs/12-lld-liveness-and-anti-spoof-engine.md)** | Presentation attack detection, temporal motion analysis, and eye-state safety. |
 | 📄 **[13 Security & Lockdown (docs/13-lld-lockdown-authentication-and-security.md)](docs/13-lld-lockdown-authentication-and-security.md)** | Android Screen Pinning (Lock Task), teacher PIN hashing (Argon2/PBKDF2), and action grants. |
 | 📄 **[16 Multiframe Verification (docs/16-lld-adaptive-multiframe-verification.md)](docs/16-lld-adaptive-multiframe-verification.md)** | Sequential multiframe evidence fusion and attempt budget policy. |
+| 📄 **[17 Biometric Pipeline Repair (docs/17-biometric-pipeline-repair-implementation-plan.md)](docs/17-biometric-pipeline-repair-implementation-plan.md)** | Canonical 2D Umeyama similarity alignment and ArcFace 512-D L2 normalization. |
+| 📄 **[18 Attendance Pipeline Rebuild (docs/18-attendance-pipeline-root-cause-and-rebuild-plan.md)](docs/18-attendance-pipeline-root-cause-and-rebuild-plan.md)** | Pipeline invariants, failure-mode isolation, and multi-frame continuity contracts. |
 | 📄 **[20 Face-ID-grade Recognition, Liveness & Low-Light Plan (docs/20-faceid-grade-recognition-liveness-lowlight-plan.md)](docs/20-faceid-grade-recognition-liveness-lowlight-plan.md)** | RGB-only plan: low-light camera/enhancement, MediaPipe 3D pose, PAD CNN, parallax + screen-flash liveness, adaptive templates. |
 | 📄 **[Sample Data Guide (sample-data/README.md)](sample-data/README.md)** | CSV roster formatting and import guide. |
 | 📄 **[Developer Scripts (scripts/README.md)](scripts/README.md)** | Tool catalog for model testing, database diagnostics, and automation. |
