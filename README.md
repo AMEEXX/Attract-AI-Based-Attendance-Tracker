@@ -234,7 +234,10 @@ For in-depth design rationale, mathematical models, and subsystem specifications
 | 📄 **[00 Main SDD (docs/00-main-sdd.md)](docs/00-main-sdd.md)** | **Canonical Architecture Document**: HLD, system invariants, domain rules, and security baselines. |
 | 📄 **[00 Architecture Decisions (docs/00-architecture-decisions.md)](docs/00-architecture-decisions.md)** | **ADRs**: Records D-001 through D-006 (teacher proof, class scope, session recovery, ML Kit boundary). |
 | 📄 **[02 Database & Persistence (docs/02-lld-database-and-persistence.md)](docs/02-lld-database-and-persistence.md)** | Room entities, migrations 1→2→3→4, schema integrity, and Keystore envelope encryption. |
+| 📄 **[03 Class & Student Management (docs/03-lld-class-and-student-management.md)](docs/03-lld-class-and-student-management.md)** | Class lifecycle, enrollment state transitions, and student roster models. |
+| 📄 **[04 Roster Import (docs/04-lld-roster-import.md)](docs/04-lld-roster-import.md)** | CSV/XLSX/OCR roster parsing, atomic batch insertion, and duplicate prevention. |
 | 📄 **[06 Live Session Engine (docs/06-lld-live-attendance-session-engine.md)](docs/06-lld-live-attendance-session-engine.md)** | Session state machine, attempt tokens, and feedback concurrency control. |
+| 📄 **[07 Session Recovery (docs/07-lld-session-recovery.md)](docs/07-lld-session-recovery.md)** | Process death resilience, transient crash recovery, and state restoration. |
 | 📄 **[08 Camera & Frames (docs/08-lld-camera-and-frame-processing.md)](docs/08-lld-camera-and-frame-processing.md)** | CameraX frame acquisition pipeline, thread safety, and `FrameBundle` contracts. |
 | 📄 **[09 Face Quality Engine (docs/09-lld-face-quality-engine.md)](docs/09-lld-face-quality-engine.md)** | Pose calculation, Laplacian blur detection, and target angle evaluation. |
 | 📄 **[10 Enrollment & Templates (docs/10-lld-face-enrollment-and-template-management.md)](docs/10-lld-face-enrollment-and-template-management.md)** | Guided 3-angle progressive enrollment, same-person continuity, and duplicate detection. |
