@@ -233,9 +233,11 @@ For in-depth design rationale, mathematical models, and subsystem specifications
 |---|---|
 | 📄 **[00 Main SDD (docs/00-main-sdd.md)](docs/00-main-sdd.md)** | **Canonical Architecture Document**: HLD, system invariants, domain rules, and security baselines. |
 | 📄 **[00 Architecture Decisions (docs/00-architecture-decisions.md)](docs/00-architecture-decisions.md)** | **ADRs**: Records D-001 through D-006 (teacher proof, class scope, session recovery, ML Kit boundary). |
+| 📄 **[01 Application Foundation & Navigation (docs/01-lld-application-foundation-and-navigation.md)](docs/01-lld-application-foundation-and-navigation.md)** | App bootstrap, Compose navigation routes, theme foundation, and modal dialog state. |
 | 📄 **[02 Database & Persistence (docs/02-lld-database-and-persistence.md)](docs/02-lld-database-and-persistence.md)** | Room entities, migrations 1→2→3→4, schema integrity, and Keystore envelope encryption. |
 | 📄 **[03 Class & Student Management (docs/03-lld-class-and-student-management.md)](docs/03-lld-class-and-student-management.md)** | Class lifecycle, enrollment state transitions, and student roster models. |
 | 📄 **[04 Roster Import (docs/04-lld-roster-import.md)](docs/04-lld-roster-import.md)** | CSV/XLSX/OCR roster parsing, atomic batch insertion, and duplicate prevention. |
+| 📄 **[05 Attendance Domain Engine (docs/05-lld-attendance-domain-engine.md)](docs/05-lld-attendance-domain-engine.md)** | Domain state machine, roll-number natural sorting, and attendance event logging. |
 | 📄 **[06 Live Session Engine (docs/06-lld-live-attendance-session-engine.md)](docs/06-lld-live-attendance-session-engine.md)** | Session state machine, attempt tokens, and feedback concurrency control. |
 | 📄 **[07 Session Recovery (docs/07-lld-session-recovery.md)](docs/07-lld-session-recovery.md)** | Process death resilience, transient crash recovery, and state restoration. |
 | 📄 **[08 Camera & Frames (docs/08-lld-camera-and-frame-processing.md)](docs/08-lld-camera-and-frame-processing.md)** | CameraX frame acquisition pipeline, thread safety, and `FrameBundle` contracts. |
@@ -244,6 +246,8 @@ For in-depth design rationale, mathematical models, and subsystem specifications
 | 📄 **[11 Recognition & Decisions (docs/11-lld-face-recognition-and-decision-engine.md)](docs/11-lld-face-recognition-and-decision-engine.md)** | Cosine distance scoring, grouped-maximum algorithm, and decision boundary thresholds. |
 | 📄 **[12 Liveness & Anti-Spoof (docs/12-lld-liveness-and-anti-spoof-engine.md)](docs/12-lld-liveness-and-anti-spoof-engine.md)** | Presentation attack detection, temporal motion analysis, and eye-state safety. |
 | 📄 **[13 Security & Lockdown (docs/13-lld-lockdown-authentication-and-security.md)](docs/13-lld-lockdown-authentication-and-security.md)** | Android Screen Pinning (Lock Task), teacher PIN hashing (Argon2/PBKDF2), and action grants. |
+| 📄 **[14 Export, Backup & Lifecycle (docs/14-lld-reporting-export-backup-and-data-lifecycle.md)](docs/14-lld-reporting-export-backup-and-data-lifecycle.md)** | CSV/JSON reporting, formula injection mitigation, and encrypted snapshot backup. |
+| 📄 **[15 UX Refinements & Hardening (docs/15-lld-bug-fixes-and-ux-refinements.md)](docs/15-lld-bug-fixes-and-ux-refinements.md)** | Viewport bracket guidance, feedback states, and biometric edge-case hardening. |
 | 📄 **[16 Multiframe Verification (docs/16-lld-adaptive-multiframe-verification.md)](docs/16-lld-adaptive-multiframe-verification.md)** | Sequential multiframe evidence fusion and attempt budget policy. |
 | 📄 **[17 Biometric Pipeline Repair (docs/17-biometric-pipeline-repair-implementation-plan.md)](docs/17-biometric-pipeline-repair-implementation-plan.md)** | Canonical 2D Umeyama similarity alignment and ArcFace 512-D L2 normalization. |
 | 📄 **[18 Attendance Pipeline Rebuild (docs/18-attendance-pipeline-root-cause-and-rebuild-plan.md)](docs/18-attendance-pipeline-root-cause-and-rebuild-plan.md)** | Pipeline invariants, failure-mode isolation, and multi-frame continuity contracts. |
