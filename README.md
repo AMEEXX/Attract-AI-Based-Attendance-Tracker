@@ -21,6 +21,8 @@
   <img src="https://img.shields.io/badge/TensorFlow_Lite-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white" alt="TFLite" />
   <img src="https://img.shields.io/badge/YOLOv8n--Face-00FFFF?style=for-the-badge&logo=target&logoColor=black" alt="YOLOv8" />
   <img src="https://img.shields.io/badge/ArcFace_512--D-8A2BE2?style=for-the-badge&logo=thealgorithms&logoColor=white" alt="ArcFace" />
+  <img src="https://img.shields.io/badge/MediaPipe_Mesh-00897B?style=for-the-badge&logo=google&logoColor=white" alt="MediaPipe" />
+  <img src="https://img.shields.io/badge/MiniFASNet_PAD-E64A19?style=for-the-badge&logo=shield&logoColor=white" alt="MiniFASNet" />
   <img src="https://img.shields.io/badge/Umeyama_2D_Similarity-FF4081?style=for-the-badge&logo=opencv&logoColor=white" alt="Umeyama" />
   <img src="https://img.shields.io/badge/CameraX_API-00C853?style=for-the-badge&logo=googlecamera&logoColor=white" alt="CameraX" />
 </p>
@@ -181,6 +183,7 @@ Attract/
 │       │       │   └── session/          # SessionCoordinator, SessionState & Teacher Grants
 │       │       ├── feature/attendance/   # AttendanceScreen, CameraPreview & ViewModels
 │       │       ├── lockdown/             # Screen Pinning (Lock Task Controller)
+│       │       ├── platform/             # CameraX bindings & MediaPipe FaceMesh engine
 │       │       └── ui/                   # Jetpack Compose theme, components & class screens
 │       ├── test/                         # Unit tests (Coordinator, Math, Duplicate, Reproductions)
 │       └── androidTest/                  # Instrumented Room migration & camera integration tests
